@@ -83,7 +83,7 @@ const mongoose_1 = require("mongoose");
         await db_1.db.disconnect();
     });
     (0, vitest_1.it)("should scan and enqueue reminders for upcoming tasks", async () => {
-        const dueDate = new Date(Date.now() + 30 * 60 * 1000); // 30 min from now
+        const dueDate = new Date(Date.now() + 20 * 60 * 1000); // 20 min from now (matches only 15m window)
         await createTask(dueDate);
         const result = await reminder_job_1.reminderJob.scan();
         (0, vitest_1.expect)(result.enqueued).toBe(1);

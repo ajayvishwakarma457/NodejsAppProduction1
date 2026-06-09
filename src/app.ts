@@ -9,10 +9,13 @@ import { taskRouter } from "./modules/tasks/task.routes";
 import { teamRouter } from "./modules/teams/team.routes";
 import { userRouter } from "./modules/users/user.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
+import { notFoundMiddleware } from "./middleware/notFound.middleware";
+import { requestIdMiddleware } from "./middleware/requestId.middleware";
 import { rateLimitMiddleware } from "./middleware/rateLimit.middleware";
 
 export const app = express();
 
+app.use(requestIdMiddleware);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -30,5 +33,6 @@ app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/notifications", notificationRouter);
 
+app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
