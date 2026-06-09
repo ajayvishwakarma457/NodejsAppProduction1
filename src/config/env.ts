@@ -26,7 +26,12 @@ const envSchema = z.object({
   STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
   STORAGE_LOCAL_PATH: z.string().min(1).default("uploads"),
   STORAGE_MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(500).default(10),
-  STORAGE_ALLOWED_MIME_TYPES: z.string().optional().default("image/jpeg,image/png,image/webp,application/pdf")
+  STORAGE_ALLOWED_MIME_TYPES: z.string().optional().default("image/jpeg,image/png,image/webp,application/pdf"),
+
+  EMAIL_JOB_ENABLED: z.preprocess((val) => val === "true" || val === true, z.boolean().default(false)),
+  EMAIL_JOB_CRON: z.string().min(1).default("*/30 * * * * *"),
+  EMAIL_JOB_BATCH_SIZE: z.coerce.number().min(1).max(100).default(10),
+  EMAIL_JOB_MAX_RETRIES: z.coerce.number().min(0).max(10).default(3)
 });
 
 const parsed = envSchema.safeParse(process.env);
