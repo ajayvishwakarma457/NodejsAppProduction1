@@ -1,13 +1,52 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
+import { logger } from "../config/logger";
 
 let ioInstance: Server | null = null;
 
-export const socketService = {
-  setIO(io: Server) {
-    ioInstance = io;
-  },
-  getIO() {
-    return ioInstance;
+const ensureInitialized = (): Server => {
+  if (!ioInstance) {
+    throw new Error("Socket.IO has not been initialized. Call setIO() first.");
   }
+  return ioInstance;
 };
 
+export const socketService = {
+  setIO(io: Server) {
+    if (ioInstance) {
+      logger.warn("Socket.IO instance is being overwritten");
+    }
+    ioInstance = io;
+  },
+
+  getIO(): Server {
+    return ensureInitialized();
+  },
+
+  emitToRoom(room: string, event: string, data: unknown): void {
+    const io = ensureInitialized();
+    io.to(room).emit(event, data);
+  },
+
+  emitToAll(event: string, data: unknown): void {
+    const io = ensureInitialized();
+    io.emit(event, data);
+  },
+
+  getConnectedCount(): number {
+    const io = ensureInitialized();
+    return io.engine.clientsCount;
+  },
+
+  getSocketById(socketId: string): Socket | undefined {
+    const io = ensureInitialized();
+    return io.sockets.sockets.get(socketId);
+  },
+
+  disconnectSocket(socketId: string, reason?: string): void {
+    const socket = this.getSocketById(socketId);
+    if (socket) {
+      socket.disconnect(true);
+      logger.info(`Socket ${socketId} disconnected`, { reason });
+    }
+  }
+};
