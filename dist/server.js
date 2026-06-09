@@ -8,85 +8,66 @@ const app_1 = require("./app");
 const db_1 = require("./config/db");
 const env_1 = require("./config/env");
 const logger_1 = require("./config/logger");
+const redis_1 = require("./config/redis");
 const sockets_1 = require("./sockets");
 const socket_service_1 = require("./services/socket.service");
 const socket_io_1 = require("socket.io");
-// ─── Production Config ───────────────────────────────────────
-const GRACEFUL_SHUTDOWN_TIMEOUT = 10000; // 10s to finish requests
-const KEEP_ALIVE_TIMEOUT = 65000; // Slightly > ALB/NGINX timeout
+let server = null;
 const bootstrap = async () => {
-    let server;
-    let io;
     try {
-        // 1. Database connection with retry logic
-        await db_1.db.connect().catch((err) => {
-            logger_1.logger.error("Database connection failed", { error: err.message });
-            process.exit(1); // Fail fast — container orchestrator will restart
-        });
-        logger_1.logger.info("Database connected");
-        // 2. Create HTTP server
+        await db_1.db.connect();
+        await redis_1.redisClient.connect();
         server = http_1.default.createServer(app_1.app);
-        server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
-        server.headersTimeout = KEEP_ALIVE_TIMEOUT + 5000;
-        // 3. Socket.IO with production CORS (restrict origins!)
-        io = new socket_io_1.Server(server, {
+        const io = new socket_io_1.Server(server, {
             cors: {
-                origin: env_1.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:3000"],
-                methods: ["GET", "POST"],
-                credentials: true,
-            },
-            // Production: use Redis adapter for multi-instance scaling
-            // adapter: createAdapter(pubClient, subClient),
-            pingTimeout: 60000,
-            pingInterval: 25000,
+                origin: env_1.env.CLIENT_URL
+            }
         });
         socket_service_1.socketService.setIO(io);
         (0, sockets_1.registerSockets)(io);
-        // 4. Graceful shutdown handlers
-        const gracefulShutdown = async (signal) => {
-            logger_1.logger.info(`Received ${signal}, starting graceful shutdown...`);
-            // Stop accepting new connections
-            server.close(async () => {
-                logger_1.logger.info("HTTP server closed");
-                // Disconnect all socket clients
-                io.close(() => {
-                    logger_1.logger.info("Socket.IO server closed");
-                });
-                // Close database connection
-                await db_1.db.disconnect().catch(() => { });
-                logger_1.logger.info("Database disconnected");
-                process.exit(0);
-            });
-            // Force exit after timeout
-            setTimeout(() => {
-                logger_1.logger.error("Forced shutdown — timeout exceeded");
-                process.exit(1);
-            }, GRACEFUL_SHUTDOWN_TIMEOUT);
-        };
-        process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-        process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-        // 5. Handle uncaught errors (production safety net)
-        process.on("uncaughtException", (err) => {
-            logger_1.logger.error("Uncaught Exception", { error: err.message, stack: err.stack });
-            gracefulShutdown("uncaughtException");
-        });
-        process.on("unhandledRejection", (reason) => {
-            logger_1.logger.error("Unhandled Rejection", { reason });
-            gracefulShutdown("unhandledRejection");
-        });
-        // 6. Start listening
         server.listen(env_1.env.PORT, () => {
             logger_1.logger.info(`${env_1.env.APP_NAME} listening on port ${env_1.env.PORT}`, {
-                env: env_1.env.NODE_ENV,
-                port: env_1.env.PORT,
-                pid: process.pid,
+                env: env_1.env.NODE_ENV
             });
         });
     }
     catch (error) {
-        logger_1.logger.error("Bootstrap failed", { error: error.message });
+        logger_1.logger.error("Failed to bootstrap application", { error });
         process.exit(1);
     }
 };
-// ─── Entry Point ─────────────────────────────────────────────
+const gracefulShutdown = async (signal) => {
+    logger_1.logger.info(`Received ${signal}. Starting graceful shutdown...`);
+    if (server) {
+        server.close(() => {
+            logger_1.logger.info("HTTP server closed");
+        });
+    }
+    try {
+        const io = socket_service_1.socketService.getIO();
+        if (io) {
+            io.close(() => {
+                logger_1.logger.info("Socket.IO server closed");
+            });
+        }
+        await db_1.db.disconnect();
+        await redis_1.redisClient.disconnect();
+        logger_1.logger.info("Graceful shutdown completed");
+        process.exit(0);
+    }
+    catch (error) {
+        logger_1.logger.error("Error during graceful shutdown", { error });
+        process.exit(1);
+    }
+};
+process.on("unhandledRejection", (reason) => {
+    logger_1.logger.error("Unhandled Rejection", { reason });
+    gracefulShutdown("unhandledRejection");
+});
+process.on("uncaughtException", (error) => {
+    logger_1.logger.error("Uncaught Exception", { error });
+    gracefulShutdown("uncaughtException");
+});
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 void bootstrap();

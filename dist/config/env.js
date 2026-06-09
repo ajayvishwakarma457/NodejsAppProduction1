@@ -13,6 +13,7 @@ const envSchema = zod_1.z.object({
     APP_NAME: zod_1.z.string().default("NodejsAppProduction1"),
     JWT_SECRET: zod_1.z.string().default("change-me"),
     REDIS_URL: zod_1.z.string().default("redis://localhost:6379"),
-    MONGODB_URI: zod_1.z.string().default("mongodb://127.0.0.1:27017/nodejs-app-production1")
+    MONGODB_URI: zod_1.z.string().default("mongodb://127.0.0.1:27017/nodejs-app-production1"),
+    CLIENT_URL: zod_1.z.string().default("*")
 });
 exports.env = envSchema.parse(process.env);
