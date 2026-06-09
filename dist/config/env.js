@@ -46,7 +46,11 @@ const envSchema = zod_1.z.object({
         if (val === undefined)
             return true;
         return val === "true" || val === true;
-    }, zod_1.z.boolean())
+    }, zod_1.z.boolean()),
+    RATE_LIMIT_ENABLED: zod_1.z.preprocess((val) => val === "true" || val === true, zod_1.z.boolean().default(false)),
+    RATE_LIMIT_WINDOW_MS: zod_1.z.coerce.number().min(1000).max(3600000).default(900000),
+    RATE_LIMIT_MAX_REQUESTS: zod_1.z.coerce.number().min(1).max(10000).default(100),
+    RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS: zod_1.z.coerce.number().min(1).max(10000).default(200)
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

@@ -39,6 +39,7 @@ const zod_1 = require("zod");
 const error_middleware_1 = require("../../middleware/error.middleware");
 const notFound_middleware_1 = require("../../middleware/notFound.middleware");
 const requestId_middleware_1 = require("../../middleware/requestId.middleware");
+const role_middleware_1 = require("../../middleware/role.middleware");
 const ApiError_1 = require("../../utils/ApiError");
 const envModule = __importStar(require("../../config/env"));
 const mockRequest = (overrides = {}) => {
@@ -354,5 +355,102 @@ const logger_1 = require("../../config/logger");
         (0, vitest_1.expect)(req.requestId).not.toBe("req-test-123");
         (0, vitest_1.expect)(res.setHeader).toHaveBeenCalledWith("X-Request-Id", vitest_1.expect.any(String));
         (0, vitest_1.expect)(next).toHaveBeenCalled();
+    });
+    (0, vitest_1.it)("should trim whitespace from client requestId", () => {
+        const req = mockRequest();
+        req.headers["x-request-id"] = "  spaced-id  ";
+        req.get = vitest_1.vi.fn((name) => req.headers[name.toLowerCase()]);
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, requestId_middleware_1.requestIdMiddleware)(req, res, next);
+        (0, vitest_1.expect)(req.requestId).toBe("spaced-id");
+    });
+    (0, vitest_1.it)("should use first value when multiple requestIds are sent", () => {
+        const req = mockRequest();
+        req.headers["x-request-id"] = "first-id, second-id";
+        req.get = vitest_1.vi.fn((name) => req.headers[name.toLowerCase()]);
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, requestId_middleware_1.requestIdMiddleware)(req, res, next);
+        (0, vitest_1.expect)(req.requestId).toBe("first-id");
+    });
+    (0, vitest_1.it)("should generate new UUID for overly long requestId", () => {
+        const req = mockRequest();
+        req.headers["x-request-id"] = "a".repeat(300);
+        req.get = vitest_1.vi.fn((name) => req.headers[name.toLowerCase()]);
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, requestId_middleware_1.requestIdMiddleware)(req, res, next);
+        (0, vitest_1.expect)(req.requestId).not.toBe("a".repeat(300));
+        (0, vitest_1.expect)(typeof req.requestId).toBe("string");
+    });
+    (0, vitest_1.it)("should generate new UUID for requestId with invalid characters", () => {
+        const req = mockRequest();
+        req.headers["x-request-id"] = "id<script>alert(1)</script>";
+        req.get = vitest_1.vi.fn((name) => req.headers[name.toLowerCase()]);
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, requestId_middleware_1.requestIdMiddleware)(req, res, next);
+        (0, vitest_1.expect)(req.requestId).not.toContain("<script>");
+        (0, vitest_1.expect)(typeof req.requestId).toBe("string");
+    });
+    (0, vitest_1.it)("should generate new UUID for empty string requestId", () => {
+        const req = mockRequest();
+        req.headers["x-request-id"] = "";
+        req.get = vitest_1.vi.fn((name) => req.headers[name.toLowerCase()]);
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, requestId_middleware_1.requestIdMiddleware)(req, res, next);
+        (0, vitest_1.expect)(req.requestId).toBeDefined();
+        (0, vitest_1.expect)(req.requestId).not.toBe("");
+    });
+});
+(0, vitest_1.describe)("roleMiddleware", () => {
+    (0, vitest_1.it)("should allow access when user has required role", () => {
+        const req = mockRequest({
+            user: { id: "user-1", email: "a@example.com", role: "admin" }
+        });
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, role_middleware_1.roleMiddleware)("admin", "owner")(req, res, next);
+        (0, vitest_1.expect)(next).toHaveBeenCalledWith();
+    });
+    (0, vitest_1.it)("should deny access when user role is not in allowed list", () => {
+        const req = mockRequest({
+            user: { id: "user-2", email: "b@example.com", role: "member" }
+        });
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, role_middleware_1.roleMiddleware)("admin")(req, res, next);
+        (0, vitest_1.expect)(next).toHaveBeenCalledTimes(1);
+        const error = next.mock.calls[0][0];
+        (0, vitest_1.expect)(error).toBeInstanceOf(ApiError_1.ApiError);
+        (0, vitest_1.expect)(error.statusCode).toBe(403);
+        (0, vitest_1.expect)(error.details).toEqual({ requiredRoles: ["admin"], actualRole: "member" });
+        (0, vitest_1.expect)(logger_1.logger.warn).toHaveBeenCalledWith("Access denied: insufficient role", vitest_1.expect.objectContaining({
+            userId: "user-2",
+            actualRole: "member",
+            requiredRoles: ["admin"]
+        }));
+    });
+    (0, vitest_1.it)("should deny access when user is not authenticated", () => {
+        const req = mockRequest();
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, role_middleware_1.roleMiddleware)("admin")(req, res, next);
+        (0, vitest_1.expect)(next).toHaveBeenCalledTimes(1);
+        const error = next.mock.calls[0][0];
+        (0, vitest_1.expect)(error).toBeInstanceOf(ApiError_1.ApiError);
+        (0, vitest_1.expect)(error.statusCode).toBe(403);
+        (0, vitest_1.expect)(error.details).toEqual({ requiredRoles: ["admin"], actualRole: undefined });
+    });
+    (0, vitest_1.it)("should allow access when user has any of the allowed roles", () => {
+        const req = mockRequest({
+            user: { id: "user-3", email: "c@example.com", role: "manager" }
+        });
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        (0, role_middleware_1.roleMiddleware)("admin", "manager", "owner")(req, res, next);
+        (0, vitest_1.expect)(next).toHaveBeenCalledWith();
     });
 });

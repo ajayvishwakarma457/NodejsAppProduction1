@@ -5,6 +5,7 @@ import { ZodError, z } from "zod";
 import { errorMiddleware } from "../../middleware/error.middleware";
 import { notFoundMiddleware } from "../../middleware/notFound.middleware";
 import { requestIdMiddleware } from "../../middleware/requestId.middleware";
+import { roleMiddleware } from "../../middleware/role.middleware";
 import { ApiError } from "../../utils/ApiError";
 import * as envModule from "../../config/env";
 
@@ -419,5 +420,133 @@ describe("requestIdMiddleware", () => {
     expect(req.requestId).not.toBe("req-test-123");
     expect(res.setHeader).toHaveBeenCalledWith("X-Request-Id", expect.any(String));
     expect(next).toHaveBeenCalled();
+  });
+
+  it("should trim whitespace from client requestId", () => {
+    const req = mockRequest();
+    req.headers["x-request-id"] = "  spaced-id  ";
+    (req.get as ReturnType<typeof vi.fn>) = vi.fn((name: string) => req.headers[name.toLowerCase()] as string | undefined);
+    const res = mockResponse();
+    const next = vi.fn();
+
+    requestIdMiddleware(req, res, next);
+
+    expect(req.requestId).toBe("spaced-id");
+  });
+
+  it("should use first value when multiple requestIds are sent", () => {
+    const req = mockRequest();
+    req.headers["x-request-id"] = "first-id, second-id";
+    (req.get as ReturnType<typeof vi.fn>) = vi.fn((name: string) => req.headers[name.toLowerCase()] as string | undefined);
+    const res = mockResponse();
+    const next = vi.fn();
+
+    requestIdMiddleware(req, res, next);
+
+    expect(req.requestId).toBe("first-id");
+  });
+
+  it("should generate new UUID for overly long requestId", () => {
+    const req = mockRequest();
+    req.headers["x-request-id"] = "a".repeat(300);
+    (req.get as ReturnType<typeof vi.fn>) = vi.fn((name: string) => req.headers[name.toLowerCase()] as string | undefined);
+    const res = mockResponse();
+    const next = vi.fn();
+
+    requestIdMiddleware(req, res, next);
+
+    expect(req.requestId).not.toBe("a".repeat(300));
+    expect(typeof req.requestId).toBe("string");
+  });
+
+  it("should generate new UUID for requestId with invalid characters", () => {
+    const req = mockRequest();
+    req.headers["x-request-id"] = "id<script>alert(1)</script>";
+    (req.get as ReturnType<typeof vi.fn>) = vi.fn((name: string) => req.headers[name.toLowerCase()] as string | undefined);
+    const res = mockResponse();
+    const next = vi.fn();
+
+    requestIdMiddleware(req, res, next);
+
+    expect(req.requestId).not.toContain("<script>");
+    expect(typeof req.requestId).toBe("string");
+  });
+
+  it("should generate new UUID for empty string requestId", () => {
+    const req = mockRequest();
+    req.headers["x-request-id"] = "";
+    (req.get as ReturnType<typeof vi.fn>) = vi.fn((name: string) => req.headers[name.toLowerCase()] as string | undefined);
+    const res = mockResponse();
+    const next = vi.fn();
+
+    requestIdMiddleware(req, res, next);
+
+    expect(req.requestId).toBeDefined();
+    expect(req.requestId).not.toBe("");
+  });
+});
+
+
+describe("roleMiddleware", () => {
+  it("should allow access when user has required role", () => {
+    const req = mockRequest({
+      user: { id: "user-1", email: "a@example.com", role: "admin" }
+    });
+    const res = mockResponse();
+    const next = vi.fn();
+
+    roleMiddleware("admin", "owner")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it("should deny access when user role is not in allowed list", () => {
+    const req = mockRequest({
+      user: { id: "user-2", email: "b@example.com", role: "member" }
+    });
+    const res = mockResponse();
+    const next = vi.fn();
+
+    roleMiddleware("admin")(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const error = (next as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.statusCode).toBe(403);
+    expect(error.details).toEqual({ requiredRoles: ["admin"], actualRole: "member" });
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Access denied: insufficient role",
+      expect.objectContaining({
+        userId: "user-2",
+        actualRole: "member",
+        requiredRoles: ["admin"]
+      })
+    );
+  });
+
+  it("should deny access when user is not authenticated", () => {
+    const req = mockRequest();
+    const res = mockResponse();
+    const next = vi.fn();
+
+    roleMiddleware("admin")(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const error = (next as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.statusCode).toBe(403);
+    expect(error.details).toEqual({ requiredRoles: ["admin"], actualRole: undefined });
+  });
+
+  it("should allow access when user has any of the allowed roles", () => {
+    const req = mockRequest({
+      user: { id: "user-3", email: "c@example.com", role: "manager" }
+    });
+    const res = mockResponse();
+    const next = vi.fn();
+
+    roleMiddleware("admin", "manager", "owner")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
   });
 });

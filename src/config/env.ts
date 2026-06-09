@@ -46,7 +46,12 @@ const envSchema = z.object({
   REMINDER_OVERDUE_ENABLED: z.preprocess((val) => {
     if (val === undefined) return true;
     return val === "true" || val === true;
-  }, z.boolean())
+  }, z.boolean()),
+
+  RATE_LIMIT_ENABLED: z.preprocess((val) => val === "true" || val === true, z.boolean().default(false)),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1000).max(3600000).default(900000),
+  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(100),
+  RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(200)
 });
 
 const parsed = envSchema.safeParse(process.env);
