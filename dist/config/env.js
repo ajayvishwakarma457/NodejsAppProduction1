@@ -32,7 +32,12 @@ const envSchema = zod_1.z.object({
     EMAIL_JOB_ENABLED: zod_1.z.preprocess((val) => val === "true" || val === true, zod_1.z.boolean().default(false)),
     EMAIL_JOB_CRON: zod_1.z.string().min(1).default("*/30 * * * * *"),
     EMAIL_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(10),
-    EMAIL_JOB_MAX_RETRIES: zod_1.z.coerce.number().min(0).max(10).default(3)
+    EMAIL_JOB_MAX_RETRIES: zod_1.z.coerce.number().min(0).max(10).default(3),
+    NOTIFICATION_JOB_ENABLED: zod_1.z.preprocess((val) => val === "true" || val === true, zod_1.z.boolean().default(false)),
+    NOTIFICATION_JOB_CRON: zod_1.z.string().min(1).default("*/15 * * * * *"),
+    NOTIFICATION_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(20),
+    NOTIFICATION_JOB_MAX_RETRIES: zod_1.z.coerce.number().min(0).max(10).default(3),
+    NOTIFICATION_CLEANUP_DAYS: zod_1.z.coerce.number().min(1).max(365).default(30)
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
