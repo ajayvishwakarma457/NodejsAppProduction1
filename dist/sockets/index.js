@@ -3,18 +3,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSockets = void 0;
 const logger_1 = require("../config/logger");
 const constants_1 = require("../utils/constants");
+const token_service_1 = require("../services/token.service");
 const notification_socket_1 = require("./notification.socket");
 const task_socket_1 = require("./task.socket");
 const team_socket_1 = require("./team.socket");
 const parseSocketUser = (socket) => {
-    const token = socket.handshake.auth.token;
-    if (!token || !token.startsWith(constants_1.TOKEN_PREFIX.access))
+    try {
+        const token = socket.handshake.auth.token;
+        if (!token)
+            return null;
+        const payload = token_service_1.tokenService.verifyAccessToken(token);
+        return { id: payload.sub, role: payload.role };
+    }
+    catch {
         return null;
-    const userId = token.replace(constants_1.TOKEN_PREFIX.access, "");
-    if (!userId)
-        return null;
-    const role = socket.handshake.auth.role || "member";
-    return { id: userId, role };
+    }
 };
 const registerSockets = (io) => {
     io.on("connection", (socket) => {

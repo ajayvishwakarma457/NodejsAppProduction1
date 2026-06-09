@@ -1,17 +1,20 @@
 import { Server, Socket } from "socket.io";
 import { logger } from "../config/logger";
-import { SOCKET_EVENTS, TOKEN_PREFIX } from "../utils/constants";
+import { SOCKET_EVENTS } from "../utils/constants";
+import { tokenService } from "../services/token.service";
 import { registerNotificationSocket } from "./notification.socket";
 import { registerTaskSocket } from "./task.socket";
 import { registerTeamSocket } from "./team.socket";
 
 const parseSocketUser = (socket: Socket): { id: string; role: string } | null => {
-  const token = socket.handshake.auth.token as string | undefined;
-  if (!token || !token.startsWith(TOKEN_PREFIX.access)) return null;
-  const userId = token.replace(TOKEN_PREFIX.access, "");
-  if (!userId) return null;
-  const role = (socket.handshake.auth.role as string) || "member";
-  return { id: userId, role };
+  try {
+    const token = socket.handshake.auth.token as string | undefined;
+    if (!token) return null;
+    const payload = tokenService.verifyAccessToken(token);
+    return { id: payload.sub, role: payload.role };
+  } catch {
+    return null;
+  }
 };
 
 export const registerSockets = (io: Server) => {
