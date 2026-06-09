@@ -7,5 +7,9 @@ export const db = {
   async connect() {
     await mongoose.connect(env.MONGODB_URI);
     logger.info("MongoDB connected", { url: env.MONGODB_URI });
+  },
+  async disconnect() {
+    await mongoose.disconnect();
+    logger.info("MongoDB disconnected");
   }
 };

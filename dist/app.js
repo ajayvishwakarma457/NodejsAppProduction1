@@ -1,0 +1,34 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.app = void 0;
+const cors_1 = __importDefault(require("cors"));
+const express_1 = __importDefault(require("express"));
+const helmet_1 = __importDefault(require("helmet"));
+const auth_routes_1 = require("./modules/auth/auth.routes");
+const comment_routes_1 = require("./modules/comments/comment.routes");
+const notification_routes_1 = require("./modules/notifications/notification.routes");
+const project_routes_1 = require("./modules/projects/project.routes");
+const task_routes_1 = require("./modules/tasks/task.routes");
+const team_routes_1 = require("./modules/teams/team.routes");
+const user_routes_1 = require("./modules/users/user.routes");
+const error_middleware_1 = require("./middleware/error.middleware");
+const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
+exports.app = (0, express_1.default)();
+exports.app.use((0, helmet_1.default)());
+exports.app.use((0, cors_1.default)());
+exports.app.use(express_1.default.json());
+exports.app.use(rateLimit_middleware_1.rateLimitMiddleware);
+exports.app.get("/health", (_req, res) => {
+    res.json({ success: true, message: "OK" });
+});
+exports.app.use("/api/v1/auth", auth_routes_1.authRouter);
+exports.app.use("/api/v1/users", user_routes_1.userRouter);
+exports.app.use("/api/v1/teams", team_routes_1.teamRouter);
+exports.app.use("/api/v1/projects", project_routes_1.projectRouter);
+exports.app.use("/api/v1/tasks", task_routes_1.taskRouter);
+exports.app.use("/api/v1/comments", comment_routes_1.commentRouter);
+exports.app.use("/api/v1/notifications", notification_routes_1.notificationRouter);
+exports.app.use(error_middleware_1.errorMiddleware);

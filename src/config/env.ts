@@ -9,7 +9,8 @@ const envSchema = z.object({
   APP_NAME: z.string().default("NodejsAppProduction1"),
   JWT_SECRET: z.string().default("change-me"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
-  MONGODB_URI: z.string().default("mongodb://127.0.0.1:27017/nodejs-app-production1")
+  MONGODB_URI: z.string().default("mongodb://127.0.0.1:27017/nodejs-app-production1"),
+  CLIENT_URL: z.string().default("*")
 });
 
 export const env = envSchema.parse(process.env);
