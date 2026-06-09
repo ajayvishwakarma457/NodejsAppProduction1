@@ -1,17 +1,17 @@
 import "express";
 
+export interface UserContext {
+  id: string;
+  role: string;
+}
+
 declare global {
   namespace Express {
-    interface UserContext {
-      id: string;
-      role: string;
-    }
-
     interface Request {
       user?: UserContext;
+      requestId?: string;
     }
   }
 }
 
 export {};
-

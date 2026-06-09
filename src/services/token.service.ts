@@ -1,9 +1,10 @@
+import { TOKEN_PREFIX } from "../utils/constants";
+
 export const tokenService = {
   generateAccessToken(userId: string) {
-    return `access-${userId}`;
+    return `${TOKEN_PREFIX.access}${userId}`;
   },
   generateRefreshToken(userId: string) {
-    return `refresh-${userId}`;
+    return `${TOKEN_PREFIX.refresh}${userId}`;
   }
 };
-
