@@ -21,7 +21,11 @@ const envSchema = zod_1.z.object({
     SMTP_SECURE: zod_1.z.preprocess((val) => val === "true" || val === true, zod_1.z.boolean().default(false)),
     SMTP_USER: zod_1.z.string().optional().default(""),
     SMTP_PASS: zod_1.z.string().optional().default(""),
-    SMTP_FROM: zod_1.z.string().optional().default("")
+    SMTP_FROM: zod_1.z.string().optional().default(""),
+    STORAGE_PROVIDER: zod_1.z.enum(["local", "s3"]).default("local"),
+    STORAGE_LOCAL_PATH: zod_1.z.string().min(1).default("uploads"),
+    STORAGE_MAX_FILE_SIZE_MB: zod_1.z.coerce.number().min(1).max(500).default(10),
+    STORAGE_ALLOWED_MIME_TYPES: zod_1.z.string().optional().default("image/jpeg,image/png,image/webp,application/pdf")
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

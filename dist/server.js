@@ -8,7 +8,7 @@ const app_1 = require("./app");
 const db_1 = require("./config/db");
 const env_1 = require("./config/env");
 const logger_1 = require("./config/logger");
-const redis_1 = require("./config/redis");
+const redis_service_1 = require("./services/redis.service");
 const sockets_1 = require("./sockets");
 const socket_service_1 = require("./services/socket.service");
 const socket_io_1 = require("socket.io");
@@ -16,7 +16,7 @@ let server = null;
 const bootstrap = async () => {
     try {
         await db_1.db.connect();
-        await redis_1.redisClient.connect();
+        await redis_service_1.redisService.connect();
         server = http_1.default.createServer(app_1.app);
         const io = new socket_io_1.Server(server, {
             cors: {
@@ -51,7 +51,7 @@ const gracefulShutdown = async (signal) => {
             });
         }
         await db_1.db.disconnect();
-        await redis_1.redisClient.disconnect();
+        await redis_service_1.redisService.disconnect();
         logger_1.logger.info("Graceful shutdown completed");
         process.exit(0);
     }

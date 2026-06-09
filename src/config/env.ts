@@ -18,7 +18,12 @@ const envSchema = z.object({
   SMTP_SECURE: z.preprocess((val) => val === "true" || val === true, z.boolean().default(false)),
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASS: z.string().optional().default(""),
-  SMTP_FROM: z.string().optional().default("")
+  SMTP_FROM: z.string().optional().default(""),
+
+  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  STORAGE_LOCAL_PATH: z.string().min(1).default("uploads"),
+  STORAGE_MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(500).default(10),
+  STORAGE_ALLOWED_MIME_TYPES: z.string().optional().default("image/jpeg,image/png,image/webp,application/pdf")
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -16,3 +16,4 @@
 - Will Redis be used for cache, queues, sessions, or all three?
 - What notification channels are required besides sockets?
 - Which upload/storage provider will `upload.middleware.js` and `storage.service.js` use?
+  **Resolved 2026-06-09:** Local filesystem by default (`STORAGE_PROVIDER=local`), with an S3 placeholder. Multer handles uploads; `storage.service.ts` abstracts provider logic.

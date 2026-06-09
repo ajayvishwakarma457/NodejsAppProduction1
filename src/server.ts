@@ -3,7 +3,7 @@ import { app } from "./app";
 import { db } from "./config/db";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
-import { redisClient } from "./config/redis";
+import { redisService } from "./services/redis.service";
 import { registerSockets } from "./sockets";
 import { socketService } from "./services/socket.service";
 import { Server } from "socket.io";
@@ -13,7 +13,7 @@ let server: http.Server | null = null;
 const bootstrap = async () => {
   try {
     await db.connect();
-    await redisClient.connect();
+    await redisService.connect();
 
     server = http.createServer(app);
 
@@ -55,7 +55,7 @@ const gracefulShutdown = async (signal: string) => {
     }
 
     await db.disconnect();
-    await redisClient.disconnect();
+    await redisService.disconnect();
     logger.info("Graceful shutdown completed");
     process.exit(0);
   } catch (error) {
