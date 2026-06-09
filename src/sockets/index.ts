@@ -6,12 +6,12 @@ import { registerNotificationSocket } from "./notification.socket";
 import { registerTaskSocket } from "./task.socket";
 import { registerTeamSocket } from "./team.socket";
 
-const parseSocketUser = (socket: Socket): { id: string; role: string } | null => {
+const parseSocketUser = (socket: Socket): { id: string; email: string; role: string } | null => {
   try {
     const token = socket.handshake.auth.token as string | undefined;
     if (!token) return null;
     const payload = tokenService.verifyAccessToken(token);
-    return { id: payload.sub, role: payload.role };
+    return { id: payload.sub, email: payload.email, role: payload.role };
   } catch {
     return null;
   }

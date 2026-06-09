@@ -55,7 +55,7 @@ describe("reminderJob", () => {
   });
 
   it("should scan and enqueue reminders for upcoming tasks", async () => {
-    const dueDate = new Date(Date.now() + 30 * 60 * 1000); // 30 min from now
+    const dueDate = new Date(Date.now() + 20 * 60 * 1000); // 20 min from now (matches only 15m window)
     await createTask(dueDate);
 
     const result = await reminderJob.scan();

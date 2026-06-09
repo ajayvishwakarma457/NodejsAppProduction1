@@ -13,7 +13,7 @@ const parseSocketUser = (socket) => {
         if (!token)
             return null;
         const payload = token_service_1.tokenService.verifyAccessToken(token);
-        return { id: payload.sub, role: payload.role };
+        return { id: payload.sub, email: payload.email, role: payload.role };
     }
     catch {
         return null;
