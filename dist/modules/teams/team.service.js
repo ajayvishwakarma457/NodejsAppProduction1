@@ -5,5 +5,8 @@ const team_repository_1 = require("./team.repository");
 exports.teamService = {
     async list() {
         return team_repository_1.teamRepository.findAll();
+    },
+    async findById(id) {
+        return team_repository_1.teamRepository.findById(id);
     }
 };

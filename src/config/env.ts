@@ -11,7 +11,14 @@ const envSchema = z.object({
   REDIS_URL: z.string().url("REDIS_URL must be a valid URL").default("redis://localhost:6379"),
   MONGODB_URI: z.string().url("MONGODB_URI must be a valid URL").default("mongodb://127.0.0.1:27017/nodejs-app-production1"),
   CLIENT_URL: z.string().min(1).default("*"),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info")
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+
+  SMTP_HOST: z.string().optional().default(""),
+  SMTP_PORT: z.coerce.number().min(1).max(65535).default(587),
+  SMTP_SECURE: z.preprocess((val) => val === "true" || val === true, z.boolean().default(false)),
+  SMTP_USER: z.string().optional().default(""),
+  SMTP_PASS: z.string().optional().default(""),
+  SMTP_FROM: z.string().optional().default("")
 });
 
 const parsed = envSchema.safeParse(process.env);

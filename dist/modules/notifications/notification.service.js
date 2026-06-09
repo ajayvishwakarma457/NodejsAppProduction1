@@ -5,5 +5,8 @@ const notification_repository_1 = require("./notification.repository");
 exports.notificationService = {
     async list() {
         return notification_repository_1.notificationRepository.findAll();
+    },
+    async markAsRead(id, userId) {
+        return notification_repository_1.notificationRepository.markAsRead(id, userId);
     }
 };

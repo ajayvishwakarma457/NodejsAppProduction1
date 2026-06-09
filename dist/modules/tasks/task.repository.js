@@ -5,5 +5,8 @@ const task_model_1 = require("./task.model");
 exports.taskRepository = {
     async findAll() {
         return task_model_1.TaskModel.find().lean();
+    },
+    async findById(id) {
+        return task_model_1.TaskModel.findById(id).lean();
     }
 };

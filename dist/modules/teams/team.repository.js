@@ -5,5 +5,8 @@ const team_model_1 = require("./team.model");
 exports.teamRepository = {
     async findAll() {
         return team_model_1.TeamModel.find().lean();
+    },
+    async findById(id) {
+        return team_model_1.TeamModel.findById(id).lean();
     }
 };
