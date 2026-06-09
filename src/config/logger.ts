@@ -9,10 +9,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3
 };
 
-const getMinLogLevel = (): LogLevel => {
-  if (env.NODE_ENV === "production") return "info";
-  return "debug";
-};
+const getMinLogLevel = (): LogLevel => env.LOG_LEVEL;
 
 const isLevelEnabled = (level: LogLevel): boolean => {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[getMinLogLevel()];
