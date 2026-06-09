@@ -8,5 +8,11 @@ exports.taskService = {
     },
     async findById(id) {
         return task_repository_1.taskRepository.findById(id);
+    },
+    async findDueInRange(start, end) {
+        return task_repository_1.taskRepository.findDueInRange(start, end);
+    },
+    async findOverdue(before) {
+        return task_repository_1.taskRepository.findOverdue(before);
     }
 };

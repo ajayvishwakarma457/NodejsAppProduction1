@@ -37,7 +37,16 @@ const envSchema = zod_1.z.object({
     NOTIFICATION_JOB_CRON: zod_1.z.string().min(1).default("*/15 * * * * *"),
     NOTIFICATION_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(20),
     NOTIFICATION_JOB_MAX_RETRIES: zod_1.z.coerce.number().min(0).max(10).default(3),
-    NOTIFICATION_CLEANUP_DAYS: zod_1.z.coerce.number().min(1).max(365).default(30)
+    NOTIFICATION_CLEANUP_DAYS: zod_1.z.coerce.number().min(1).max(365).default(30),
+    REMINDER_JOB_ENABLED: zod_1.z.preprocess((val) => val === "true" || val === true, zod_1.z.boolean().default(false)),
+    REMINDER_JOB_CRON: zod_1.z.string().min(1).default("0 */6 * * *"),
+    REMINDER_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(50),
+    REMINDER_WINDOWS_MINUTES: zod_1.z.string().min(1).default("1440,60,15"),
+    REMINDER_OVERDUE_ENABLED: zod_1.z.preprocess((val) => {
+        if (val === undefined)
+            return true;
+        return val === "true" || val === true;
+    }, zod_1.z.boolean())
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

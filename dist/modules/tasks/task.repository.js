@@ -8,5 +8,21 @@ exports.taskRepository = {
     },
     async findById(id) {
         return task_model_1.TaskModel.findById(id).lean();
+    },
+    async findDueInRange(start, end) {
+        return task_model_1.TaskModel.find({
+            status: { $nin: ["done"] },
+            dueDate: { $gte: start, $lte: end }
+        })
+            .populate("assignedTo", "email firstName lastName")
+            .lean();
+    },
+    async findOverdue(before) {
+        return task_model_1.TaskModel.find({
+            status: { $nin: ["done"] },
+            dueDate: { $lt: before }
+        })
+            .populate("assignedTo", "email firstName lastName")
+            .lean();
     }
 };
