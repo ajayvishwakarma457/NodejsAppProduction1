@@ -18,7 +18,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 
 Typical request flow:
 
-1. Request enters through `app.js` and route registration.
+1. Request enters through `app.ts` and route registration.
 2. Middleware handles auth, rate limiting, and errors.
 3. Module routes call controllers.
 4. Controllers delegate business logic to services.
@@ -36,110 +36,110 @@ Typical request flow:
 ```text
 src/
 ├── config/
-│   ├── db.js
-│   ├── redis.js
-│   ├── env.js
-│   └── logger.js
+│   ├── db.ts
+│   ├── redis.ts
+│   ├── env.ts
+│   └── logger.ts
 │
 ├── modules/
 │   ├── auth/
-│   │   ├── auth.controller.js
-│   │   ├── auth.service.js
-│   │   ├── auth.repository.js
-│   │   ├── auth.routes.js
-│   │   ├── auth.validation.js
-│   │   └── auth.utils.js
+│   │   ├── auth.controller.ts
+│   │   ├── auth.service.ts
+│   │   ├── auth.repository.ts
+│   │   ├── auth.routes.ts
+│   │   ├── auth.validation.ts
+│   │   └── auth.utils.ts
 │   │
 │   ├── users/
-│   │   ├── user.controller.js
-│   │   ├── user.service.js
-│   │   ├── user.repository.js
-│   │   ├── user.routes.js
-│   │   ├── user.validation.js
-│   │   └── user.model.js
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   ├── user.repository.ts
+│   │   ├── user.routes.ts
+│   │   ├── user.validation.ts
+│   │   └── user.model.ts
 │   │
 │   ├── teams/
-│   │   ├── team.controller.js
-│   │   ├── team.service.js
-│   │   ├── team.repository.js
-│   │   ├── team.routes.js
-│   │   ├── team.validation.js
-│   │   └── team.model.js
+│   │   ├── team.controller.ts
+│   │   ├── team.service.ts
+│   │   ├── team.repository.ts
+│   │   ├── team.routes.ts
+│   │   ├── team.validation.ts
+│   │   └── team.model.ts
 │   │
 │   ├── projects/
-│   │   ├── project.controller.js
-│   │   ├── project.service.js
-│   │   ├── project.repository.js
-│   │   ├── project.routes.js
-│   │   ├── project.validation.js
-│   │   └── project.model.js
+│   │   ├── project.controller.ts
+│   │   ├── project.service.ts
+│   │   ├── project.repository.ts
+│   │   ├── project.routes.ts
+│   │   ├── project.validation.ts
+│   │   └── project.model.ts
 │   │
 │   ├── tasks/
-│   │   ├── task.controller.js
-│   │   ├── task.service.js
-│   │   ├── task.repository.js
-│   │   ├── task.routes.js
-│   │   ├── task.validation.js
-│   │   └── task.model.js
+│   │   ├── task.controller.ts
+│   │   ├── task.service.ts
+│   │   ├── task.repository.ts
+│   │   ├── task.routes.ts
+│   │   ├── task.validation.ts
+│   │   └── task.model.ts
 │   │
 │   ├── comments/
-│   │   ├── comment.controller.js
-│   │   ├── comment.service.js
-│   │   ├── comment.repository.js
-│   │   ├── comment.routes.js
-│   │   ├── comment.validation.js
-│   │   └── comment.model.js
+│   │   ├── comment.controller.ts
+│   │   ├── comment.service.ts
+│   │   ├── comment.repository.ts
+│   │   ├── comment.routes.ts
+│   │   ├── comment.validation.ts
+│   │   └── comment.model.ts
 │   │
 │   └── notifications/
-│       ├── notification.controller.js
-│       ├── notification.service.js
-│       ├── notification.repository.js
-│       ├── notification.routes.js
-│       ├── notification.validation.js
-│       └── notification.model.js
+│       ├── notification.controller.ts
+│       ├── notification.service.ts
+│       ├── notification.repository.ts
+│       ├── notification.routes.ts
+│       ├── notification.validation.ts
+│       └── notification.model.ts
 │
 ├── middleware/
-│   ├── auth.middleware.js
-│   ├── role.middleware.js
-│   ├── validate.middleware.js
-│   ├── error.middleware.js
-│   ├── rateLimit.middleware.js
-│   └── upload.middleware.js
+│   ├── auth.middleware.ts
+│   ├── role.middleware.ts
+│   ├── validate.middleware.ts
+│   ├── error.middleware.ts
+│   ├── rateLimit.middleware.ts
+│   └── upload.middleware.ts
 │
 ├── services/
-│   ├── email.service.js
-│   ├── storage.service.js
-│   ├── redis.service.js
-│   ├── token.service.js
-│   └── socket.service.js
+│   ├── email.service.ts
+│   ├── storage.service.ts
+│   ├── redis.service.ts
+│   ├── token.service.ts
+│   └── socket.service.ts
 │
 ├── jobs/
-│   ├── email.job.js
-│   ├── reminder.job.js
-│   ├── notification.job.js
-│   └── index.js
+│   ├── email.job.ts
+│   ├── reminder.job.ts
+│   ├── notification.job.ts
+│   └── index.ts
 │
 ├── sockets/
-│   ├── index.js
-│   ├── task.socket.js
-│   ├── notification.socket.js
-│   └── team.socket.js
+│   ├── index.ts
+│   ├── task.socket.ts
+│   ├── notification.socket.ts
+│   └── team.socket.ts
 │
 ├── utils/
-│   ├── ApiError.js
-│   ├── ApiResponse.js
-│   ├── asyncHandler.js
-│   ├── constants.js
-│   ├── helpers.js
-│   └── pagination.js
+│   ├── ApiError.ts
+│   ├── ApiResponse.ts
+│   ├── asyncHandler.ts
+│   ├── constants.ts
+│   ├── helpers.ts
+│   └── pagination.ts
 │
 ├── tests/
-│   ├── auth.test.js
-│   ├── user.test.js
-│   ├── team.test.js
-│   ├── project.test.js
-│   └── task.test.js
+│   ├── auth.test.ts
+│   ├── user.test.ts
+│   ├── team.test.ts
+│   ├── project.test.ts
+│   └── task.test.ts
 │
-├── app.js
-└── server.js
+├── app.ts
+└── server.ts
 ```
