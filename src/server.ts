@@ -4,6 +4,7 @@ import { db } from "./config/db";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { redisService } from "./services/redis.service";
+import { jobOrchestrator } from "./jobs";
 import { registerSockets } from "./sockets";
 import { socketService } from "./services/socket.service";
 import { Server } from "socket.io";
@@ -31,6 +32,8 @@ const bootstrap = async () => {
         env: env.NODE_ENV
       });
     });
+
+    jobOrchestrator.startAll();
   } catch (error) {
     logger.error("Failed to bootstrap application", { error });
     process.exit(1);
@@ -53,6 +56,8 @@ const gracefulShutdown = async (signal: string) => {
         logger.info("Socket.IO server closed");
       });
     }
+
+    jobOrchestrator.stopAll();
 
     await db.disconnect();
     await redisService.disconnect();

@@ -9,6 +9,7 @@ const db_1 = require("./config/db");
 const env_1 = require("./config/env");
 const logger_1 = require("./config/logger");
 const redis_service_1 = require("./services/redis.service");
+const jobs_1 = require("./jobs");
 const sockets_1 = require("./sockets");
 const socket_service_1 = require("./services/socket.service");
 const socket_io_1 = require("socket.io");
@@ -30,6 +31,7 @@ const bootstrap = async () => {
                 env: env_1.env.NODE_ENV
             });
         });
+        jobs_1.jobOrchestrator.startAll();
     }
     catch (error) {
         logger_1.logger.error("Failed to bootstrap application", { error });
@@ -50,6 +52,7 @@ const gracefulShutdown = async (signal) => {
                 logger_1.logger.info("Socket.IO server closed");
             });
         }
+        jobs_1.jobOrchestrator.stopAll();
         await db_1.db.disconnect();
         await redis_service_1.redisService.disconnect();
         logger_1.logger.info("Graceful shutdown completed");
