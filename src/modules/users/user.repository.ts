@@ -1,8 +1,7 @@
-import { UserModel } from "./user.model";
+import { UserDocument, UserModel } from "./user.model";
 
 export const userRepository = {
-  async findAll(): Promise<UserModel[]> {
-    return [];
+  async findAll(): Promise<UserDocument[]> {
+    return UserModel.find().lean();
   }
 };
-

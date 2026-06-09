@@ -1,8 +1,7 @@
-import { CommentModel } from "./comment.model";
+import { CommentDocument, CommentModel } from "./comment.model";
 
 export const commentRepository = {
-  async findAll(): Promise<CommentModel[]> {
-    return [];
+  async findAll(): Promise<CommentDocument[]> {
+    return CommentModel.find().lean();
   }
 };
-

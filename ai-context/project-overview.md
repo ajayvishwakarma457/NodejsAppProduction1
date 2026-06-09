@@ -13,6 +13,8 @@ Node.js backend structured as a modular production-style application.
 - Node.js
 - JavaScript
 - Modular feature-based backend structure
+- MongoDB
+- Mongoose
 - Redis support
 - Socket support
 - Background jobs
