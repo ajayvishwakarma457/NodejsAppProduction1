@@ -61,7 +61,6 @@ if (!parsed.success) {
     (issue) => `  - ${issue.path.join(".")}: ${issue.message}`
   );
 
-  // eslint-disable-next-line no-console
   console.error("Environment validation failed:\n" + messages.join("\n"));
   process.exit(1);
 }

@@ -155,3 +155,4 @@ app.use("/api/v1/notifications", notificationRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
+

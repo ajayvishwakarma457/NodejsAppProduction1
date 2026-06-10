@@ -1,4 +1,3 @@
-import { Socket } from "socket.io";
 import { UserContext } from "./express";
 
 declare module "socket.io" {
