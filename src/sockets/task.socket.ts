@@ -26,7 +26,7 @@ export const registerTaskSocket = (io: Server, socket: Socket) => {
       return;
     }
 
-    const task = await taskService.findById(taskId);
+    const task = await taskService.getById(taskId as string);
     if (!task) {
       logger.warn("task:join rejected: task not found", { socketId: socket.id, taskId });
       socket.emit(SOCKET_EVENTS.task.error, { message: "Task not found" });

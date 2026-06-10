@@ -1,14 +1,163 @@
+import { FilterQuery } from "mongoose";
 import { TaskDocument, TaskModel } from "./task.model";
+import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+
+/* ------------------------------------------------------------------ */
+// Types
+/* ------------------------------------------------------------------ */
+
+export interface TaskListFilter {
+  projectId?: string;
+  assignedTo?: string;
+  createdBy?: string;
+  status?: string;
+  priority?: string;
+  search?: string;
+}
+
+export interface TaskListOptions {
+  page: number;
+  limit: number;
+  sort: string;
+  order: "asc" | "desc";
+}
+
+export interface TaskListResult {
+  data: TaskDocument[];
+  meta: PaginationMeta;
+}
+
+/* ------------------------------------------------------------------ */
+// Helpers
+/* ------------------------------------------------------------------ */
+
+const buildFilterQuery = (filter: TaskListFilter): FilterQuery<TaskDocument> => {
+  const query: FilterQuery<TaskDocument> = {};
+
+  if (filter.projectId) {
+    query.projectId = filter.projectId;
+  }
+
+  if (filter.assignedTo) {
+    query.assignedTo = filter.assignedTo;
+  }
+
+  if (filter.createdBy) {
+    query.createdBy = filter.createdBy;
+  }
+
+  if (filter.status) {
+    query.status = filter.status;
+  }
+
+  if (filter.priority) {
+    query.priority = filter.priority;
+  }
+
+  if (filter.search) {
+    const searchRegex = { $regex: filter.search, $options: "i" };
+    query.$or = [
+      { title: searchRegex },
+      { description: searchRegex }
+    ];
+  }
+
+  return query;
+};
+
+/* ------------------------------------------------------------------ */
+// Repository
+/* ------------------------------------------------------------------ */
 
 export const taskRepository = {
-  async findAll(): Promise<TaskDocument[]> {
-    return TaskModel.find().lean();
+  /**
+   * Find all tasks with pagination, sorting, and optional filtering.
+   */
+  async findAll(
+    options: TaskListOptions,
+    filter: TaskListFilter = {}
+  ): Promise<TaskListResult> {
+    const query = buildFilterQuery(filter);
+    const skip = (options.page - 1) * options.limit;
+    const sortDirection = options.order === "desc" ? -1 : 1;
+
+    const [data, total] = await Promise.all([
+      TaskModel.find(query)
+        .sort({ [options.sort]: sortDirection })
+        .skip(skip)
+        .limit(options.limit)
+        .lean(),
+      TaskModel.countDocuments(query)
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(options.page, options.limit, total)
+    };
   },
 
+  /**
+   * Find a task by its MongoDB _id.
+   */
   async findById(id: string): Promise<TaskDocument | null> {
     return TaskModel.findById(id).lean();
   },
 
+  /**
+   * Find a task by id with project and user details populated.
+   */
+  async findByIdWithDetails(id: string): Promise<TaskDocument | null> {
+    return TaskModel.findById(id)
+      .populate("projectId", "name status")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("assignedTo", "firstName lastName email avatar")
+      .lean();
+  },
+
+  /**
+   * Create a new task document.
+   */
+  async create(data: Partial<TaskDocument>): Promise<TaskDocument> {
+    return TaskModel.create(data);
+  },
+
+  /**
+   * Update a task by id. Returns the updated document or null if not found.
+   */
+  async updateById(
+    id: string,
+    data: Partial<TaskDocument>
+  ): Promise<TaskDocument | null> {
+    return TaskModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  },
+
+  /**
+   * Delete a task by id. Returns true if a document was deleted.
+   */
+  async deleteById(id: string): Promise<boolean> {
+    const result = await TaskModel.findByIdAndDelete(id);
+    return result !== null;
+  },
+
+  /**
+   * Check whether a task with the given id exists.
+   */
+  async exists(id: string): Promise<boolean> {
+    const doc = await TaskModel.exists({ _id: id });
+    return doc !== null;
+  },
+
+  /**
+   * Count tasks matching the given filter.
+   */
+  async count(filter: TaskListFilter = {}): Promise<number> {
+    return TaskModel.countDocuments(buildFilterQuery(filter));
+  },
+
+  /**
+   * Find tasks due within a date range that are not done.
+   * Populates assignedTo for reminder job usage.
+   */
   async findDueInRange(start: Date, end: Date): Promise<TaskDocument[]> {
     return TaskModel.find({
       status: { $nin: ["done"] },
@@ -18,6 +167,10 @@ export const taskRepository = {
       .lean();
   },
 
+  /**
+   * Find overdue tasks that are not done.
+   * Populates assignedTo for reminder job usage.
+   */
   async findOverdue(before: Date): Promise<TaskDocument[]> {
     return TaskModel.find({
       status: { $nin: ["done"] },
