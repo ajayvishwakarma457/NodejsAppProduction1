@@ -24,7 +24,7 @@ const registerTeamSocket = (io, socket) => {
             socket.emit(constants_1.SOCKET_EVENTS.team.error, { message: "Unauthorized" });
             return;
         }
-        const team = await team_service_1.teamService.findById(teamId);
+        const team = await team_service_1.teamService.getById(teamId);
         if (!team) {
             logger_1.logger.warn("team:join rejected: team not found", { socketId: socket.id, teamId });
             socket.emit(constants_1.SOCKET_EVENTS.team.error, { message: "Team not found" });

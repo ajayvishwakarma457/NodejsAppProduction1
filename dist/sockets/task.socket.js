@@ -24,7 +24,7 @@ const registerTaskSocket = (io, socket) => {
             socket.emit(constants_1.SOCKET_EVENTS.task.error, { message: "Unauthorized" });
             return;
         }
-        const task = await task_service_1.taskService.findById(taskId);
+        const task = await task_service_1.taskService.getById(taskId);
         if (!task) {
             logger_1.logger.warn("task:join rejected: task not found", { socketId: socket.id, taskId });
             socket.emit(constants_1.SOCKET_EVENTS.task.error, { message: "Task not found" });
