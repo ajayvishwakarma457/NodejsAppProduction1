@@ -25,7 +25,7 @@ export const registerTeamSocket = (io: Server, socket: Socket) => {
       return;
     }
 
-    const team = await teamService.findById(teamId);
+    const team = await teamService.getById(teamId as string);
     if (!team) {
       logger.warn("team:join rejected: team not found", { socketId: socket.id, teamId });
       socket.emit(SOCKET_EVENTS.team.error, { message: "Team not found" });
