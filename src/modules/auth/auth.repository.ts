@@ -1,5 +1,5 @@
-import { userRepository } from "../users/user.repository";
-import { UserDocument } from "../users/user.model";
+import { userRepository } from '../users/user.repository';
+import { UserDocument } from '../users/user.model';
 
 export const authRepository = {
   async findByEmail(email: string): Promise<UserDocument | null> {
@@ -16,5 +16,5 @@ export const authRepository = {
 
   async updateLastLogin(id: string): Promise<void> {
     return userRepository.updateLastLogin(id);
-  }
+  },
 };

@@ -1,23 +1,23 @@
-import { Request, Response, NextFunction } from "express";
-import { StatusCodes } from "http-status-codes";
-import { redisClient } from "../config/redis";
-import { env } from "../config/env";
-import { logger } from "../config/logger";
+import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { redisClient } from '../config/redis';
+import { env } from '../config/env';
+import { logger } from '../config/logger';
 
 interface RateLimitIdentifier {
-  type: "user" | "ip";
+  type: 'user' | 'ip';
   id: string;
 }
 
 const getIdentifier = (req: Request): RateLimitIdentifier => {
   if (req.user?.id) {
-    return { type: "user", id: req.user.id };
+    return { type: 'user', id: req.user.id };
   }
-  return { type: "ip", id: req.ip || "unknown" };
+  return { type: 'ip', id: req.ip || 'unknown' };
 };
 
 export const rateLimitMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (!env.RATE_LIMIT_ENABLED || req.path === "/health") {
+  if (!env.RATE_LIMIT_ENABLED || req.path === '/health') {
     return next();
   }
 
@@ -27,9 +27,7 @@ export const rateLimitMiddleware = async (req: Request, res: Response, next: Nex
   const { type, id } = getIdentifier(req);
   const key = `${prefix}:${type}:${id}`;
   const maxRequests =
-    type === "user"
-      ? env.RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS
-      : env.RATE_LIMIT_MAX_REQUESTS;
+    type === 'user' ? env.RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS : env.RATE_LIMIT_MAX_REQUESTS;
 
   try {
     const current = await redisClient.incr(key);
@@ -46,32 +44,32 @@ export const rateLimitMiddleware = async (req: Request, res: Response, next: Nex
     }
     const resetTime = Math.ceil(Date.now() / 1000) + ttl;
 
-    res.setHeader("X-RateLimit-Limit", String(maxRequests));
-    res.setHeader("X-RateLimit-Remaining", String(Math.max(0, maxRequests - current)));
-    res.setHeader("X-RateLimit-Reset", String(resetTime));
+    res.setHeader('X-RateLimit-Limit', String(maxRequests));
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, maxRequests - current)));
+    res.setHeader('X-RateLimit-Reset', String(resetTime));
 
     if (current > maxRequests) {
-      logger.warn("Rate limit exceeded", {
+      logger.warn('Rate limit exceeded', {
         method: req.method,
         url: req.originalUrl,
         requestId: req.requestId,
         identifier: id,
         type,
-        count: current
+        count: current,
       });
 
       return res.status(StatusCodes.TOO_MANY_REQUESTS).json({
         success: false,
-        message: "Too many requests, please try again later",
-        requestId: req.requestId
+        message: 'Too many requests, please try again later',
+        requestId: req.requestId,
       });
     }
 
     next();
   } catch (error) {
-    logger.warn("Rate limiting check failed, allowing request", {
+    logger.warn('Rate limiting check failed, allowing request', {
       error: error instanceof Error ? error.message : error,
-      requestId: req.requestId
+      requestId: req.requestId,
     });
     next();
   }

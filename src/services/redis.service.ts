@@ -1,7 +1,7 @@
-import { redisClient } from "../config/redis";
-import { logger } from "../config/logger";
-import { env } from "../config/env";
-import { CACHE_TTL } from "../utils/constants";
+import { redisClient } from '../config/redis';
+import { logger } from '../config/logger';
+import { env } from '../config/env';
+import { CACHE_TTL } from '../utils/constants';
 
 const DEFAULT_PREFIX = `${env.APP_NAME}:`;
 
@@ -12,16 +12,12 @@ const buildKey = (key: string, namespace?: string): string => {
   return `${DEFAULT_PREFIX}${key}`;
 };
 
-const safeExec = async <T>(
-  operation: string,
-  fn: () => Promise<T>,
-  fallback: T
-): Promise<T> => {
+const safeExec = async <T>(operation: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
   try {
     return await fn();
   } catch (error) {
     logger.error(`Redis operation failed: ${operation}`, {
-      error: error instanceof Error ? error.message : error
+      error: error instanceof Error ? error.message : error,
     });
     return fallback;
   }
@@ -50,10 +46,10 @@ export const redisService = {
   /** Check Redis connectivity. */
   async health(): Promise<boolean> {
     return safeExec(
-      "health",
+      'health',
       async () => {
         const pong = await redisClient.ping();
-        return pong === "PONG";
+        return pong === 'PONG';
       },
       false
     );
@@ -67,7 +63,7 @@ export const redisService = {
     namespace?: string
   ): Promise<boolean> {
     return safeExec(
-      "set",
+      'set',
       async () => {
         const fullKey = buildKey(key, namespace);
         await redisClient.setEx(fullKey, ttlSeconds, value);
@@ -80,7 +76,7 @@ export const redisService = {
   /** Get a string value. */
   async get(key: string, namespace?: string): Promise<string | null> {
     return safeExec(
-      "get",
+      'get',
       async () => {
         const fullKey = buildKey(key, namespace);
         return redisClient.get(fullKey);
@@ -92,7 +88,7 @@ export const redisService = {
   /** Delete one or more keys. */
   async del(key: string | string[], namespace?: string): Promise<number> {
     return safeExec(
-      "del",
+      'del',
       async () => {
         const keys = Array.isArray(key) ? key : [key];
         const fullKeys = keys.map((k) => buildKey(k, namespace));
@@ -120,7 +116,7 @@ export const redisService = {
     try {
       return JSON.parse(raw) as T;
     } catch (error) {
-      logger.error("Redis JSON parse failed", { key, error });
+      logger.error('Redis JSON parse failed', { key, error });
       return null;
     }
   },
@@ -147,7 +143,7 @@ export const redisService = {
   /** Check if a key exists. */
   async exists(key: string, namespace?: string): Promise<boolean> {
     const count = await safeExec(
-      "exists",
+      'exists',
       async () => redisClient.exists(buildKey(key, namespace)),
       0
     );
@@ -157,7 +153,7 @@ export const redisService = {
   /** Set expiration (seconds) on an existing key. */
   async expire(key: string, ttlSeconds: number, namespace?: string): Promise<boolean> {
     const result = await safeExec(
-      "expire",
+      'expire',
       async () => redisClient.expire(buildKey(key, namespace), ttlSeconds),
       false
     );
@@ -166,26 +162,18 @@ export const redisService = {
 
   /** Increment a key by a given amount. */
   async incrBy(key: string, amount: number = 1, namespace?: string): Promise<number> {
-    return safeExec(
-      "incrBy",
-      async () => redisClient.incrBy(buildKey(key, namespace), amount),
-      0
-    );
+    return safeExec('incrBy', async () => redisClient.incrBy(buildKey(key, namespace), amount), 0);
   },
 
   /** Decrement a key by a given amount. */
   async decrBy(key: string, amount: number = 1, namespace?: string): Promise<number> {
-    return safeExec(
-      "decrBy",
-      async () => redisClient.decrBy(buildKey(key, namespace), amount),
-      0
-    );
+    return safeExec('decrBy', async () => redisClient.decrBy(buildKey(key, namespace), amount), 0);
   },
 
   /** Delete keys matching a pattern (uses SCAN to avoid blocking). */
   async deletePattern(pattern: string, namespace?: string): Promise<number> {
     return safeExec(
-      "deletePattern",
+      'deletePattern',
       async () => {
         const fullPattern = buildKey(pattern, namespace);
         let cursor = 0;
@@ -194,7 +182,7 @@ export const redisService = {
         do {
           const result = await redisClient.scan(cursor, {
             MATCH: fullPattern,
-            COUNT: 100
+            COUNT: 100,
           });
 
           cursor = result.cursor;
@@ -221,13 +209,13 @@ export const redisService = {
     const token = `${Date.now()}-${Math.random()}`;
 
     const acquired = await safeExec(
-      "lock",
+      'lock',
       async () => {
         const result = await redisClient.set(fullKey, token, {
           NX: true,
-          EX: ttlSeconds
+          EX: ttlSeconds,
         });
-        return result === "OK";
+        return result === 'OK';
       },
       false
     );
@@ -236,13 +224,17 @@ export const redisService = {
 
     return {
       release: async () => {
-        await safeExec("releaseLock", async () => {
-          const current = await redisClient.get(fullKey);
-          if (current === token) {
-            await redisClient.del(fullKey);
-          }
-        }, undefined);
-      }
+        await safeExec(
+          'releaseLock',
+          async () => {
+            const current = await redisClient.get(fullKey);
+            if (current === token) {
+              await redisClient.del(fullKey);
+            }
+          },
+          undefined
+        );
+      },
     };
-  }
+  },
 };

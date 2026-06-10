@@ -1,10 +1,10 @@
-import { Server, Socket } from "socket.io";
-import { logger } from "../config/logger";
-import { SOCKET_EVENTS } from "../utils/constants";
-import { tokenService } from "../services/token.service";
-import { registerNotificationSocket } from "./notification.socket";
-import { registerTaskSocket } from "./task.socket";
-import { registerTeamSocket } from "./team.socket";
+import { Server, Socket } from 'socket.io';
+import { logger } from '../config/logger';
+import { SOCKET_EVENTS } from '../utils/constants';
+import { tokenService } from '../services/token.service';
+import { registerNotificationSocket } from './notification.socket';
+import { registerTaskSocket } from './task.socket';
+import { registerTeamSocket } from './team.socket';
 
 const parseSocketUser = (socket: Socket): { id: string; email: string; role: string } | null => {
   try {
@@ -18,19 +18,19 @@ const parseSocketUser = (socket: Socket): { id: string; email: string; role: str
 };
 
 export const registerSockets = (io: Server) => {
-  io.on("connection", (socket) => {
+  io.on('connection', (socket) => {
     try {
-      logger.info("Socket connected", {
+      logger.info('Socket connected', {
         socketId: socket.id,
-        ip: socket.handshake.address
+        ip: socket.handshake.address,
       });
 
       const user = parseSocketUser(socket);
       if (!user) {
-        logger.warn("Socket connection rejected: invalid or missing auth token", {
-          socketId: socket.id
+        logger.warn('Socket connection rejected: invalid or missing auth token', {
+          socketId: socket.id,
         });
-        socket.emit(SOCKET_EVENTS.connection.error, { message: "Authentication required" });
+        socket.emit(SOCKET_EVENTS.connection.error, { message: 'Authentication required' });
         socket.disconnect(true);
         return;
       }
@@ -41,24 +41,24 @@ export const registerSockets = (io: Server) => {
       registerNotificationSocket(socket);
       registerTeamSocket(io, socket);
 
-      socket.on("disconnect", (reason) => {
-        logger.info("Socket disconnected", {
+      socket.on('disconnect', (reason) => {
+        logger.info('Socket disconnected', {
           socketId: socket.id,
-          reason
+          reason,
         });
       });
 
-      socket.on("error", (err) => {
-        logger.error("Socket error", {
+      socket.on('error', (err) => {
+        logger.error('Socket error', {
           socketId: socket.id,
-          error: err instanceof Error ? err.message : String(err)
+          error: err instanceof Error ? err.message : String(err),
         });
       });
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      logger.error("Unhandled error in socket connection handler", {
+      logger.error('Unhandled error in socket connection handler', {
         socketId: socket.id,
-        error: error.message
+        error: error.message,
       });
       socket.disconnect(true);
     }

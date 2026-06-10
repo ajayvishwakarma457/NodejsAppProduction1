@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { UserDocument, UserModel } from "./user.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { UserDocument, UserModel } from './user.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -16,7 +16,7 @@ export interface UserListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface UserListResult {
@@ -40,12 +40,8 @@ const buildFilterQuery = (filter: UserListFilter): FilterQuery<UserDocument> => 
   }
 
   if (filter.search) {
-    const searchRegex = { $regex: filter.search, $options: "i" };
-    query.$or = [
-      { firstName: searchRegex },
-      { lastName: searchRegex },
-      { email: searchRegex }
-    ];
+    const searchRegex = { $regex: filter.search, $options: 'i' };
+    query.$or = [{ firstName: searchRegex }, { lastName: searchRegex }, { email: searchRegex }];
   }
 
   return query;
@@ -59,13 +55,10 @@ export const userRepository = {
   /**
    * Find all users with pagination, sorting, and optional filtering.
    */
-  async findAll(
-    options: UserListOptions,
-    filter: UserListFilter = {}
-  ): Promise<UserListResult> {
+  async findAll(options: UserListOptions, filter: UserListFilter = {}): Promise<UserListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       UserModel.find(query)
@@ -73,12 +66,12 @@ export const userRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      UserModel.countDocuments(query)
+      UserModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -103,7 +96,7 @@ export const userRepository = {
    */
   async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
     return UserModel.findOne({ email: email.toLowerCase().trim() })
-      .select("+password +refreshToken")
+      .select('+password +refreshToken')
       .lean();
   },
 
@@ -117,10 +110,7 @@ export const userRepository = {
   /**
    * Update a user by id. Returns the updated document or null if not found.
    */
-  async updateById(
-    id: string,
-    data: Partial<UserDocument>
-  ): Promise<UserDocument | null> {
+  async updateById(id: string, data: Partial<UserDocument>): Promise<UserDocument | null> {
     return UserModel.findByIdAndUpdate(id, data, { new: true }).lean();
   },
 
@@ -152,5 +142,5 @@ export const userRepository = {
    */
   async updateLastLogin(id: string): Promise<void> {
     await UserModel.findByIdAndUpdate(id, { lastLogin: new Date() });
-  }
+  },
 };

@@ -1,13 +1,13 @@
-import http from "http";
-import { app } from "./app";
-import { db } from "./config/db";
-import { env } from "./config/env";
-import { logger } from "./config/logger";
-import { redisService } from "./services/redis.service";
-import { jobOrchestrator } from "./jobs";
-import { registerSockets } from "./sockets";
-import { socketService } from "./services/socket.service";
-import { Server } from "socket.io";
+import http from 'http';
+import { app } from './app';
+import { db } from './config/db';
+import { env } from './config/env';
+import { logger } from './config/logger';
+import { redisService } from './services/redis.service';
+import { jobOrchestrator } from './jobs';
+import { registerSockets } from './sockets';
+import { socketService } from './services/socket.service';
+import { Server } from 'socket.io';
 
 let server: http.Server | null = null;
 
@@ -20,8 +20,8 @@ const bootstrap = async () => {
 
     const io = new Server(server, {
       cors: {
-        origin: env.CLIENT_URL
-      }
+        origin: env.CLIENT_URL,
+      },
     });
 
     socketService.setIO(io);
@@ -29,13 +29,13 @@ const bootstrap = async () => {
 
     server.listen(env.PORT, () => {
       logger.info(`${env.APP_NAME} listening on port ${env.PORT}`, {
-        env: env.NODE_ENV
+        env: env.NODE_ENV,
       });
     });
 
     jobOrchestrator.startAll();
   } catch (error) {
-    logger.error("Failed to bootstrap application", { error });
+    logger.error('Failed to bootstrap application', { error });
     process.exit(1);
   }
 };
@@ -45,7 +45,7 @@ const gracefulShutdown = async (signal: string) => {
 
   if (server) {
     server.close(() => {
-      logger.info("HTTP server closed");
+      logger.info('HTTP server closed');
     });
   }
 
@@ -53,7 +53,7 @@ const gracefulShutdown = async (signal: string) => {
     const io = socketService.getIO();
     if (io) {
       io.close(() => {
-        logger.info("Socket.IO server closed");
+        logger.info('Socket.IO server closed');
       });
     }
 
@@ -61,25 +61,25 @@ const gracefulShutdown = async (signal: string) => {
 
     await db.disconnect();
     await redisService.disconnect();
-    logger.info("Graceful shutdown completed");
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    logger.error("Error during graceful shutdown", { error });
+    logger.error('Error during graceful shutdown', { error });
     process.exit(1);
   }
 };
 
-process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled Rejection", { reason });
-  gracefulShutdown("unhandledRejection");
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', { reason });
+  gracefulShutdown('unhandledRejection');
 });
 
-process.on("uncaughtException", (error) => {
-  logger.error("Uncaught Exception", { error });
-  gracefulShutdown("uncaughtException");
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', { error });
+  gracefulShutdown('uncaughtException');
 });
 
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 void bootstrap();

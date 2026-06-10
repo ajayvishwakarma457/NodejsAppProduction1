@@ -1,16 +1,11 @@
-import { ApiError } from "../../utils/ApiError";
-import { getPagination } from "../../utils/pagination";
-import { CommentDocument } from "./comment.model";
-import { commentRepository, CommentListFilter } from "./comment.repository";
+import { ApiError } from '../../utils/ApiError';
+import { getPagination } from '../../utils/pagination';
+import { CommentDocument } from './comment.model';
+import { commentRepository, CommentListFilter } from './comment.repository';
 
 export const commentService = {
   async list(query: Record<string, unknown>) {
-    const pagination = getPagination(
-      query.page,
-      query.limit,
-      query.sort,
-      query.order
-    );
+    const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
     const filter: CommentListFilter = {};
 
@@ -27,7 +22,7 @@ export const commentService = {
         page: pagination.page,
         limit: pagination.limit,
         sort: pagination.sort,
-        order: pagination.order as "asc" | "desc"
+        order: pagination.order as 'asc' | 'desc',
       },
       filter
     );
@@ -40,19 +35,23 @@ export const commentService = {
   async create(data: Record<string, unknown>, userId: string): Promise<CommentDocument> {
     return commentRepository.create({
       ...data,
-      userId
+      userId,
     });
   },
 
-  async update(id: string, data: Record<string, unknown>, userId: string): Promise<CommentDocument | null> {
+  async update(
+    id: string,
+    data: Record<string, unknown>,
+    userId: string
+  ): Promise<CommentDocument | null> {
     const comment = await commentRepository.findById(id);
 
     if (!comment) {
-      throw ApiError.notFound("Comment not found");
+      throw ApiError.notFound('Comment not found');
     }
 
     if (String(comment.userId) !== userId) {
-      throw ApiError.forbidden("You can only update your own comments");
+      throw ApiError.forbidden('You can only update your own comments');
     }
 
     return commentRepository.updateById(id, data);
@@ -62,13 +61,13 @@ export const commentService = {
     const comment = await commentRepository.findById(id);
 
     if (!comment) {
-      throw ApiError.notFound("Comment not found");
+      throw ApiError.notFound('Comment not found');
     }
 
     if (String(comment.userId) !== userId) {
-      throw ApiError.forbidden("You can only delete your own comments");
+      throw ApiError.forbidden('You can only delete your own comments');
     }
 
     return commentRepository.deleteById(id);
-  }
+  },
 };

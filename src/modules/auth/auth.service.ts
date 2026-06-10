@@ -1,10 +1,10 @@
-import bcrypt from "bcryptjs";
-import { ApiError } from "../../utils/ApiError";
-import { tokenService } from "../../services/token.service";
-import { authRepository } from "./auth.repository";
-import { userRepository } from "../users/user.repository";
-import { sanitizeAuthUser, SanitizedUser } from "./auth.utils";
-import { TokenPair } from "../../services/token.service";
+import bcrypt from 'bcryptjs';
+import { ApiError } from '../../utils/ApiError';
+import { tokenService } from '../../services/token.service';
+import { authRepository } from './auth.repository';
+import { userRepository } from '../users/user.repository';
+import { sanitizeAuthUser, SanitizedUser } from './auth.utils';
+import { TokenPair } from '../../services/token.service';
 
 export interface AuthResult {
   user: SanitizedUser;
@@ -17,12 +17,12 @@ export const authService = {
 
     const existing = await userRepository.findByEmail(email);
     if (existing) {
-      throw ApiError.conflict("Email already registered");
+      throw ApiError.conflict('Email already registered');
     }
 
     const user = await authRepository.create({
       ...data,
-      email
+      email,
     });
 
     const tokens = await tokenService.generateTokenPair(
@@ -33,7 +33,7 @@ export const authService = {
 
     return {
       user: sanitizeAuthUser(user),
-      tokens
+      tokens,
     };
   },
 
@@ -41,13 +41,13 @@ export const authService = {
     const user = await authRepository.findByEmail(email);
 
     if (!user) {
-      throw ApiError.unauthorized("Invalid email or password");
+      throw ApiError.unauthorized('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password as string);
 
     if (!isPasswordValid) {
-      throw ApiError.unauthorized("Invalid email or password");
+      throw ApiError.unauthorized('Invalid email or password');
     }
 
     await authRepository.updateLastLogin(String((user as Record<string, unknown>)._id));
@@ -60,7 +60,7 @@ export const authService = {
 
     return {
       user: sanitizeAuthUser(user),
-      tokens
+      tokens,
     };
   },
 
@@ -89,25 +89,21 @@ export const authService = {
     return sanitizeAuthUser(user);
   },
 
-  async changePassword(
-    userId: string,
-    oldPassword: string,
-    newPassword: string
-  ): Promise<void> {
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
     const user = await authRepository.findByEmail(
-      String((await userRepository.findById(userId))?.email ?? "")
+      String((await userRepository.findById(userId))?.email ?? '')
     );
 
     if (!user) {
-      throw ApiError.notFound("User not found");
+      throw ApiError.notFound('User not found');
     }
 
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password as string);
 
     if (!isOldPasswordValid) {
-      throw ApiError.badRequest("Current password is incorrect");
+      throw ApiError.badRequest('Current password is incorrect');
     }
 
     await authRepository.updateById(userId, { password: newPassword });
-  }
+  },
 };

@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { TeamDocument, TeamModel } from "./team.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { TeamDocument, TeamModel } from './team.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -16,7 +16,7 @@ export interface TeamListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface TeamListResult {
@@ -36,14 +36,11 @@ const buildFilterQuery = (filter: TeamListFilter): FilterQuery<TeamDocument> => 
   }
 
   if (filter.memberId) {
-    query.$or = [
-      { ownerId: filter.memberId },
-      { "members.userId": filter.memberId }
-    ];
+    query.$or = [{ ownerId: filter.memberId }, { 'members.userId': filter.memberId }];
   }
 
   if (filter.search) {
-    query.name = { $regex: filter.search, $options: "i" };
+    query.name = { $regex: filter.search, $options: 'i' };
   }
 
   return query;
@@ -57,13 +54,10 @@ export const teamRepository = {
   /**
    * Find all teams with pagination, sorting, and optional filtering.
    */
-  async findAll(
-    options: TeamListOptions,
-    filter: TeamListFilter = {}
-  ): Promise<TeamListResult> {
+  async findAll(options: TeamListOptions, filter: TeamListFilter = {}): Promise<TeamListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       TeamModel.find(query)
@@ -71,12 +65,12 @@ export const teamRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      TeamModel.countDocuments(query)
+      TeamModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -92,8 +86,8 @@ export const teamRepository = {
    */
   async findByIdWithMembers(id: string): Promise<TeamDocument | null> {
     return TeamModel.findById(id)
-      .populate("ownerId", "firstName lastName email avatar")
-      .populate("members.userId", "firstName lastName email avatar")
+      .populate('ownerId', 'firstName lastName email avatar')
+      .populate('members.userId', 'firstName lastName email avatar')
       .lean();
   },
 
@@ -107,10 +101,7 @@ export const teamRepository = {
   /**
    * Update a team by id. Returns the updated document or null if not found.
    */
-  async updateById(
-    id: string,
-    data: Partial<TeamDocument>
-  ): Promise<TeamDocument | null> {
+  async updateById(id: string, data: Partial<TeamDocument>): Promise<TeamDocument | null> {
     return TeamModel.findByIdAndUpdate(id, data, { new: true }).lean();
   },
 
@@ -141,18 +132,12 @@ export const teamRepository = {
    * Add a member to a team. Returns the existing team if the user is
    * already an owner or member to prevent duplicates.
    */
-  async addMember(
-    teamId: string,
-    userId: string,
-    role = "member"
-  ): Promise<TeamDocument | null> {
+  async addMember(teamId: string, userId: string, role = 'member'): Promise<TeamDocument | null> {
     const team = await TeamModel.findById(teamId).lean();
     if (!team) return null;
 
     const isOwner = String(team.ownerId) === userId;
-    const isMember = team.members.some(
-      (m) => String(m.userId) === userId
-    );
+    const isMember = team.members.some((m) => String(m.userId) === userId);
 
     if (isOwner || isMember) {
       return team;
@@ -168,10 +153,7 @@ export const teamRepository = {
   /**
    * Remove a member from a team by userId.
    */
-  async removeMember(
-    teamId: string,
-    userId: string
-  ): Promise<TeamDocument | null> {
+  async removeMember(teamId: string, userId: string): Promise<TeamDocument | null> {
     return TeamModel.findByIdAndUpdate(
       teamId,
       { $pull: { members: { userId } } },
@@ -188,9 +170,9 @@ export const teamRepository = {
     role: string
   ): Promise<TeamDocument | null> {
     return TeamModel.findOneAndUpdate(
-      { _id: teamId, "members.userId": userId },
-      { $set: { "members.$.role": role } },
+      { _id: teamId, 'members.userId': userId },
+      { $set: { 'members.$.role': role } },
       { new: true }
     ).lean();
-  }
+  },
 };

@@ -1,6 +1,6 @@
-import { UserContext } from "./express";
+import { UserContext } from './express';
 
-declare module "socket.io" {
+declare module 'socket.io' {
   interface Handshake {
     auth: {
       token?: string;

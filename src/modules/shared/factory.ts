@@ -1,12 +1,12 @@
-import { Request, Response, Router } from "express";
-import { Model, Document, FilterQuery } from "mongoose";
-import { ZodSchema, z } from "zod";
-import { StatusCodes } from "http-status-codes";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { ApiResponse } from "../../utils/ApiResponse";
-import { getPagination, buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
-import { validateMiddleware } from "../../middleware/validate.middleware";
-import { logger } from "../../config/logger";
+import { Request, Response, Router } from 'express';
+import { Model, Document, FilterQuery } from 'mongoose';
+import { ZodSchema, z } from 'zod';
+import { StatusCodes } from 'http-status-codes';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { ApiResponse } from '../../utils/ApiResponse';
+import { getPagination, buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { validateMiddleware } from '../../middleware/validate.middleware';
+import { logger } from '../../config/logger';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -16,7 +16,7 @@ export interface CrudListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface CrudListResult<T> {
@@ -59,16 +59,16 @@ const defaultListQuerySchema = z.object({
   query: z.object({
     page: z.coerce.number().min(1).default(1),
     limit: z.coerce.number().min(1).max(100).default(10),
-    sort: z.string().optional().default("createdAt"),
-    order: z.enum(["asc", "desc"]).optional().default("desc"),
-    search: z.string().optional()
-  })
+    sort: z.string().optional().default('createdAt'),
+    order: z.enum(['asc', 'desc']).optional().default('desc'),
+    search: z.string().optional(),
+  }),
 });
 
 const defaultIdParamSchema = z.object({
   params: z.object({
-    id: z.string().min(1, "Id is required")
-  })
+    id: z.string().min(1, 'Id is required'),
+  }),
 });
 
 /* ------------------------------------------------------------------ */
@@ -94,9 +94,7 @@ const defaultIdParamSchema = z.object({
  * app.use("/users", userModule.router);
  * ```
  */
-export const createCrudModule = <TDoc extends Document>(
-  options: CrudModuleOptions<TDoc>
-) => {
+export const createCrudModule = <TDoc extends Document>(options: CrudModuleOptions<TDoc>) => {
   const { name, model, validation = {}, searchFields = [], buildFilter } = options;
 
   /* ---------------------------------------------------------------- */
@@ -112,7 +110,7 @@ export const createCrudModule = <TDoc extends Document>(
       filter: FilterQuery<TDoc> = {}
     ): Promise<CrudListResult<TDoc>> {
       const skip = (opts.page - 1) * opts.limit;
-      const sortDirection = opts.order === "desc" ? -1 : 1;
+      const sortDirection = opts.order === 'desc' ? -1 : 1;
 
       const [data, total] = await Promise.all([
         model
@@ -121,14 +119,14 @@ export const createCrudModule = <TDoc extends Document>(
           .skip(skip)
           .limit(opts.limit)
           .lean(),
-        model.countDocuments(filter)
+        model.countDocuments(filter),
       ]);
 
       logger.debug(`${name} repository.findAll`, { filter, count: data.length, total });
 
       return {
         data: data as TDoc[],
-        meta: buildPaginationMeta(opts.page, opts.limit, total)
+        meta: buildPaginationMeta(opts.page, opts.limit, total),
       };
     },
 
@@ -150,10 +148,7 @@ export const createCrudModule = <TDoc extends Document>(
     /**
      * Update a document by id. Returns the updated document or null.
      */
-    async updateById(
-      id: string,
-      data: Record<string, unknown>
-    ): Promise<TDoc | null> {
+    async updateById(id: string, data: Record<string, unknown>): Promise<TDoc | null> {
       logger.info(`${name} repository.updateById`, { id, data });
       return model.findByIdAndUpdate(id, data, { new: true }).lean() as Promise<TDoc | null>;
     },
@@ -165,7 +160,7 @@ export const createCrudModule = <TDoc extends Document>(
       logger.info(`${name} repository.deleteById`, { id });
       const result = await model.findByIdAndDelete(id);
       return result !== null;
-    }
+    },
   };
 
   /* ---------------------------------------------------------------- */
@@ -174,21 +169,16 @@ export const createCrudModule = <TDoc extends Document>(
 
   const service = {
     async list(query: Record<string, unknown>): Promise<CrudListResult<TDoc>> {
-      const pagination = getPagination(
-        query.page,
-        query.limit,
-        query.sort,
-        query.order
-      );
+      const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
       let filter: FilterQuery<TDoc> = {};
 
       if (buildFilter) {
         filter = buildFilter(query);
       } else if (searchFields.length > 0 && query.search) {
-        const searchRegex = { $regex: String(query.search), $options: "i" };
+        const searchRegex = { $regex: String(query.search), $options: 'i' };
         filter.$or = searchFields.map((field) => ({
-          [field]: searchRegex
+          [field]: searchRegex,
         })) as FilterQuery<TDoc>[];
       }
 
@@ -197,7 +187,7 @@ export const createCrudModule = <TDoc extends Document>(
           page: pagination.page,
           limit: pagination.limit,
           sort: pagination.sort,
-          order: pagination.order as "asc" | "desc"
+          order: pagination.order as 'asc' | 'desc',
         },
         filter
       );
@@ -217,7 +207,7 @@ export const createCrudModule = <TDoc extends Document>(
 
     async remove(id: string): Promise<boolean> {
       return repository.deleteById(id);
-    }
+    },
   };
 
   /* ---------------------------------------------------------------- */
@@ -226,9 +216,7 @@ export const createCrudModule = <TDoc extends Document>(
 
   const controller = {
     async list(req: Request, res: Response) {
-      const { data, meta } = await service.list(
-        req.query as Record<string, unknown>
-      );
+      const { data, meta } = await service.list(req.query as Record<string, unknown>);
       ApiResponse.paginated(data, meta).send(res);
     },
 
@@ -238,7 +226,7 @@ export const createCrudModule = <TDoc extends Document>(
       if (!item) {
         res.status(StatusCodes.NOT_FOUND).json({
           success: false,
-          message: `${name} not found`
+          message: `${name} not found`,
         });
         return;
       }
@@ -257,7 +245,7 @@ export const createCrudModule = <TDoc extends Document>(
       if (!item) {
         res.status(StatusCodes.NOT_FOUND).json({
           success: false,
-          message: `${name} not found`
+          message: `${name} not found`,
         });
         return;
       }
@@ -271,13 +259,13 @@ export const createCrudModule = <TDoc extends Document>(
       if (!deleted) {
         res.status(StatusCodes.NOT_FOUND).json({
           success: false,
-          message: `${name} not found`
+          message: `${name} not found`,
         });
         return;
       }
 
       ApiResponse.noContent(`${name} deleted`).send(res);
-    }
+    },
   };
 
   /* ---------------------------------------------------------------- */
@@ -302,16 +290,16 @@ export const createCrudModule = <TDoc extends Document>(
     ? validateMiddleware(validation.update)
     : (_req: Request, _res: Response, next: () => void) => next();
 
-  router.get("/", listQueryValidator, asyncHandler(controller.list));
-  router.get("/:id", idParamValidator, asyncHandler(controller.getById));
-  router.post("/", createValidator, asyncHandler(controller.create));
-  router.patch("/:id", updateValidator, asyncHandler(controller.update));
-  router.delete("/:id", idParamValidator, asyncHandler(controller.remove));
+  router.get('/', listQueryValidator, asyncHandler(controller.list));
+  router.get('/:id', idParamValidator, asyncHandler(controller.getById));
+  router.post('/', createValidator, asyncHandler(controller.create));
+  router.patch('/:id', updateValidator, asyncHandler(controller.update));
+  router.delete('/:id', idParamValidator, asyncHandler(controller.remove));
 
   return {
     repository,
     service,
     controller,
-    router
+    router,
   };
 };

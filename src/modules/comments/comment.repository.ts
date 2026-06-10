@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { CommentDocument, CommentModel } from "./comment.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { CommentDocument, CommentModel } from './comment.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -15,7 +15,7 @@ export interface CommentListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface CommentListResult {
@@ -55,7 +55,7 @@ export const commentRepository = {
   ): Promise<CommentListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       CommentModel.find(query)
@@ -63,12 +63,12 @@ export const commentRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      CommentModel.countDocuments(query)
+      CommentModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -83,9 +83,7 @@ export const commentRepository = {
    * Find a comment by id with user details populated.
    */
   async findByIdWithUser(id: string): Promise<CommentDocument | null> {
-    return CommentModel.findById(id)
-      .populate("userId", "firstName lastName email avatar")
-      .lean();
+    return CommentModel.findById(id).populate('userId', 'firstName lastName email avatar').lean();
   },
 
   /**
@@ -94,7 +92,7 @@ export const commentRepository = {
   async findByTaskId(taskId: string): Promise<CommentDocument[]> {
     return CommentModel.find({ taskId })
       .sort({ createdAt: -1 })
-      .populate("userId", "firstName lastName email avatar")
+      .populate('userId', 'firstName lastName email avatar')
       .lean();
   },
 
@@ -126,5 +124,5 @@ export const commentRepository = {
   async exists(id: string): Promise<boolean> {
     const doc = await CommentModel.exists({ _id: id });
     return doc !== null;
-  }
+  },
 };

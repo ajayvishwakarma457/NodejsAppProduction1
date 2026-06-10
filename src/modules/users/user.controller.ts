@@ -1,13 +1,11 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { userService } from "./user.service";
-import { ApiResponse } from "../../utils/ApiResponse";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { userService } from './user.service';
+import { ApiResponse } from '../../utils/ApiResponse';
 
 export const userController = {
   async list(req: Request, res: Response) {
-    const { data, meta } = await userService.list(
-      req.query as Record<string, unknown>
-    );
+    const { data, meta } = await userService.list(req.query as Record<string, unknown>);
     ApiResponse.paginated(data, meta).send(res);
   },
 
@@ -17,7 +15,7 @@ export const userController = {
     if (!user) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "User not found"
+        message: 'User not found',
       });
       return;
     }
@@ -36,7 +34,7 @@ export const userController = {
     if (!user) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "User not found"
+        message: 'User not found',
       });
       return;
     }
@@ -50,11 +48,11 @@ export const userController = {
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "User not found"
+        message: 'User not found',
       });
       return;
     }
 
     ApiResponse.noContent().send(res);
-  }
+  },
 };

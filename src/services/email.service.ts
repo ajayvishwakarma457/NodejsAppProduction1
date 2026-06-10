@@ -1,9 +1,9 @@
-import nodemailer from "nodemailer";
-import type { Transporter, SendMailOptions } from "nodemailer";
-import type { Attachment } from "nodemailer/lib/mailer";
-import { env } from "../config/env";
-import { logger } from "../config/logger";
-import { ApiError } from "../utils/ApiError";
+import nodemailer from 'nodemailer';
+import type { Transporter, SendMailOptions } from 'nodemailer';
+import type { Attachment } from 'nodemailer/lib/mailer';
+import { env } from '../config/env';
+import { logger } from '../config/logger';
+import { ApiError } from '../utils/ApiError';
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -23,7 +23,7 @@ const RETRY_DELAY_MS = 1000;
 
 const createTransporter = (): Transporter | null => {
   if (!env.SMTP_HOST) {
-    logger.warn("SMTP_HOST not configured. Emails will be logged only.");
+    logger.warn('SMTP_HOST not configured. Emails will be logged only.');
     return null;
   }
 
@@ -33,34 +33,33 @@ const createTransporter = (): Transporter | null => {
     secure: env.SMTP_SECURE,
     auth: {
       user: env.SMTP_USER,
-      pass: env.SMTP_PASS
+      pass: env.SMTP_PASS,
     },
     pool: true,
     maxConnections: 5,
-    maxMessages: 100
+    maxMessages: 100,
   });
 };
 
-const delay = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const sendWithRetry = async (
   mailOptions: SendMailOptions,
   attempt = 1
 ): Promise<{ messageId: string }> => {
   if (!transporter) {
-    logger.info("[EMAIL MOCK] Would send email", {
+    logger.info('[EMAIL MOCK] Would send email', {
       to: mailOptions.to,
-      subject: mailOptions.subject
+      subject: mailOptions.subject,
     });
     return { messageId: `mock-${Date.now()}` };
   }
 
   try {
     const result = await transporter.sendMail(mailOptions);
-    logger.info("Email sent", {
+    logger.info('Email sent', {
       messageId: result.messageId,
-      to: mailOptions.to
+      to: mailOptions.to,
     });
     return { messageId: result.messageId };
   } catch (error) {
@@ -70,15 +69,15 @@ const sendWithRetry = async (
       to: mailOptions.to,
       subject: mailOptions.subject,
       error: error instanceof Error ? error.message : error,
-      willRetry: !isLastAttempt
+      willRetry: !isLastAttempt,
     });
 
     if (isLastAttempt) {
-      logger.error("Email sending failed after max retries", {
+      logger.error('Email sending failed after max retries', {
         to: mailOptions.to,
-        subject: mailOptions.subject
+        subject: mailOptions.subject,
       });
-      throw ApiError.internal("Failed to send email");
+      throw ApiError.internal('Failed to send email');
     }
 
     await delay(RETRY_DELAY_MS * attempt);
@@ -90,16 +89,16 @@ const validateEmailOptions = (options: SendEmailOptions): void => {
   const { to, subject, text, html } = options;
 
   const toList = Array.isArray(to) ? to : [to];
-  if (toList.length === 0 || toList.some((t) => !t || typeof t !== "string")) {
+  if (toList.length === 0 || toList.some((t) => !t || typeof t !== 'string')) {
     throw ApiError.badRequest("Valid recipient 'to' is required");
   }
 
   if (!subject || subject.trim().length === 0) {
-    throw ApiError.badRequest("Email subject is required");
+    throw ApiError.badRequest('Email subject is required');
   }
 
   if (!text?.trim() && !html?.trim()) {
-    throw ApiError.badRequest("Email body (text or html) is required");
+    throw ApiError.badRequest('Email body (text or html) is required');
   }
 };
 
@@ -131,18 +130,9 @@ export const emailService = {
     validateEmailOptions(options);
     this.init();
 
-    const {
-      to,
-      subject,
-      text,
-      html,
-      cc,
-      bcc,
-      replyTo,
-      attachments
-    } = options;
+    const { to, subject, text, html, cc, bcc, replyTo, attachments } = options;
 
-    const from = env.SMTP_FROM || env.SMTP_USER || "no-reply@example.com";
+    const from = env.SMTP_FROM || env.SMTP_USER || 'no-reply@example.com';
 
     const mailOptions: SendMailOptions = {
       from,
@@ -153,7 +143,7 @@ export const emailService = {
       cc,
       bcc,
       replyTo,
-      attachments
+      attachments,
     };
 
     return sendWithRetry(mailOptions);
@@ -166,7 +156,7 @@ export const emailService = {
     recipients: string[],
     subject: string,
     body: { text?: string; html?: string },
-    options?: Omit<SendEmailOptions, "to" | "subject" | "text" | "html">
+    options?: Omit<SendEmailOptions, 'to' | 'subject' | 'text' | 'html'>
   ): Promise<{ messageId: string; to: string }[]> {
     const results: { messageId: string; to: string }[] = [];
 
@@ -177,14 +167,14 @@ export const emailService = {
           subject,
           text: body.text,
           html: body.html,
-          ...options
+          ...options,
         });
         results.push({ messageId: result.messageId, to: recipient });
       } catch (error) {
-        logger.error("Bulk email failed for recipient", { to: recipient, error });
+        logger.error('Bulk email failed for recipient', { to: recipient, error });
       }
     }
 
     return results;
-  }
+  },
 };

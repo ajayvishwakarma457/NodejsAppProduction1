@@ -1,5 +1,5 @@
-import { Socket } from "socket.io";
-import { logger } from "../config/logger";
+import { Socket } from 'socket.io';
+import { logger } from '../config/logger';
 
 export const socketHandler = <T extends unknown[]>(
   socket: Socket,
@@ -14,7 +14,7 @@ export const socketHandler = <T extends unknown[]>(
           const error = err instanceof Error ? err : new Error(String(err));
           logger.error(`Socket event "${event}" failed`, {
             socketId: socket.id,
-            error: error.message
+            error: error.message,
           });
         });
       }
@@ -22,7 +22,7 @@ export const socketHandler = <T extends unknown[]>(
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error(`Socket event "${event}" failed`, {
         socketId: socket.id,
-        error: error.message
+        error: error.message,
       });
     }
   });

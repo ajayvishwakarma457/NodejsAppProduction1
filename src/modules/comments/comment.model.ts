@@ -1,14 +1,14 @@
-import { InferSchemaType, Schema, model } from "mongoose";
+import { InferSchemaType, Schema, model } from 'mongoose';
 
 const commentSchema = new Schema(
   {
-    taskId: { type: Schema.Types.ObjectId, ref: "Task", required: true, index: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    parentId: { type: Schema.Types.ObjectId, ref: "Comment", default: null, index: true },
-    content: { type: String, required: true, trim: true, maxlength: 5000 }
+    taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    parentId: { type: Schema.Types.ObjectId, ref: 'Comment', default: null, index: true },
+    content: { type: String, required: true, trim: true, maxlength: 5000 },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
@@ -17,4 +17,4 @@ commentSchema.index({ taskId: 1, createdAt: -1 });
 
 export type CommentDocument = InferSchemaType<typeof commentSchema>;
 
-export const CommentModel = model<CommentDocument>("Comment", commentSchema);
+export const CommentModel = model<CommentDocument>('Comment', commentSchema);

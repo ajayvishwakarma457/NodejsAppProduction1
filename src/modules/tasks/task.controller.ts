@@ -1,13 +1,11 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { taskService } from "./task.service";
-import { ApiResponse } from "../../utils/ApiResponse";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { taskService } from './task.service';
+import { ApiResponse } from '../../utils/ApiResponse';
 
 export const taskController = {
   async list(req: Request, res: Response) {
-    const { data, meta } = await taskService.list(
-      req.query as Record<string, unknown>
-    );
+    const { data, meta } = await taskService.list(req.query as Record<string, unknown>);
     ApiResponse.paginated(data, meta).send(res);
   },
 
@@ -17,7 +15,7 @@ export const taskController = {
     if (!task) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Task not found"
+        message: 'Task not found',
       });
       return;
     }
@@ -36,7 +34,7 @@ export const taskController = {
     if (!task) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Task not found"
+        message: 'Task not found',
       });
       return;
     }
@@ -50,11 +48,11 @@ export const taskController = {
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Task not found"
+        message: 'Task not found',
       });
       return;
     }
 
     ApiResponse.noContent().send(res);
-  }
+  },
 };

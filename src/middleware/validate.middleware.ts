@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from "express";
-import { ZodSchema, ZodError } from "zod";
-import { StatusCodes } from "http-status-codes";
-import { ApiError } from "../utils/ApiError";
-import { logger } from "../config/logger";
+import { NextFunction, Request, Response } from 'express';
+import { ZodSchema, ZodError } from 'zod';
+import { StatusCodes } from 'http-status-codes';
+import { ApiError } from '../utils/ApiError';
+import { logger } from '../config/logger';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -24,13 +24,11 @@ export interface ValidateSchemas {
  * Formats a ZodError into a human-readable message and a structured
  * details map keyed by dot-notation paths (e.g. "body.email").
  */
-const formatZodErrors = (
-  error: ZodError
-): { message: string; details: ValidationErrorDetails } => {
+const formatZodErrors = (error: ZodError): { message: string; details: ValidationErrorDetails } => {
   const details: ValidationErrorDetails = {};
 
   for (const issue of error.issues) {
-    const path = issue.path.join(".") || "root";
+    const path = issue.path.join('.') || 'root';
     if (!details[path]) {
       details[path] = [];
     }
@@ -38,12 +36,12 @@ const formatZodErrors = (
   }
 
   const message = Object.entries(details)
-    .map(([path, msgs]) => `${path}: ${msgs.join(", ")}`)
-    .join("; ");
+    .map(([path, msgs]) => `${path}: ${msgs.join(', ')}`)
+    .join('; ');
 
   return {
-    message: message || "Validation failed",
-    details
+    message: message || 'Validation failed',
+    details,
   };
 };
 
@@ -67,17 +65,17 @@ export const validateMiddleware = <T extends ZodSchema>(schema: T) => {
     const result = schema.safeParse({
       body: req.body,
       params: req.params,
-      query: req.query
+      query: req.query,
     });
 
     if (!result.success) {
       const { message, details } = formatZodErrors(result.error);
 
-      logger.warn("Request validation failed", {
+      logger.warn('Request validation failed', {
         path: req.path,
         method: req.method,
         requestId: req.requestId,
-        details
+        details,
       });
 
       next(new ApiError(StatusCodes.BAD_REQUEST, message, details));
@@ -89,7 +87,7 @@ export const validateMiddleware = <T extends ZodSchema>(schema: T) => {
     const parsed = result.data as Record<string, unknown>;
     if (parsed.body !== undefined) req.body = parsed.body;
     if (parsed.params !== undefined) req.params = parsed.params as Record<string, string>;
-    if (parsed.query !== undefined) req.query = parsed.query as Request["query"];
+    if (parsed.query !== undefined) req.query = parsed.query as Request['query'];
 
     next();
   };
@@ -111,7 +109,7 @@ export const validate = (schemas: ValidateSchemas) => {
     const allErrors: ValidationErrorDetails = {};
     const errorMessages: string[] = [];
 
-    const parts = ["body", "params", "query"] as const;
+    const parts = ['body', 'params', 'query'] as const;
 
     for (const part of parts) {
       const schema = schemas[part];
@@ -130,19 +128,19 @@ export const validate = (schemas: ValidateSchemas) => {
       } else {
         // Cast is safe: Zod has validated the shape and Express types
         // are intentionally loose (body: any, query: ParsedQs, etc.).
-        req[part] = result.data as unknown as typeof req[typeof part];
+        req[part] = result.data as unknown as (typeof req)[typeof part];
       }
     }
 
     if (errorMessages.length > 0) {
-      logger.warn("Request validation failed", {
+      logger.warn('Request validation failed', {
         path: req.path,
         method: req.method,
         requestId: req.requestId,
-        details: allErrors
+        details: allErrors,
       });
 
-      next(new ApiError(StatusCodes.BAD_REQUEST, errorMessages.join("; "), allErrors));
+      next(new ApiError(StatusCodes.BAD_REQUEST, errorMessages.join('; '), allErrors));
       return;
     }
 

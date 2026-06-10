@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { jobOrchestrator, emailJob, notificationJob, reminderJob } from "../jobs";
-import { redisService } from "../services/redis.service";
-import { db } from "../config/db";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { jobOrchestrator, emailJob, notificationJob, reminderJob } from '../jobs';
+import { redisService } from '../services/redis.service';
+import { db } from '../config/db';
 
-describe("jobOrchestrator", () => {
+describe('jobOrchestrator', () => {
   beforeAll(async () => {
     await db.connect();
     await redisService.connect();
@@ -24,37 +24,37 @@ describe("jobOrchestrator", () => {
     await db.disconnect();
   });
 
-  it("should return health stats for all jobs", async () => {
+  it('should return health stats for all jobs', async () => {
     const health = await jobOrchestrator.health();
 
     expect(health).toHaveLength(3);
     expect(health.map((h) => h.name)).toEqual(
-      expect.arrayContaining(["email", "notification", "reminder"])
+      expect.arrayContaining(['email', 'notification', 'reminder'])
     );
 
     for (const entry of health) {
-      expect(entry).toHaveProperty("queueSize");
-      expect(entry).toHaveProperty("dlqSize");
-      expect(typeof entry.queueSize).toBe("number");
-      expect(typeof entry.dlqSize).toBe("number");
+      expect(entry).toHaveProperty('queueSize');
+      expect(entry).toHaveProperty('dlqSize');
+      expect(typeof entry.queueSize).toBe('number');
+      expect(typeof entry.dlqSize).toBe('number');
     }
   });
 
-  it("should start and stop all jobs without crashing", () => {
+  it('should start and stop all jobs without crashing', () => {
     // Jobs are disabled by default in test env, so startAll should log but not crash
     expect(() => jobOrchestrator.startAll()).not.toThrow();
     expect(() => jobOrchestrator.stopAll()).not.toThrow();
   });
 
-  it("should reflect queue changes in health stats", async () => {
+  it('should reflect queue changes in health stats', async () => {
     await emailJob.enqueue({
-      to: "a@example.com",
-      subject: "Test",
-      text: "Hello"
+      to: 'a@example.com',
+      subject: 'Test',
+      text: 'Hello',
     });
 
     const health = await jobOrchestrator.health();
-    const emailHealth = health.find((h) => h.name === "email");
+    const emailHealth = health.find((h) => h.name === 'email');
 
     expect(emailHealth?.queueSize).toBe(1);
   });

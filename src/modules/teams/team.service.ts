@@ -1,14 +1,9 @@
-import { teamRepository, TeamListFilter } from "./team.repository";
-import { getPagination } from "../../utils/pagination";
+import { teamRepository, TeamListFilter } from './team.repository';
+import { getPagination } from '../../utils/pagination';
 
 export const teamService = {
   async list(query: Record<string, unknown>) {
-    const pagination = getPagination(
-      query.page,
-      query.limit,
-      query.sort,
-      query.order
-    );
+    const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
     const filter: TeamListFilter = {};
 
@@ -29,7 +24,7 @@ export const teamService = {
         page: pagination.page,
         limit: pagination.limit,
         sort: pagination.sort,
-        order: pagination.order as "asc" | "desc"
+        order: pagination.order as 'asc' | 'desc',
       },
       filter
     );
@@ -57,5 +52,5 @@ export const teamService = {
 
   async removeMember(teamId: string, userId: string) {
     return teamRepository.removeMember(teamId, userId);
-  }
+  },
 };

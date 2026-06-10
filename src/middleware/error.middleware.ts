@@ -1,16 +1,16 @@
-import { NextFunction, Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { ZodError } from "zod";
-import { logger } from "../config/logger";
-import { env } from "../config/env";
-import { ApiError } from "../utils/ApiError";
+import { NextFunction, Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { ZodError } from 'zod';
+import { logger } from '../config/logger';
+import { env } from '../config/env';
+import { ApiError } from '../utils/ApiError';
 
 /* ------------------------------------------------------------------ */
 // Error type guards (duck-typing to avoid direct Mongoose/JWT imports)
 /* ------------------------------------------------------------------ */
 
-const isMongooseValidationError = (err: Error): boolean => err.name === "ValidationError";
-const isMongooseCastError = (err: Error): boolean => err.name === "CastError";
+const isMongooseValidationError = (err: Error): boolean => err.name === 'ValidationError';
+const isMongooseCastError = (err: Error): boolean => err.name === 'CastError';
 
 interface MongoError extends Error {
   code?: number;
@@ -20,11 +20,11 @@ interface MongoError extends Error {
 const isMongoDuplicateKeyError = (err: Error): err is MongoError =>
   (err as MongoError).code === 11000;
 
-const isJwtExpiredError = (err: Error): boolean => err.name === "TokenExpiredError";
-const isJwtError = (err: Error): boolean => err.name === "JsonWebTokenError";
+const isJwtExpiredError = (err: Error): boolean => err.name === 'TokenExpiredError';
+const isJwtError = (err: Error): boolean => err.name === 'JsonWebTokenError';
 
 const isSyntaxError = (err: Error): err is SyntaxError & { body?: unknown } =>
-  err instanceof SyntaxError && "body" in err;
+  err instanceof SyntaxError && 'body' in err;
 
 interface MulterLikeError extends Error {
   code: string;
@@ -32,7 +32,7 @@ interface MulterLikeError extends Error {
 }
 
 const isMulterError = (err: Error): err is MulterLikeError =>
-  err.name === "MulterError" && "code" in err;
+  err.name === 'MulterError' && 'code' in err;
 
 /* ------------------------------------------------------------------ */
 // Helpers
@@ -50,12 +50,19 @@ const isOperationalError = (err: Error): boolean => {
 };
 
 const redactBody = (body: unknown): unknown => {
-  if (!body || typeof body !== "object") return body;
+  if (!body || typeof body !== 'object') return body;
   const clone = { ...body } as Record<string, unknown>;
-  const sensitive = new Set(["password", "token", "refreshToken", "secret", "authorization", "apiKey"]);
+  const sensitive = new Set([
+    'password',
+    'token',
+    'refreshToken',
+    'secret',
+    'authorization',
+    'apiKey',
+  ]);
   for (const key of Object.keys(clone)) {
     if (sensitive.has(key.toLowerCase())) {
-      clone[key] = "[REDACTED]";
+      clone[key] = '[REDACTED]';
     }
   }
   return clone;
@@ -66,7 +73,7 @@ const buildRequestContext = (req: Request): Record<string, unknown> => {
     method: req.method,
     url: req.originalUrl || req.url,
     requestId: req.requestId,
-    ip: req.ip
+    ip: req.ip,
   };
   if (req.user?.id) ctx.userId = req.user.id;
   if (req.body) ctx.body = redactBody(req.body);
@@ -76,16 +83,16 @@ const buildRequestContext = (req: Request): Record<string, unknown> => {
 
 const getMulterMessage = (code: string): string => {
   const map: Record<string, string> = {
-    LIMIT_FILE_SIZE: "File too large",
-    LIMIT_FILE_COUNT: "Too many files",
-    LIMIT_UNEXPECTED_FILE: "Unexpected file field",
-    LIMIT_PART_COUNT: "Too many parts",
-    LIMIT_FIELD_KEY: "Field name too long",
-    LIMIT_FIELD_VALUE: "Field value too long",
-    LIMIT_FIELD_COUNT: "Too many fields",
-    MISSING_FIELD_NAME: "Missing field name"
+    LIMIT_FILE_SIZE: 'File too large',
+    LIMIT_FILE_COUNT: 'Too many files',
+    LIMIT_UNEXPECTED_FILE: 'Unexpected file field',
+    LIMIT_PART_COUNT: 'Too many parts',
+    LIMIT_FIELD_KEY: 'Field name too long',
+    LIMIT_FIELD_VALUE: 'Field value too long',
+    LIMIT_FIELD_COUNT: 'Too many fields',
+    MISSING_FIELD_NAME: 'Missing field name',
   };
-  return map[code] || "File upload error";
+  return map[code] || 'File upload error';
 };
 
 /* ------------------------------------------------------------------ */
@@ -99,7 +106,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
   }
 
   let statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
-  let message = "Internal server error";
+  let message = 'Internal server error';
   let details: unknown = undefined;
 
   if (err instanceof ApiError) {
@@ -108,36 +115,36 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
     details = err.details;
   } else if (err instanceof ZodError) {
     statusCode = StatusCodes.BAD_REQUEST;
-    message = "Validation failed";
+    message = 'Validation failed';
     details = err.flatten().fieldErrors;
   } else if (isMongooseValidationError(err)) {
     statusCode = StatusCodes.BAD_REQUEST;
-    message = "Validation failed";
+    message = 'Validation failed';
     const mongooseErr = err as Error & { errors?: Record<string, { message: string }> };
     if (mongooseErr.errors) {
       details = Object.entries(mongooseErr.errors).map(([field, e]) => ({
         field,
-        message: e.message
+        message: e.message,
       }));
     }
   } else if (isMongooseCastError(err)) {
     statusCode = StatusCodes.BAD_REQUEST;
-    message = "Invalid value for field";
+    message = 'Invalid value for field';
     const castErr = err as Error & { path?: string; value?: unknown };
     details = { field: castErr.path, value: castErr.value };
   } else if (isMongoDuplicateKeyError(err)) {
     statusCode = StatusCodes.CONFLICT;
-    message = "Duplicate field value";
+    message = 'Duplicate field value';
     details = err.keyValue;
   } else if (isJwtExpiredError(err)) {
     statusCode = StatusCodes.UNAUTHORIZED;
-    message = "Token expired";
+    message = 'Token expired';
   } else if (isJwtError(err)) {
     statusCode = StatusCodes.UNAUTHORIZED;
-    message = "Invalid token";
+    message = 'Invalid token';
   } else if (isSyntaxError(err)) {
     statusCode = StatusCodes.BAD_REQUEST;
-    message = "Invalid JSON payload";
+    message = 'Invalid JSON payload';
   } else if (isMulterError(err)) {
     statusCode = StatusCodes.BAD_REQUEST;
     message = getMulterMessage(err.code);
@@ -145,7 +152,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
   }
 
   const operational = isOperationalError(err);
-  const isProd = env.NODE_ENV === "production";
+  const isProd = env.NODE_ENV === 'production';
 
   // Preserve original values for logging before sanitizing the response
   const originalMessage = err.message;
@@ -153,7 +160,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
 
   // Sanitize non-operational 500s in production
   if (statusCode >= 500 && !operational && isProd) {
-    message = "Internal server error";
+    message = 'Internal server error';
     details = undefined;
   }
 
@@ -165,7 +172,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
     statusCode,
     operational,
     stack: err.stack,
-    details: originalDetails
+    details: originalDetails,
   };
 
   if ((err as Error & { cause?: unknown }).cause) {
@@ -182,7 +189,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
   const response: Record<string, unknown> = {
     success: false,
     message,
-    requestId: req.requestId
+    requestId: req.requestId,
   };
 
   if (details !== undefined) {

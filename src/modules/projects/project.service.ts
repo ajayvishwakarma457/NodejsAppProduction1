@@ -1,14 +1,9 @@
-import { projectRepository, ProjectListFilter } from "./project.repository";
-import { getPagination } from "../../utils/pagination";
+import { projectRepository, ProjectListFilter } from './project.repository';
+import { getPagination } from '../../utils/pagination';
 
 export const projectService = {
   async list(query: Record<string, unknown>) {
-    const pagination = getPagination(
-      query.page,
-      query.limit,
-      query.sort,
-      query.order
-    );
+    const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
     const filter: ProjectListFilter = {};
 
@@ -33,7 +28,7 @@ export const projectService = {
         page: pagination.page,
         limit: pagination.limit,
         sort: pagination.sort,
-        order: pagination.order as "asc" | "desc"
+        order: pagination.order as 'asc' | 'desc',
       },
       filter
     );
@@ -53,5 +48,5 @@ export const projectService = {
 
   async remove(id: string) {
     return projectRepository.deleteById(id);
-  }
+  },
 };

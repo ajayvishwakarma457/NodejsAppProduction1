@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { NotificationDocument, NotificationModel } from "./notification.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { NotificationDocument, NotificationModel } from './notification.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -16,7 +16,7 @@ export interface NotificationListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface NotificationListResult {
@@ -60,7 +60,7 @@ export const notificationRepository = {
   ): Promise<NotificationListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       NotificationModel.find(query)
@@ -68,12 +68,12 @@ export const notificationRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      NotificationModel.countDocuments(query)
+      NotificationModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -96,8 +96,8 @@ export const notificationRepository = {
    */
   async findPending(limit: number): Promise<NotificationDocument[]> {
     return NotificationModel.find({
-      status: "pending",
-      $or: [{ scheduledAt: null }, { scheduledAt: { $lte: new Date() } }]
+      status: 'pending',
+      $or: [{ scheduledAt: null }, { scheduledAt: { $lte: new Date() } }],
     })
       .sort({ createdAt: 1 })
       .limit(limit)
@@ -135,7 +135,7 @@ export const notificationRepository = {
   async markDelivered(id: string): Promise<boolean> {
     const result = await NotificationModel.updateOne(
       { _id: id },
-      { status: "delivered", deliveredAt: new Date(), errorMessage: null }
+      { status: 'delivered', deliveredAt: new Date(), errorMessage: null }
     );
     return result.matchedCount > 0;
   },
@@ -146,7 +146,7 @@ export const notificationRepository = {
   async markFailed(id: string, errorMessage: string): Promise<void> {
     await NotificationModel.updateOne(
       { _id: id },
-      { status: "failed", failedAt: new Date(), errorMessage }
+      { status: 'failed', failedAt: new Date(), errorMessage }
     );
   },
 
@@ -182,9 +182,9 @@ export const notificationRepository = {
 
     const result = await NotificationModel.deleteMany({
       isRead: true,
-      createdAt: { $lt: cutoff }
+      createdAt: { $lt: cutoff },
     });
 
     return result.deletedCount ?? 0;
-  }
+  },
 };

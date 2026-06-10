@@ -1,25 +1,25 @@
-import { Types } from "mongoose";
+import { Types } from 'mongoose';
 
 export const slugify = (value: string, options?: { maxLength?: number }): string => {
   const maxLength = options?.maxLength ?? 100;
 
   return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .slice(0, maxLength);
 };
 
 export const isValidId = (value: unknown): value is string =>
-  typeof value === "string" && value.trim().length > 0;
+  typeof value === 'string' && value.trim().length > 0;
 
 export const isValidObjectId = (value: unknown): boolean =>
-  typeof value === "string" && Types.ObjectId.isValid(value);
+  typeof value === 'string' && Types.ObjectId.isValid(value);
 
 export const toObjectId = (value: string): Types.ObjectId | null => {
   if (!isValidObjectId(value)) return null;
@@ -55,20 +55,19 @@ export const omit = <T extends Record<string, unknown>, K extends keyof T>(
 
 export const isEmpty = (value: unknown): boolean => {
   if (value == null) return true;
-  if (typeof value === "string") return value.trim().length === 0;
+  if (typeof value === 'string') return value.trim().length === 0;
   if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === "object") return Object.keys(value).length === 0;
+  if (typeof value === 'object') return Object.keys(value).length === 0;
   return false;
 };
 
 export const generateRandomString = (length = 32): string => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
 };
 
-export const sanitizeEmail = (email: string): string =>
-  email.trim().toLowerCase();
+export const sanitizeEmail = (email: string): string => email.trim().toLowerCase();

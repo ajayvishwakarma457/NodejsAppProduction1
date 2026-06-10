@@ -1,4 +1,4 @@
-import { UserDocument } from "../users/user.model";
+import { UserDocument } from '../users/user.model';
 
 export interface SanitizedUser {
   id: string;
@@ -26,6 +26,6 @@ export const sanitizeAuthUser = (user: UserDocument | Record<string, unknown>): 
     isVerified: Boolean(u.isVerified),
     lastLogin: (u.lastLogin as Date | null) ?? null,
     createdAt: new Date(u.createdAt as Date | string),
-    updatedAt: new Date(u.updatedAt as Date | string)
+    updatedAt: new Date(u.updatedAt as Date | string),
   };
 };

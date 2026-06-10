@@ -1,11 +1,11 @@
-import { Server, Socket } from "socket.io";
-import { logger } from "../config/logger";
+import { Server, Socket } from 'socket.io';
+import { logger } from '../config/logger';
 
 let ioInstance: Server | null = null;
 
 const ensureInitialized = (): Server => {
   if (!ioInstance) {
-    throw new Error("Socket.IO has not been initialized. Call setIO() first.");
+    throw new Error('Socket.IO has not been initialized. Call setIO() first.');
   }
   return ioInstance;
 };
@@ -13,7 +13,7 @@ const ensureInitialized = (): Server => {
 export const socketService = {
   setIO(io: Server) {
     if (ioInstance) {
-      logger.warn("Socket.IO instance is being overwritten");
+      logger.warn('Socket.IO instance is being overwritten');
     }
     ioInstance = io;
   },
@@ -48,5 +48,5 @@ export const socketService = {
       socket.disconnect(true);
       logger.info(`Socket ${socketId} disconnected`, { reason });
     }
-  }
+  },
 };

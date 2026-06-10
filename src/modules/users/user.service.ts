@@ -1,14 +1,9 @@
-import { userRepository, UserListFilter } from "./user.repository";
-import { getPagination } from "../../utils/pagination";
+import { userRepository, UserListFilter } from './user.repository';
+import { getPagination } from '../../utils/pagination';
 
 export const userService = {
   async list(query: Record<string, unknown>) {
-    const pagination = getPagination(
-      query.page,
-      query.limit,
-      query.sort,
-      query.order
-    );
+    const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
     const filter: UserListFilter = {};
 
@@ -29,7 +24,7 @@ export const userService = {
         page: pagination.page,
         limit: pagination.limit,
         sort: pagination.sort,
-        order: pagination.order as "asc" | "desc"
+        order: pagination.order as 'asc' | 'desc',
       },
       filter
     );
@@ -49,5 +44,5 @@ export const userService = {
 
   async remove(id: string) {
     return userRepository.deleteById(id);
-  }
+  },
 };

@@ -1,10 +1,10 @@
-import fs from "fs/promises";
-import path from "path";
-import { createReadStream } from "fs";
-import type { Request } from "express";
-import { env } from "../config/env";
-import { logger } from "../config/logger";
-import { ApiError } from "../utils/ApiError";
+import fs from 'fs/promises';
+import path from 'path';
+import { createReadStream } from 'fs';
+import type { Request } from 'express';
+import { env } from '../config/env';
+import { logger } from '../config/logger';
+import { ApiError } from '../utils/ApiError';
 
 export interface StorageFile {
   fieldname: string;
@@ -42,20 +42,20 @@ class LocalStorageProvider implements StorageProvider {
 
   constructor() {
     this.basePath = path.resolve(env.STORAGE_LOCAL_PATH);
-    this.publicUrl = "/uploads";
+    this.publicUrl = '/uploads';
   }
 
   private resolvePath(key: string): string {
     // Prevent directory traversal
-    const clean = key.replace(/\.\./g, "").replace(/^\/+/g, "");
+    const clean = key.replace(/\.\./g, '').replace(/^\/+/g, '');
     return path.join(this.basePath, clean);
   }
 
-  async upload(file: StorageFile, folder = "general"): Promise<UploadResult> {
+  async upload(file: StorageFile, folder = 'general'): Promise<UploadResult> {
     const timestamp = Date.now();
-    const ext = path.extname(file.originalname) || ".bin";
+    const ext = path.extname(file.originalname) || '.bin';
     const safeName = `${timestamp}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-    const key = path.join(folder, safeName).replace(/\\/g, "/");
+    const key = path.join(folder, safeName).replace(/\\/g, '/');
     const destPath = this.resolvePath(key);
 
     await fs.mkdir(path.dirname(destPath), { recursive: true });
@@ -65,17 +65,17 @@ class LocalStorageProvider implements StorageProvider {
     } else if (file.path) {
       await fs.copyFile(file.path, destPath);
     } else {
-      throw ApiError.internal("No file buffer or path available");
+      throw ApiError.internal('No file buffer or path available');
     }
 
-    logger.info("File uploaded (local)", { key, size: file.size });
+    logger.info('File uploaded (local)', { key, size: file.size });
 
     return {
       key,
       url: this.getUrl(key),
       size: file.size,
       mimetype: file.mimetype,
-      originalName: file.originalname
+      originalName: file.originalname,
     };
   }
 
@@ -83,7 +83,7 @@ class LocalStorageProvider implements StorageProvider {
     try {
       const filePath = this.resolvePath(key);
       await fs.unlink(filePath);
-      logger.info("File deleted (local)", { key });
+      logger.info('File deleted (local)', { key });
       return true;
     } catch {
       return false;
@@ -104,7 +104,7 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   getUrl(key: string): string {
-    return `${this.publicUrl}/${key.replace(/\\/g, "/")}`;
+    return `${this.publicUrl}/${key.replace(/\\/g, '/')}`;
   }
 }
 
@@ -114,21 +114,21 @@ class S3StorageProvider implements StorageProvider {
   // Placeholder for future S3/MinIO implementation.
   // Swap in @aws-sdk/client-s3 when ready.
 
-  async upload(file: StorageFile, folder = "general"): Promise<UploadResult> {
-    logger.warn("S3 provider is not yet implemented. Falling back to local.");
+  async upload(file: StorageFile, folder = 'general'): Promise<UploadResult> {
+    logger.warn('S3 provider is not yet implemented. Falling back to local.');
     return new LocalStorageProvider().upload(file, folder);
   }
 
   async delete(_key: string): Promise<boolean> {
-    throw ApiError.internal("S3 provider is not yet implemented");
+    throw ApiError.internal('S3 provider is not yet implemented');
   }
 
   async exists(_key: string): Promise<boolean> {
-    throw ApiError.internal("S3 provider is not yet implemented");
+    throw ApiError.internal('S3 provider is not yet implemented');
   }
 
   getStream(_key: string): NodeJS.ReadableStream {
-    throw ApiError.internal("S3 provider is not yet implemented");
+    throw ApiError.internal('S3 provider is not yet implemented');
   }
 
   getUrl(key: string): string {
@@ -140,9 +140,9 @@ class S3StorageProvider implements StorageProvider {
 
 const createProvider = (): StorageProvider => {
   switch (env.STORAGE_PROVIDER) {
-    case "s3":
+    case 's3':
       return new S3StorageProvider();
-    case "local":
+    case 'local':
     default:
       return new LocalStorageProvider();
   }
@@ -190,28 +190,24 @@ export const storageService = {
     const maxBytes = env.STORAGE_MAX_FILE_SIZE_MB * 1024 * 1024;
 
     if (file.size > maxBytes) {
-      throw ApiError.badRequest(
-        `File size exceeds ${env.STORAGE_MAX_FILE_SIZE_MB}MB limit`
-      );
+      throw ApiError.badRequest(`File size exceeds ${env.STORAGE_MAX_FILE_SIZE_MB}MB limit`);
     }
 
-    const allowed = env.STORAGE_ALLOWED_MIME_TYPES.split(",").map((t) =>
-      t.trim().toLowerCase()
-    );
+    const allowed = env.STORAGE_ALLOWED_MIME_TYPES.split(',').map((t) => t.trim().toLowerCase());
 
     if (!allowed.includes(file.mimetype.toLowerCase())) {
       throw ApiError.badRequest(
-        `File type "${file.mimetype}" is not allowed. Allowed: ${allowed.join(", ")}`
+        `File type "${file.mimetype}" is not allowed. Allowed: ${allowed.join(', ')}`
       );
     }
   },
 
   /** Generate a unique safe filename. */
-  generateKey(originalName: string, folder = "general"): string {
-    const ext = path.extname(originalName) || ".bin";
+  generateKey(originalName: string, folder = 'general'): string {
+    const ext = path.extname(originalName) || '.bin';
     const timestamp = Date.now();
     const rand = Math.random().toString(36).slice(2, 10);
-    return path.join(folder, `${timestamp}-${rand}${ext}`).replace(/\\/g, "/");
+    return path.join(folder, `${timestamp}-${rand}${ext}`).replace(/\\/g, '/');
   },
 
   /** Multer file filter compatible with Express. */
@@ -220,18 +216,12 @@ export const storageService = {
     file: Express.Multer.File,
     cb: (error: Error | null, acceptFile?: boolean) => void
   ): void {
-    const allowed = env.STORAGE_ALLOWED_MIME_TYPES.split(",").map((t) =>
-      t.trim().toLowerCase()
-    );
+    const allowed = env.STORAGE_ALLOWED_MIME_TYPES.split(',').map((t) => t.trim().toLowerCase());
 
     if (allowed.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
-      cb(
-        new Error(
-          `File type "${file.mimetype}" is not allowed. Allowed: ${allowed.join(", ")}`
-        )
-      );
+      cb(new Error(`File type "${file.mimetype}" is not allowed. Allowed: ${allowed.join(', ')}`));
     }
-  }
+  },
 };

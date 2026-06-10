@@ -1,13 +1,11 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { teamService } from "./team.service";
-import { ApiResponse } from "../../utils/ApiResponse";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { teamService } from './team.service';
+import { ApiResponse } from '../../utils/ApiResponse';
 
 export const teamController = {
   async list(req: Request, res: Response) {
-    const { data, meta } = await teamService.list(
-      req.query as Record<string, unknown>
-    );
+    const { data, meta } = await teamService.list(req.query as Record<string, unknown>);
     ApiResponse.paginated(data, meta).send(res);
   },
 
@@ -17,7 +15,7 @@ export const teamController = {
     if (!team) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Team not found"
+        message: 'Team not found',
       });
       return;
     }
@@ -36,7 +34,7 @@ export const teamController = {
     if (!team) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Team not found"
+        message: 'Team not found',
       });
       return;
     }
@@ -50,7 +48,7 @@ export const teamController = {
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Team not found"
+        message: 'Team not found',
       });
       return;
     }
@@ -68,7 +66,7 @@ export const teamController = {
     if (!team) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Team not found or member already exists"
+        message: 'Team not found or member already exists',
       });
       return;
     }
@@ -77,19 +75,16 @@ export const teamController = {
   },
 
   async removeMember(req: Request, res: Response) {
-    const team = await teamService.removeMember(
-      req.params.id as string,
-      req.body.userId as string
-    );
+    const team = await teamService.removeMember(req.params.id as string, req.body.userId as string);
 
     if (!team) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Team not found"
+        message: 'Team not found',
       });
       return;
     }
 
     ApiResponse.ok(team).send(res);
-  }
+  },
 };

@@ -1,21 +1,16 @@
-import { ApiError } from "../../utils/ApiError";
-import { getPagination } from "../../utils/pagination";
-import { NotificationDocument } from "./notification.model";
-import { notificationRepository, NotificationListFilter } from "./notification.repository";
+import { ApiError } from '../../utils/ApiError';
+import { getPagination } from '../../utils/pagination';
+import { NotificationDocument } from './notification.model';
+import { notificationRepository, NotificationListFilter } from './notification.repository';
 
 export const notificationService = {
   async list(query: Record<string, unknown>, userId: string) {
-    const pagination = getPagination(
-      query.page,
-      query.limit,
-      query.sort,
-      query.order
-    );
+    const pagination = getPagination(query.page, query.limit, query.sort, query.order);
 
     const filter: NotificationListFilter = { userId };
 
     if (query.isRead !== undefined) {
-      filter.isRead = String(query.isRead) === "true";
+      filter.isRead = String(query.isRead) === 'true';
     }
 
     if (query.type) {
@@ -27,7 +22,7 @@ export const notificationService = {
         page: pagination.page,
         limit: pagination.limit,
         sort: pagination.sort,
-        order: pagination.order as "asc" | "desc"
+        order: pagination.order as 'asc' | 'desc',
       },
       filter
     );
@@ -37,7 +32,7 @@ export const notificationService = {
     const notification = await notificationRepository.findById(id);
 
     if (notification && String(notification.userId) !== userId) {
-      throw ApiError.forbidden("You do not have access to this notification");
+      throw ApiError.forbidden('You do not have access to this notification');
     }
 
     return notification;
@@ -51,7 +46,7 @@ export const notificationService = {
     const notification = await notificationRepository.markAsRead(id, userId);
 
     if (!notification) {
-      throw ApiError.notFound("Notification not found or already read");
+      throw ApiError.notFound('Notification not found or already read');
     }
 
     return notification;
@@ -77,11 +72,11 @@ export const notificationService = {
     const notification = await notificationRepository.findById(id);
 
     if (!notification) {
-      throw ApiError.notFound("Notification not found");
+      throw ApiError.notFound('Notification not found');
     }
 
     if (String(notification.userId) !== userId) {
-      throw ApiError.forbidden("You do not have access to this notification");
+      throw ApiError.forbidden('You do not have access to this notification');
     }
 
     return notificationRepository.deleteById(id);
@@ -93,5 +88,5 @@ export const notificationService = {
 
   async cleanupOldReadNotifications(days: number): Promise<number> {
     return notificationRepository.deleteOldReadNotifications(days);
-  }
+  },
 };

@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { emailJob, EmailQueuePayload } from "../jobs/email.job";
-import { redisService } from "../services/redis.service";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { emailJob, EmailQueuePayload } from '../jobs/email.job';
+import { redisService } from '../services/redis.service';
 
-describe("emailJob", () => {
+describe('emailJob', () => {
   const sampleEmail: EmailQueuePayload = {
-    to: "test@example.com",
-    subject: "Test Subject",
-    text: "Hello world"
+    to: 'test@example.com',
+    subject: 'Test Subject',
+    text: 'Hello world',
   };
 
   beforeAll(async () => {
@@ -22,13 +22,13 @@ describe("emailJob", () => {
     await redisService.disconnect();
   });
 
-  it("should enqueue an email", async () => {
+  it('should enqueue an email', async () => {
     await emailJob.enqueue(sampleEmail);
     const stats = await emailJob.stats();
     expect(stats.queueSize).toBe(1);
   });
 
-  it("should process a batch and succeed", async () => {
+  it('should process a batch and succeed', async () => {
     await emailJob.enqueue(sampleEmail);
     const result = await emailJob.processBatch();
 
@@ -40,9 +40,9 @@ describe("emailJob", () => {
     expect(stats.queueSize).toBe(0);
   });
 
-  it("should retry failed emails up to max retries", async () => {
+  it('should retry failed emails up to max retries', async () => {
     // Queue an email with invalid recipient to force failure
-    await emailJob.enqueue({ to: "", subject: "Bad", text: "test" });
+    await emailJob.enqueue({ to: '', subject: 'Bad', text: 'test' });
 
     // First attempt fails and requeues (retries: 0 -> 1)
     const r1 = await emailJob.processBatch();
@@ -69,30 +69,30 @@ describe("emailJob", () => {
     expect(stats.dlqSize).toBe(1);
   });
 
-  it("should process multiple emails in a batch", async () => {
-    await emailJob.enqueue({ to: "a@example.com", subject: "A", text: "a" });
-    await emailJob.enqueue({ to: "b@example.com", subject: "B", text: "b" });
-    await emailJob.enqueue({ to: "c@example.com", subject: "C", text: "c" });
+  it('should process multiple emails in a batch', async () => {
+    await emailJob.enqueue({ to: 'a@example.com', subject: 'A', text: 'a' });
+    await emailJob.enqueue({ to: 'b@example.com', subject: 'B', text: 'b' });
+    await emailJob.enqueue({ to: 'c@example.com', subject: 'C', text: 'c' });
 
     const result = await emailJob.processBatch();
     expect(result.processed).toBe(3);
     expect(result.succeeded).toBe(3);
   });
 
-  it("should peek at the next email without removing it", async () => {
+  it('should peek at the next email without removing it', async () => {
     await emailJob.enqueue(sampleEmail);
     const peeked = await emailJob.peek();
 
     expect(peeked).not.toBeNull();
-    expect(peeked?.payload.subject).toBe("Test Subject");
+    expect(peeked?.payload.subject).toBe('Test Subject');
 
     const stats = await emailJob.stats();
     expect(stats.queueSize).toBe(1);
   });
 
-  it("should clear queue and dlq", async () => {
+  it('should clear queue and dlq', async () => {
     // Use invalid email to force DLQ
-    await emailJob.enqueue({ to: "", subject: "F", text: "t" });
+    await emailJob.enqueue({ to: '', subject: 'F', text: 't' });
     await emailJob.processBatch(); // fail -> retry 1
     await emailJob.processBatch(); // fail -> retry 2
     await emailJob.processBatch(); // fail -> retry 3

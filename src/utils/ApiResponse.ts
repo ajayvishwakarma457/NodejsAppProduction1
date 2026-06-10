@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from 'express';
 
 interface PaginationMeta {
   page: number;
@@ -29,7 +29,7 @@ export class ApiResponse<T> {
   toJSON() {
     const payload: Record<string, unknown> = {
       success: this.success,
-      message: this.message
+      message: this.message,
     };
 
     if (this.data !== undefined) {
@@ -43,19 +43,19 @@ export class ApiResponse<T> {
     return payload;
   }
 
-  static ok<T>(data?: T, message = "OK"): ApiResponse<T> {
+  static ok<T>(data?: T, message = 'OK'): ApiResponse<T> {
     return new ApiResponse(200, message, data);
   }
 
-  static created<T>(data?: T, message = "Created"): ApiResponse<T> {
+  static created<T>(data?: T, message = 'Created'): ApiResponse<T> {
     return new ApiResponse(201, message, data);
   }
 
-  static noContent(message = "No content"): ApiResponse<never> {
+  static noContent(message = 'No content'): ApiResponse<never> {
     return new ApiResponse(204, message);
   }
 
-  static paginated<T>(data: T, meta: PaginationMeta, message = "OK"): ApiResponse<T> {
+  static paginated<T>(data: T, meta: PaginationMeta, message = 'OK'): ApiResponse<T> {
     return new ApiResponse(200, message, data, meta);
   }
 }

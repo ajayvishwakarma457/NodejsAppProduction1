@@ -1,13 +1,11 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { commentService } from "./comment.service";
-import { ApiResponse } from "../../utils/ApiResponse";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { commentService } from './comment.service';
+import { ApiResponse } from '../../utils/ApiResponse';
 
 export const commentController = {
   async list(req: Request, res: Response) {
-    const { data, meta } = await commentService.list(
-      req.query as Record<string, unknown>
-    );
+    const { data, meta } = await commentService.list(req.query as Record<string, unknown>);
     ApiResponse.paginated(data, meta).send(res);
   },
 
@@ -17,7 +15,7 @@ export const commentController = {
     if (!comment) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Comment not found"
+        message: 'Comment not found',
       });
       return;
     }
@@ -28,7 +26,7 @@ export const commentController = {
   async create(req: Request, res: Response) {
     const userId = req.user!.id;
     const comment = await commentService.create(req.body, userId);
-    ApiResponse.created(comment, "Comment created").send(res);
+    ApiResponse.created(comment, 'Comment created').send(res);
   },
 
   async update(req: Request, res: Response) {
@@ -38,12 +36,12 @@ export const commentController = {
     if (!comment) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Comment not found"
+        message: 'Comment not found',
       });
       return;
     }
 
-    ApiResponse.ok(comment, "Comment updated").send(res);
+    ApiResponse.ok(comment, 'Comment updated').send(res);
   },
 
   async remove(req: Request, res: Response) {
@@ -53,11 +51,11 @@ export const commentController = {
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Comment not found"
+        message: 'Comment not found',
       });
       return;
     }
 
-    ApiResponse.noContent("Comment deleted").send(res);
-  }
+    ApiResponse.noContent('Comment deleted').send(res);
+  },
 };

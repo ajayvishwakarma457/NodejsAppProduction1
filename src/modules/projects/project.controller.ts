@@ -1,13 +1,11 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import { projectService } from "./project.service";
-import { ApiResponse } from "../../utils/ApiResponse";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { projectService } from './project.service';
+import { ApiResponse } from '../../utils/ApiResponse';
 
 export const projectController = {
   async list(req: Request, res: Response) {
-    const { data, meta } = await projectService.list(
-      req.query as Record<string, unknown>
-    );
+    const { data, meta } = await projectService.list(req.query as Record<string, unknown>);
     ApiResponse.paginated(data, meta).send(res);
   },
 
@@ -17,7 +15,7 @@ export const projectController = {
     if (!project) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Project not found"
+        message: 'Project not found',
       });
       return;
     }
@@ -27,7 +25,7 @@ export const projectController = {
 
   async create(req: Request, res: Response) {
     const project = await projectService.create(req.body);
-    ApiResponse.created(project, "Project created").send(res);
+    ApiResponse.created(project, 'Project created').send(res);
   },
 
   async update(req: Request, res: Response) {
@@ -36,12 +34,12 @@ export const projectController = {
     if (!project) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Project not found"
+        message: 'Project not found',
       });
       return;
     }
 
-    ApiResponse.ok(project, "Project updated").send(res);
+    ApiResponse.ok(project, 'Project updated').send(res);
   },
 
   async remove(req: Request, res: Response) {
@@ -50,11 +48,11 @@ export const projectController = {
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Project not found"
+        message: 'Project not found',
       });
       return;
     }
 
-    ApiResponse.noContent("Project deleted").send(res);
-  }
+    ApiResponse.noContent('Project deleted').send(res);
+  },
 };

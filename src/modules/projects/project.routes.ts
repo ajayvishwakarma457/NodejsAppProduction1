@@ -1,42 +1,42 @@
-import { Router } from "express";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { validateMiddleware } from "../../middleware/validate.middleware";
-import { projectController } from "./project.controller";
+import { Router } from 'express';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { validateMiddleware } from '../../middleware/validate.middleware';
+import { projectController } from './project.controller';
 import {
   createProjectSchema,
   listProjectsQuerySchema,
   projectIdParamSchema,
-  updateProjectSchema
-} from "./project.validation";
+  updateProjectSchema,
+} from './project.validation';
 
 export const projectRouter = Router();
 
 projectRouter.get(
-  "/",
+  '/',
   validateMiddleware(listProjectsQuerySchema),
   asyncHandler(projectController.list)
 );
 
 projectRouter.get(
-  "/:id",
+  '/:id',
   validateMiddleware(projectIdParamSchema),
   asyncHandler(projectController.getById)
 );
 
 projectRouter.post(
-  "/",
+  '/',
   validateMiddleware(createProjectSchema),
   asyncHandler(projectController.create)
 );
 
 projectRouter.patch(
-  "/:id",
+  '/:id',
   validateMiddleware(updateProjectSchema),
   asyncHandler(projectController.update)
 );
 
 projectRouter.delete(
-  "/:id",
+  '/:id',
   validateMiddleware(projectIdParamSchema),
   asyncHandler(projectController.remove)
 );

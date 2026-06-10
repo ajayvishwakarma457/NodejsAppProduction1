@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { ProjectDocument, ProjectModel } from "./project.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { ProjectDocument, ProjectModel } from './project.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -17,7 +17,7 @@ export interface ProjectListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface ProjectListResult {
@@ -45,7 +45,7 @@ const buildFilterQuery = (filter: ProjectListFilter): FilterQuery<ProjectDocumen
   }
 
   if (filter.search) {
-    const searchRegex = { $regex: filter.search, $options: "i" };
+    const searchRegex = { $regex: filter.search, $options: 'i' };
     query.$or = [{ name: searchRegex }, { description: searchRegex }];
   }
 
@@ -66,7 +66,7 @@ export const projectRepository = {
   ): Promise<ProjectListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       ProjectModel.find(query)
@@ -74,12 +74,12 @@ export const projectRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      ProjectModel.countDocuments(query)
+      ProjectModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -100,10 +100,7 @@ export const projectRepository = {
   /**
    * Update a project by id. Returns the updated document or null if not found.
    */
-  async updateById(
-    id: string,
-    data: Partial<ProjectDocument>
-  ): Promise<ProjectDocument | null> {
+  async updateById(id: string, data: Partial<ProjectDocument>): Promise<ProjectDocument | null> {
     return ProjectModel.findByIdAndUpdate(id, data, { new: true }).lean();
   },
 
@@ -121,5 +118,5 @@ export const projectRepository = {
   async exists(id: string): Promise<boolean> {
     const doc = await ProjectModel.exists({ _id: id });
     return doc !== null;
-  }
+  },
 };

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /* ------------------------------------------------------------------ */
 // Body schemas
@@ -6,29 +6,29 @@ import { z } from "zod";
 
 export const createProjectSchema = z.object({
   body: z.object({
-    name: z.string().min(1, "Project name is required").max(100),
-    description: z.string().min(1, "Description is required").max(1000),
-    status: z.enum(["active", "completed", "archived"]).optional(),
-    ownerId: z.string().min(1, "Owner id is required"),
-    teamId: z.string().min(1, "Team id is required"),
+    name: z.string().min(1, 'Project name is required').max(100),
+    description: z.string().min(1, 'Description is required').max(1000),
+    status: z.enum(['active', 'completed', 'archived']).optional(),
+    ownerId: z.string().min(1, 'Owner id is required'),
+    teamId: z.string().min(1, 'Team id is required'),
     startDate: z.string().datetime().optional().or(z.date().optional()),
-    dueDate: z.string().datetime().optional().or(z.date().optional())
-  })
+    dueDate: z.string().datetime().optional().or(z.date().optional()),
+  }),
 });
 
 export const updateProjectSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(100).optional(),
     description: z.string().min(1).max(1000).optional(),
-    status: z.enum(["active", "completed", "archived"]).optional(),
+    status: z.enum(['active', 'completed', 'archived']).optional(),
     ownerId: z.string().min(1).optional(),
     teamId: z.string().min(1).optional(),
     startDate: z.string().datetime().optional().or(z.date().optional()),
-    dueDate: z.string().datetime().optional().or(z.date().optional())
+    dueDate: z.string().datetime().optional().or(z.date().optional()),
   }),
   params: z.object({
-    id: z.string().min(1, "Project id is required")
-  })
+    id: z.string().min(1, 'Project id is required'),
+  }),
 });
 
 /* ------------------------------------------------------------------ */
@@ -39,17 +39,17 @@ export const listProjectsQuerySchema = z.object({
   query: z.object({
     page: z.coerce.number().min(1).default(1),
     limit: z.coerce.number().min(1).max(100).default(10),
-    sort: z.string().optional().default("createdAt"),
-    order: z.enum(["asc", "desc"]).optional().default("desc"),
-    status: z.enum(["active", "completed", "archived"]).optional(),
+    sort: z.string().optional().default('createdAt'),
+    order: z.enum(['asc', 'desc']).optional().default('desc'),
+    status: z.enum(['active', 'completed', 'archived']).optional(),
     ownerId: z.string().optional(),
     teamId: z.string().optional(),
-    search: z.string().optional()
-  })
+    search: z.string().optional(),
+  }),
 });
 
 export const projectIdParamSchema = z.object({
   params: z.object({
-    id: z.string().min(1, "Project id is required")
-  })
+    id: z.string().min(1, 'Project id is required'),
+  }),
 });

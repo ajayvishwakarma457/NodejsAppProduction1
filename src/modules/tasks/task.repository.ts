@@ -1,6 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { TaskDocument, TaskModel } from "./task.model";
-import { buildPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { FilterQuery } from 'mongoose';
+import { TaskDocument, TaskModel } from './task.model';
+import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -19,7 +19,7 @@ export interface TaskListOptions {
   page: number;
   limit: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
 export interface TaskListResult {
@@ -55,11 +55,8 @@ const buildFilterQuery = (filter: TaskListFilter): FilterQuery<TaskDocument> => 
   }
 
   if (filter.search) {
-    const searchRegex = { $regex: filter.search, $options: "i" };
-    query.$or = [
-      { title: searchRegex },
-      { description: searchRegex }
-    ];
+    const searchRegex = { $regex: filter.search, $options: 'i' };
+    query.$or = [{ title: searchRegex }, { description: searchRegex }];
   }
 
   return query;
@@ -73,13 +70,10 @@ export const taskRepository = {
   /**
    * Find all tasks with pagination, sorting, and optional filtering.
    */
-  async findAll(
-    options: TaskListOptions,
-    filter: TaskListFilter = {}
-  ): Promise<TaskListResult> {
+  async findAll(options: TaskListOptions, filter: TaskListFilter = {}): Promise<TaskListResult> {
     const query = buildFilterQuery(filter);
     const skip = (options.page - 1) * options.limit;
-    const sortDirection = options.order === "desc" ? -1 : 1;
+    const sortDirection = options.order === 'desc' ? -1 : 1;
 
     const [data, total] = await Promise.all([
       TaskModel.find(query)
@@ -87,12 +81,12 @@ export const taskRepository = {
         .skip(skip)
         .limit(options.limit)
         .lean(),
-      TaskModel.countDocuments(query)
+      TaskModel.countDocuments(query),
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(options.page, options.limit, total)
+      meta: buildPaginationMeta(options.page, options.limit, total),
     };
   },
 
@@ -108,9 +102,9 @@ export const taskRepository = {
    */
   async findByIdWithDetails(id: string): Promise<TaskDocument | null> {
     return TaskModel.findById(id)
-      .populate("projectId", "name status")
-      .populate("createdBy", "firstName lastName email avatar")
-      .populate("assignedTo", "firstName lastName email avatar")
+      .populate('projectId', 'name status')
+      .populate('createdBy', 'firstName lastName email avatar')
+      .populate('assignedTo', 'firstName lastName email avatar')
       .lean();
   },
 
@@ -124,10 +118,7 @@ export const taskRepository = {
   /**
    * Update a task by id. Returns the updated document or null if not found.
    */
-  async updateById(
-    id: string,
-    data: Partial<TaskDocument>
-  ): Promise<TaskDocument | null> {
+  async updateById(id: string, data: Partial<TaskDocument>): Promise<TaskDocument | null> {
     return TaskModel.findByIdAndUpdate(id, data, { new: true }).lean();
   },
 
@@ -160,10 +151,10 @@ export const taskRepository = {
    */
   async findDueInRange(start: Date, end: Date): Promise<TaskDocument[]> {
     return TaskModel.find({
-      status: { $nin: ["done"] },
-      dueDate: { $gte: start, $lte: end }
+      status: { $nin: ['done'] },
+      dueDate: { $gte: start, $lte: end },
     })
-      .populate("assignedTo", "email firstName lastName")
+      .populate('assignedTo', 'email firstName lastName')
       .lean();
   },
 
@@ -173,10 +164,10 @@ export const taskRepository = {
    */
   async findOverdue(before: Date): Promise<TaskDocument[]> {
     return TaskModel.find({
-      status: { $nin: ["done"] },
-      dueDate: { $lt: before }
+      status: { $nin: ['done'] },
+      dueDate: { $lt: before },
     })
-      .populate("assignedTo", "email firstName lastName")
+      .populate('assignedTo', 'email firstName lastName')
       .lean();
-  }
+  },
 };

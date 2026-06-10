@@ -1,4 +1,4 @@
-import { redisService } from "../services/redis.service";
+import { redisService } from '../services/redis.service';
 
 export interface QueueItem<T> {
   id: string;
@@ -18,7 +18,7 @@ export const createQueue = <T>(name: string) => {
         id: id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
         payload,
         retries: 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       await redisService.client.lPush(queueKey, JSON.stringify(item));
     },
@@ -67,6 +67,6 @@ export const createQueue = <T>(name: string) => {
 
     async clearDLQ(): Promise<void> {
       await redisService.client.del(dlqKey);
-    }
+    },
   };
 };

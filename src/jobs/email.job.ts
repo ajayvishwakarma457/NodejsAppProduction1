@@ -1,14 +1,14 @@
-import * as cron from "node-cron";
-import { env } from "../config/env";
-import { logger } from "../config/logger";
-import { emailService, SendEmailOptions } from "../services/email.service";
-import { createQueue } from "../utils/queue";
+import * as cron from 'node-cron';
+import { env } from '../config/env';
+import { logger } from '../config/logger';
+import { emailService, SendEmailOptions } from '../services/email.service';
+import { createQueue } from '../utils/queue';
 
 export interface EmailQueuePayload extends SendEmailOptions {
   metadata?: Record<string, unknown>;
 }
 
-const emailQueue = createQueue<EmailQueuePayload>("email");
+const emailQueue = createQueue<EmailQueuePayload>('email');
 
 let task: cron.ScheduledTask | null = null;
 
@@ -28,9 +28,9 @@ export const emailJob = {
   /** Enqueue an email to be sent by the background job. */
   async enqueue(payload: EmailQueuePayload): Promise<void> {
     await emailQueue.enqueue(payload);
-    logger.debug("Email enqueued", {
+    logger.debug('Email enqueued', {
       to: payload.to,
-      subject: payload.subject
+      subject: payload.subject,
     });
   },
 
@@ -54,10 +54,10 @@ export const emailJob = {
 
       if (result.success) {
         succeeded++;
-        logger.info("Email job sent successfully", {
+        logger.info('Email job sent successfully', {
           id: item.id,
           to: item.payload.to,
-          messageId: result.messageId
+          messageId: result.messageId,
         });
         continue;
       }
@@ -68,20 +68,20 @@ export const emailJob = {
 
       if (item.retries <= maxRetries) {
         await emailQueue.requeue(item);
-        logger.warn("Email job failed, requeued for retry", {
+        logger.warn('Email job failed, requeued for retry', {
           id: item.id,
           to: item.payload.to,
           retries: item.retries,
-          error: result.error
+          error: result.error,
         });
       } else {
         await emailQueue.moveToDLQ(item);
         movedToDLQ++;
-        logger.error("Email job failed permanently, moved to DLQ", {
+        logger.error('Email job failed permanently, moved to DLQ', {
           id: item.id,
           to: item.payload.to,
           retries: item.retries,
-          error: result.error
+          error: result.error,
         });
       }
     }
@@ -90,57 +90,54 @@ export const emailJob = {
       processed: items.length,
       succeeded,
       failed,
-      movedToDLQ
+      movedToDLQ,
     };
   },
 
   /** Get current queue and DLQ sizes. */
   async stats(): Promise<{ queueSize: number; dlqSize: number }> {
-    const [queueSize, dlqSize] = await Promise.all([
-      emailQueue.size(),
-      emailQueue.dlqSize()
-    ]);
+    const [queueSize, dlqSize] = await Promise.all([emailQueue.size(), emailQueue.dlqSize()]);
     return { queueSize, dlqSize };
   },
 
   /** Start the scheduled email job. */
   start(): void {
     if (task) {
-      logger.warn("Email job already running");
+      logger.warn('Email job already running');
       return;
     }
 
     if (!env.EMAIL_JOB_ENABLED) {
-      logger.info("Email job is disabled (EMAIL_JOB_ENABLED=false)");
+      logger.info('Email job is disabled (EMAIL_JOB_ENABLED=false)');
       return;
     }
 
     if (!cron.validate(env.EMAIL_JOB_CRON)) {
-      logger.error("Invalid email job cron expression", {
-        cron: env.EMAIL_JOB_CRON
+      logger.error('Invalid email job cron expression', {
+        cron: env.EMAIL_JOB_CRON,
       });
       return;
     }
 
     task = cron.schedule(env.EMAIL_JOB_CRON, async () => {
       try {
-        logger.debug("Email job batch starting");
+        logger.debug('Email job batch starting');
         const result = await this.processBatch();
 
         if (result.processed > 0) {
-          logger.info("Email job batch completed", result);
+          logger.info('Email job batch completed', result);
         }
       } catch (error) {
-        logger.error("Email job batch crashed", {
-          error: error instanceof Error ? error.message : error
+        logger.error('Email job batch crashed', {
+          error: error instanceof Error ? error.message : error,
         });
       }
     });
 
-    logger.info("Email job started", {
+    logger.info('Email job started', {
       cron: env.EMAIL_JOB_CRON,
       batchSize: env.EMAIL_JOB_BATCH_SIZE,
-      maxRetries: env.EMAIL_JOB_MAX_RETRIES
+      maxRetries: env.EMAIL_JOB_MAX_RETRIES,
     });
   },
 
@@ -149,7 +146,7 @@ export const emailJob = {
     if (task) {
       task.stop();
       task = null;
-      logger.info("Email job stopped");
+      logger.info('Email job stopped');
     }
   },
 
@@ -161,12 +158,12 @@ export const emailJob = {
   /** Clear the entire queue (use with caution). */
   async clearQueue(): Promise<void> {
     await emailQueue.clear();
-    logger.warn("Email queue cleared");
+    logger.warn('Email queue cleared');
   },
 
   /** Clear the dead letter queue (use with caution). */
   async clearDLQ(): Promise<void> {
     await emailQueue.clearDLQ();
-    logger.warn("Email DLQ cleared");
-  }
+    logger.warn('Email DLQ cleared');
+  },
 };
