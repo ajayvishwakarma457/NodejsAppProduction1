@@ -12,16 +12,17 @@ const sanitizeRequestId = (raw) => {
         return (0, crypto_1.randomUUID)();
     }
     // Take only the first value if multiple headers were sent (comma-separated)
-    const firstValue = trimmed.split(",")[0].trim();
+    const firstValue = trimmed.split(',')[0].trim();
     if (!VALID_REQUEST_ID_PATTERN.test(firstValue)) {
         return (0, crypto_1.randomUUID)();
     }
     return firstValue;
 };
 const requestIdMiddleware = (req, res, next) => {
-    const requestId = sanitizeRequestId(req.get("X-Request-Id"));
+    const requestId = sanitizeRequestId(req.get('X-Request-Id'));
     req.requestId = requestId;
-    res.setHeader("X-Request-Id", requestId);
+    res.setHeader('X-Request-Id', requestId);
     next();
 };
 exports.requestIdMiddleware = requestIdMiddleware;
+//# sourceMappingURL=requestId.middleware.js.map

@@ -9,13 +9,13 @@ const ApiError_1 = require("../utils/ApiError");
 /* ------------------------------------------------------------------ */
 // Error type guards (duck-typing to avoid direct Mongoose/JWT imports)
 /* ------------------------------------------------------------------ */
-const isMongooseValidationError = (err) => err.name === "ValidationError";
-const isMongooseCastError = (err) => err.name === "CastError";
+const isMongooseValidationError = (err) => err.name === 'ValidationError';
+const isMongooseCastError = (err) => err.name === 'CastError';
 const isMongoDuplicateKeyError = (err) => err.code === 11000;
-const isJwtExpiredError = (err) => err.name === "TokenExpiredError";
-const isJwtError = (err) => err.name === "JsonWebTokenError";
-const isSyntaxError = (err) => err instanceof SyntaxError && "body" in err;
-const isMulterError = (err) => err.name === "MulterError" && "code" in err;
+const isJwtExpiredError = (err) => err.name === 'TokenExpiredError';
+const isJwtError = (err) => err.name === 'JsonWebTokenError';
+const isSyntaxError = (err) => err instanceof SyntaxError && 'body' in err;
+const isMulterError = (err) => err.name === 'MulterError' && 'code' in err;
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -37,13 +37,20 @@ const isOperationalError = (err) => {
     return false;
 };
 const redactBody = (body) => {
-    if (!body || typeof body !== "object")
+    if (!body || typeof body !== 'object')
         return body;
     const clone = { ...body };
-    const sensitive = new Set(["password", "token", "refreshToken", "secret", "authorization", "apiKey"]);
+    const sensitive = new Set([
+        'password',
+        'token',
+        'refreshToken',
+        'secret',
+        'authorization',
+        'apiKey',
+    ]);
     for (const key of Object.keys(clone)) {
         if (sensitive.has(key.toLowerCase())) {
-            clone[key] = "[REDACTED]";
+            clone[key] = '[REDACTED]';
         }
     }
     return clone;
@@ -53,7 +60,7 @@ const buildRequestContext = (req) => {
         method: req.method,
         url: req.originalUrl || req.url,
         requestId: req.requestId,
-        ip: req.ip
+        ip: req.ip,
     };
     if (req.user?.id)
         ctx.userId = req.user.id;
@@ -65,16 +72,16 @@ const buildRequestContext = (req) => {
 };
 const getMulterMessage = (code) => {
     const map = {
-        LIMIT_FILE_SIZE: "File too large",
-        LIMIT_FILE_COUNT: "Too many files",
-        LIMIT_UNEXPECTED_FILE: "Unexpected file field",
-        LIMIT_PART_COUNT: "Too many parts",
-        LIMIT_FIELD_KEY: "Field name too long",
-        LIMIT_FIELD_VALUE: "Field value too long",
-        LIMIT_FIELD_COUNT: "Too many fields",
-        MISSING_FIELD_NAME: "Missing field name"
+        LIMIT_FILE_SIZE: 'File too large',
+        LIMIT_FILE_COUNT: 'Too many files',
+        LIMIT_UNEXPECTED_FILE: 'Unexpected file field',
+        LIMIT_PART_COUNT: 'Too many parts',
+        LIMIT_FIELD_KEY: 'Field name too long',
+        LIMIT_FIELD_VALUE: 'Field value too long',
+        LIMIT_FIELD_COUNT: 'Too many fields',
+        MISSING_FIELD_NAME: 'Missing field name',
     };
-    return map[code] || "File upload error";
+    return map[code] || 'File upload error';
 };
 /* ------------------------------------------------------------------ */
 // Main middleware
@@ -85,7 +92,7 @@ const errorMiddleware = (err, req, res, next) => {
         return next(err);
     }
     let statusCode = http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR;
-    let message = "Internal server error";
+    let message = 'Internal server error';
     let details = undefined;
     if (err instanceof ApiError_1.ApiError) {
         statusCode = err.statusCode;
@@ -94,42 +101,42 @@ const errorMiddleware = (err, req, res, next) => {
     }
     else if (err instanceof zod_1.ZodError) {
         statusCode = http_status_codes_1.StatusCodes.BAD_REQUEST;
-        message = "Validation failed";
+        message = 'Validation failed';
         details = err.flatten().fieldErrors;
     }
     else if (isMongooseValidationError(err)) {
         statusCode = http_status_codes_1.StatusCodes.BAD_REQUEST;
-        message = "Validation failed";
+        message = 'Validation failed';
         const mongooseErr = err;
         if (mongooseErr.errors) {
             details = Object.entries(mongooseErr.errors).map(([field, e]) => ({
                 field,
-                message: e.message
+                message: e.message,
             }));
         }
     }
     else if (isMongooseCastError(err)) {
         statusCode = http_status_codes_1.StatusCodes.BAD_REQUEST;
-        message = "Invalid value for field";
+        message = 'Invalid value for field';
         const castErr = err;
         details = { field: castErr.path, value: castErr.value };
     }
     else if (isMongoDuplicateKeyError(err)) {
         statusCode = http_status_codes_1.StatusCodes.CONFLICT;
-        message = "Duplicate field value";
+        message = 'Duplicate field value';
         details = err.keyValue;
     }
     else if (isJwtExpiredError(err)) {
         statusCode = http_status_codes_1.StatusCodes.UNAUTHORIZED;
-        message = "Token expired";
+        message = 'Token expired';
     }
     else if (isJwtError(err)) {
         statusCode = http_status_codes_1.StatusCodes.UNAUTHORIZED;
-        message = "Invalid token";
+        message = 'Invalid token';
     }
     else if (isSyntaxError(err)) {
         statusCode = http_status_codes_1.StatusCodes.BAD_REQUEST;
-        message = "Invalid JSON payload";
+        message = 'Invalid JSON payload';
     }
     else if (isMulterError(err)) {
         statusCode = http_status_codes_1.StatusCodes.BAD_REQUEST;
@@ -137,13 +144,13 @@ const errorMiddleware = (err, req, res, next) => {
         details = { code: err.code, field: err.field };
     }
     const operational = isOperationalError(err);
-    const isProd = env_1.env.NODE_ENV === "production";
+    const isProd = env_1.env.NODE_ENV === 'production';
     // Preserve original values for logging before sanitizing the response
     const originalMessage = err.message;
     const originalDetails = details;
     // Sanitize non-operational 500s in production
     if (statusCode >= 500 && !operational && isProd) {
-        message = "Internal server error";
+        message = 'Internal server error';
         details = undefined;
     }
     // Log with full original context (never sanitized)
@@ -154,7 +161,7 @@ const errorMiddleware = (err, req, res, next) => {
         statusCode,
         operational,
         stack: err.stack,
-        details: originalDetails
+        details: originalDetails,
     };
     if (err.cause) {
         logMeta.cause = err.cause;
@@ -169,7 +176,7 @@ const errorMiddleware = (err, req, res, next) => {
     const response = {
         success: false,
         message,
-        requestId: req.requestId
+        requestId: req.requestId,
     };
     if (details !== undefined) {
         response.details = details;
@@ -180,3 +187,4 @@ const errorMiddleware = (err, req, res, next) => {
     res.status(statusCode).json(response);
 };
 exports.errorMiddleware = errorMiddleware;
+//# sourceMappingURL=error.middleware.js.map

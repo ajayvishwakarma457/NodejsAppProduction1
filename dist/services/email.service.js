@@ -13,7 +13,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 const createTransporter = () => {
     if (!env_1.env.SMTP_HOST) {
-        logger_1.logger.warn("SMTP_HOST not configured. Emails will be logged only.");
+        logger_1.logger.warn('SMTP_HOST not configured. Emails will be logged only.');
         return null;
     }
     return nodemailer_1.default.createTransport({
@@ -22,27 +22,27 @@ const createTransporter = () => {
         secure: env_1.env.SMTP_SECURE,
         auth: {
             user: env_1.env.SMTP_USER,
-            pass: env_1.env.SMTP_PASS
+            pass: env_1.env.SMTP_PASS,
         },
         pool: true,
         maxConnections: 5,
-        maxMessages: 100
+        maxMessages: 100,
     });
 };
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const sendWithRetry = async (mailOptions, attempt = 1) => {
     if (!transporter) {
-        logger_1.logger.info("[EMAIL MOCK] Would send email", {
+        logger_1.logger.info('[EMAIL MOCK] Would send email', {
             to: mailOptions.to,
-            subject: mailOptions.subject
+            subject: mailOptions.subject,
         });
         return { messageId: `mock-${Date.now()}` };
     }
     try {
         const result = await transporter.sendMail(mailOptions);
-        logger_1.logger.info("Email sent", {
+        logger_1.logger.info('Email sent', {
             messageId: result.messageId,
-            to: mailOptions.to
+            to: mailOptions.to,
         });
         return { messageId: result.messageId };
     }
@@ -52,14 +52,14 @@ const sendWithRetry = async (mailOptions, attempt = 1) => {
             to: mailOptions.to,
             subject: mailOptions.subject,
             error: error instanceof Error ? error.message : error,
-            willRetry: !isLastAttempt
+            willRetry: !isLastAttempt,
         });
         if (isLastAttempt) {
-            logger_1.logger.error("Email sending failed after max retries", {
+            logger_1.logger.error('Email sending failed after max retries', {
                 to: mailOptions.to,
-                subject: mailOptions.subject
+                subject: mailOptions.subject,
             });
-            throw ApiError_1.ApiError.internal("Failed to send email");
+            throw ApiError_1.ApiError.internal('Failed to send email');
         }
         await delay(RETRY_DELAY_MS * attempt);
         return sendWithRetry(mailOptions, attempt + 1);
@@ -68,14 +68,14 @@ const sendWithRetry = async (mailOptions, attempt = 1) => {
 const validateEmailOptions = (options) => {
     const { to, subject, text, html } = options;
     const toList = Array.isArray(to) ? to : [to];
-    if (toList.length === 0 || toList.some((t) => !t || typeof t !== "string")) {
+    if (toList.length === 0 || toList.some((t) => !t || typeof t !== 'string')) {
         throw ApiError_1.ApiError.badRequest("Valid recipient 'to' is required");
     }
     if (!subject || subject.trim().length === 0) {
-        throw ApiError_1.ApiError.badRequest("Email subject is required");
+        throw ApiError_1.ApiError.badRequest('Email subject is required');
     }
     if (!text?.trim() && !html?.trim()) {
-        throw ApiError_1.ApiError.badRequest("Email body (text or html) is required");
+        throw ApiError_1.ApiError.badRequest('Email body (text or html) is required');
     }
 };
 exports.emailService = {
@@ -104,7 +104,7 @@ exports.emailService = {
         validateEmailOptions(options);
         this.init();
         const { to, subject, text, html, cc, bcc, replyTo, attachments } = options;
-        const from = env_1.env.SMTP_FROM || env_1.env.SMTP_USER || "no-reply@example.com";
+        const from = env_1.env.SMTP_FROM || env_1.env.SMTP_USER || 'no-reply@example.com';
         const mailOptions = {
             from,
             to,
@@ -114,7 +114,7 @@ exports.emailService = {
             cc,
             bcc,
             replyTo,
-            attachments
+            attachments,
         };
         return sendWithRetry(mailOptions);
     },
@@ -130,14 +130,15 @@ exports.emailService = {
                     subject,
                     text: body.text,
                     html: body.html,
-                    ...options
+                    ...options,
                 });
                 results.push({ messageId: result.messageId, to: recipient });
             }
             catch (error) {
-                logger_1.logger.error("Bulk email failed for recipient", { to: recipient, error });
+                logger_1.logger.error('Bulk email failed for recipient', { to: recipient, error });
             }
         }
         return results;
-    }
+    },
 };
+//# sourceMappingURL=email.service.js.map

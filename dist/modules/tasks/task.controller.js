@@ -14,7 +14,7 @@ exports.taskController = {
         if (!task) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "Task not found"
+                message: 'Task not found',
             });
             return;
         }
@@ -29,7 +29,7 @@ exports.taskController = {
         if (!task) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "Task not found"
+                message: 'Task not found',
             });
             return;
         }
@@ -40,10 +40,11 @@ exports.taskController = {
         if (!deleted) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "Task not found"
+                message: 'Task not found',
             });
             return;
         }
         ApiResponse_1.ApiResponse.noContent().send(res);
-    }
+    },
 };
+//# sourceMappingURL=task.controller.js.map

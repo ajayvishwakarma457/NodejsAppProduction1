@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
+import { authMiddleware } from '../../middleware/auth.middleware';
 import { validateMiddleware } from '../../middleware/validate.middleware';
 import { taskController } from './task.controller';
 import {
@@ -10,6 +11,8 @@ import {
 } from './task.validation';
 
 export const taskRouter = Router();
+
+taskRouter.use(authMiddleware);
 
 taskRouter.get('/', validateMiddleware(listTasksQuerySchema), asyncHandler(taskController.list));
 

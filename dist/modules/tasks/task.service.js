@@ -29,7 +29,7 @@ exports.taskService = {
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
-            order: pagination.order
+            order: pagination.order,
         }, filter);
     },
     async getById(id) {
@@ -49,5 +49,6 @@ exports.taskService = {
     },
     async findOverdue(before) {
         return task_repository_1.taskRepository.findOverdue(before);
-    }
+    },
 };
+//# sourceMappingURL=task.service.js.map

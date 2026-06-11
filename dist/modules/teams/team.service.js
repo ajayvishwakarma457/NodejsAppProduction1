@@ -20,7 +20,7 @@ exports.teamService = {
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
-            order: pagination.order
+            order: pagination.order,
         }, filter);
     },
     async getById(id) {
@@ -40,5 +40,6 @@ exports.teamService = {
     },
     async removeMember(teamId, userId) {
         return team_repository_1.teamRepository.removeMember(teamId, userId);
-    }
+    },
 };
+//# sourceMappingURL=team.service.js.map

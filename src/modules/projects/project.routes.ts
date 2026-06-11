@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
+import { authMiddleware } from '../../middleware/auth.middleware';
 import { validateMiddleware } from '../../middleware/validate.middleware';
 import { projectController } from './project.controller';
 import {
@@ -10,6 +11,8 @@ import {
 } from './project.validation';
 
 export const projectRouter = Router();
+
+projectRouter.use(authMiddleware);
 
 projectRouter.get(
   '/',

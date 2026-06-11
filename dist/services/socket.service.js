@@ -5,14 +5,14 @@ const logger_1 = require("../config/logger");
 let ioInstance = null;
 const ensureInitialized = () => {
     if (!ioInstance) {
-        throw new Error("Socket.IO has not been initialized. Call setIO() first.");
+        throw new Error('Socket.IO has not been initialized. Call setIO() first.');
     }
     return ioInstance;
 };
 exports.socketService = {
     setIO(io) {
         if (ioInstance) {
-            logger_1.logger.warn("Socket.IO instance is being overwritten");
+            logger_1.logger.warn('Socket.IO instance is being overwritten');
         }
         ioInstance = io;
     },
@@ -41,5 +41,6 @@ exports.socketService = {
             socket.disconnect(true);
             logger_1.logger.info(`Socket ${socketId} disconnected`, { reason });
         }
-    }
+    },
 };
+//# sourceMappingURL=socket.service.js.map

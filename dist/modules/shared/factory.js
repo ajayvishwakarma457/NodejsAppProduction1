@@ -16,15 +16,15 @@ const defaultListQuerySchema = zod_1.z.object({
     query: zod_1.z.object({
         page: zod_1.z.coerce.number().min(1).default(1),
         limit: zod_1.z.coerce.number().min(1).max(100).default(10),
-        sort: zod_1.z.string().optional().default("createdAt"),
-        order: zod_1.z.enum(["asc", "desc"]).optional().default("desc"),
-        search: zod_1.z.string().optional()
-    })
+        sort: zod_1.z.string().optional().default('createdAt'),
+        order: zod_1.z.enum(['asc', 'desc']).optional().default('desc'),
+        search: zod_1.z.string().optional(),
+    }),
 });
 const defaultIdParamSchema = zod_1.z.object({
     params: zod_1.z.object({
-        id: zod_1.z.string().min(1, "Id is required")
-    })
+        id: zod_1.z.string().min(1, 'Id is required'),
+    }),
 });
 /* ------------------------------------------------------------------ */
 // Factory
@@ -59,7 +59,7 @@ const createCrudModule = (options) => {
          */
         async findAll(opts, filter = {}) {
             const skip = (opts.page - 1) * opts.limit;
-            const sortDirection = opts.order === "desc" ? -1 : 1;
+            const sortDirection = opts.order === 'desc' ? -1 : 1;
             const [data, total] = await Promise.all([
                 model
                     .find(filter)
@@ -67,12 +67,12 @@ const createCrudModule = (options) => {
                     .skip(skip)
                     .limit(opts.limit)
                     .lean(),
-                model.countDocuments(filter)
+                model.countDocuments(filter),
             ]);
             logger_1.logger.debug(`${name} repository.findAll`, { filter, count: data.length, total });
             return {
                 data: data,
-                meta: (0, pagination_1.buildPaginationMeta)(opts.page, opts.limit, total)
+                meta: (0, pagination_1.buildPaginationMeta)(opts.page, opts.limit, total),
             };
         },
         /**
@@ -102,7 +102,7 @@ const createCrudModule = (options) => {
             logger_1.logger.info(`${name} repository.deleteById`, { id });
             const result = await model.findByIdAndDelete(id);
             return result !== null;
-        }
+        },
     };
     /* ---------------------------------------------------------------- */
     // Service
@@ -115,16 +115,16 @@ const createCrudModule = (options) => {
                 filter = buildFilter(query);
             }
             else if (searchFields.length > 0 && query.search) {
-                const searchRegex = { $regex: String(query.search), $options: "i" };
+                const searchRegex = { $regex: String(query.search), $options: 'i' };
                 filter.$or = searchFields.map((field) => ({
-                    [field]: searchRegex
+                    [field]: searchRegex,
                 }));
             }
             return repository.findAll({
                 page: pagination.page,
                 limit: pagination.limit,
                 sort: pagination.sort,
-                order: pagination.order
+                order: pagination.order,
             }, filter);
         },
         async getById(id) {
@@ -138,7 +138,7 @@ const createCrudModule = (options) => {
         },
         async remove(id) {
             return repository.deleteById(id);
-        }
+        },
     };
     /* ---------------------------------------------------------------- */
     // Controller
@@ -153,7 +153,7 @@ const createCrudModule = (options) => {
             if (!item) {
                 res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                     success: false,
-                    message: `${name} not found`
+                    message: `${name} not found`,
                 });
                 return;
             }
@@ -168,7 +168,7 @@ const createCrudModule = (options) => {
             if (!item) {
                 res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                     success: false,
-                    message: `${name} not found`
+                    message: `${name} not found`,
                 });
                 return;
             }
@@ -179,12 +179,12 @@ const createCrudModule = (options) => {
             if (!deleted) {
                 res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                     success: false,
-                    message: `${name} not found`
+                    message: `${name} not found`,
                 });
                 return;
             }
             ApiResponse_1.ApiResponse.noContent(`${name} deleted`).send(res);
-        }
+        },
     };
     /* ---------------------------------------------------------------- */
     // Router
@@ -202,16 +202,17 @@ const createCrudModule = (options) => {
     const updateValidator = validation.update
         ? (0, validate_middleware_1.validateMiddleware)(validation.update)
         : (_req, _res, next) => next();
-    router.get("/", listQueryValidator, (0, asyncHandler_1.asyncHandler)(controller.list));
-    router.get("/:id", idParamValidator, (0, asyncHandler_1.asyncHandler)(controller.getById));
-    router.post("/", createValidator, (0, asyncHandler_1.asyncHandler)(controller.create));
-    router.patch("/:id", updateValidator, (0, asyncHandler_1.asyncHandler)(controller.update));
-    router.delete("/:id", idParamValidator, (0, asyncHandler_1.asyncHandler)(controller.remove));
+    router.get('/', listQueryValidator, (0, asyncHandler_1.asyncHandler)(controller.list));
+    router.get('/:id', idParamValidator, (0, asyncHandler_1.asyncHandler)(controller.getById));
+    router.post('/', createValidator, (0, asyncHandler_1.asyncHandler)(controller.create));
+    router.patch('/:id', updateValidator, (0, asyncHandler_1.asyncHandler)(controller.update));
+    router.delete('/:id', idParamValidator, (0, asyncHandler_1.asyncHandler)(controller.remove));
     return {
         repository,
         service,
         controller,
-        router
+        router,
     };
 };
 exports.createCrudModule = createCrudModule;
+//# sourceMappingURL=factory.js.map

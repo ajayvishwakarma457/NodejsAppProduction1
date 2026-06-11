@@ -20,7 +20,7 @@ exports.userService = {
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
-            order: pagination.order
+            order: pagination.order,
         }, filter);
     },
     async getById(id) {
@@ -34,5 +34,6 @@ exports.userService = {
     },
     async remove(id) {
         return user_repository_1.userRepository.deleteById(id);
-    }
+    },
 };
+//# sourceMappingURL=user.service.js.map

@@ -11,12 +11,13 @@ const notFoundMiddleware = (req, res) => {
         path: req.path,
         requestId: req.requestId,
         ip: req.ip,
-        ...(req.user?.id ? { userId: req.user.id } : {})
+        ...(req.user?.id ? { userId: req.user.id } : {}),
     });
     res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
         success: false,
         message,
-        requestId: req.requestId
+        requestId: req.requestId,
     });
 };
 exports.notFoundMiddleware = notFoundMiddleware;
+//# sourceMappingURL=notFound.middleware.js.map

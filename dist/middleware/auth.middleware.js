@@ -5,10 +5,10 @@ const ApiError_1 = require("../utils/ApiError");
 const token_service_1 = require("../services/token.service");
 const extractBearerToken = (req) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || typeof authHeader !== "string")
+    if (!authHeader || typeof authHeader !== 'string')
         return null;
-    const [scheme, token] = authHeader.split(" ");
-    if (scheme?.toLowerCase() !== "bearer" || !token)
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme?.toLowerCase() !== 'bearer' || !token)
         return null;
     return token;
 };
@@ -17,19 +17,19 @@ const authMiddleware = async (req, _res, next) => {
     try {
         const token = extractBearerToken(req);
         if (!token) {
-            next(ApiError_1.ApiError.unauthorized("Access token required"));
+            next(ApiError_1.ApiError.unauthorized('Access token required'));
             return;
         }
         const isBlacklisted = await token_service_1.tokenService.isBlacklisted(token);
         if (isBlacklisted) {
-            next(ApiError_1.ApiError.unauthorized("Token has been revoked"));
+            next(ApiError_1.ApiError.unauthorized('Token has been revoked'));
             return;
         }
         const payload = token_service_1.tokenService.verifyAccessToken(token);
         req.user = {
             id: payload.sub,
             email: payload.email,
-            role: payload.role
+            role: payload.role,
         };
         next();
     }
@@ -38,7 +38,7 @@ const authMiddleware = async (req, _res, next) => {
             next(error);
             return;
         }
-        next(ApiError_1.ApiError.unauthorized("Authentication failed"));
+        next(ApiError_1.ApiError.unauthorized('Authentication failed'));
     }
 };
 exports.authMiddleware = authMiddleware;
@@ -59,7 +59,7 @@ const optionalAuthMiddleware = async (req, _res, next) => {
         req.user = {
             id: payload.sub,
             email: payload.email,
-            role: payload.role
+            role: payload.role,
         };
         next();
     }
@@ -68,3 +68,4 @@ const optionalAuthMiddleware = async (req, _res, next) => {
     }
 };
 exports.optionalAuthMiddleware = optionalAuthMiddleware;
+//# sourceMappingURL=auth.middleware.js.map

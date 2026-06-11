@@ -18,12 +18,12 @@ const limits = {
     fields: 10,
     fieldNameSize: 100,
     fieldSize: 1 * ONE_MB,
-    parts: 20
+    parts: 20,
 };
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits,
-    fileFilter: storage_service_1.storageService.multerFileFilter
+    fileFilter: storage_service_1.storageService.multerFileFilter,
 });
 /**
  * Wraps a multer middleware to catch errors and convert them into
@@ -34,54 +34,55 @@ const handleUploadError = (multerFn) => (req, res, next) => {
         if (!err)
             return next();
         if (err instanceof multer_1.default.MulterError) {
-            logger_1.logger.warn("Upload rejected", {
+            logger_1.logger.warn('Upload rejected', {
                 method: req.method,
                 url: req.originalUrl || req.url,
                 requestId: req.requestId,
                 userId: req.user?.id,
                 code: err.code,
-                field: err.field
+                field: err.field,
             });
-            let message = "File upload error";
+            let message = 'File upload error';
             const status = http_status_codes_1.StatusCodes.BAD_REQUEST;
             switch (err.code) {
-                case "LIMIT_FILE_SIZE":
+                case 'LIMIT_FILE_SIZE':
                     message = `File too large. Max size is ${env_1.env.STORAGE_MAX_FILE_SIZE_MB}MB`;
                     break;
-                case "LIMIT_FILE_COUNT":
+                case 'LIMIT_FILE_COUNT':
                     message = `Too many files. Max allowed is ${limits.files}`;
                     break;
-                case "LIMIT_UNEXPECTED_FILE":
+                case 'LIMIT_UNEXPECTED_FILE':
                     message = `Unexpected file field "${err.field}"`;
                     break;
-                case "LIMIT_FIELD_KEY":
-                    message = "Field name too long";
+                case 'LIMIT_FIELD_KEY':
+                    message = 'Field name too long';
                     break;
-                case "LIMIT_FIELD_VALUE":
-                    message = "Field value too long";
+                case 'LIMIT_FIELD_VALUE':
+                    message = 'Field value too long';
                     break;
-                case "LIMIT_FIELD_COUNT":
-                    message = "Too many non-file fields";
+                case 'LIMIT_FIELD_COUNT':
+                    message = 'Too many non-file fields';
                     break;
-                case "LIMIT_PART_COUNT":
-                    message = "Too many multipart parts";
+                case 'LIMIT_PART_COUNT':
+                    message = 'Too many multipart parts';
                     break;
             }
             return next(new ApiError_1.ApiError(status, message, { code: err.code, field: err.field }));
         }
         // Unknown upload error (e.g., rejected by custom fileFilter)
         if (err instanceof Error) {
-            logger_1.logger.warn("Upload rejected by file filter", {
+            logger_1.logger.warn('Upload rejected by file filter', {
                 method: req.method,
                 url: req.originalUrl || req.url,
                 requestId: req.requestId,
                 userId: req.user?.id,
-                error: err.message
+                error: err.message,
             });
             return next(ApiError_1.ApiError.badRequest(err.message));
         }
         next(err);
     });
 };
-exports.uploadMiddleware = handleUploadError(upload.single("file"));
-exports.uploadMultipleMiddleware = handleUploadError(upload.array("files", 5));
+exports.uploadMiddleware = handleUploadError(upload.single('file'));
+exports.uploadMultipleMiddleware = handleUploadError(upload.array('files', 5));
+//# sourceMappingURL=upload.middleware.js.map

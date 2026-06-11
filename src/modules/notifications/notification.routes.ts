@@ -5,7 +5,9 @@ import { validateMiddleware } from '../../middleware/validate.middleware';
 import { notificationController } from './notification.controller';
 import {
   createNotificationSchema,
+  countUnreadQuerySchema,
   listNotificationsQuerySchema,
+  markAllAsReadSchema,
   markAsReadSchema,
   notificationIdParamSchema,
 } from './notification.validation';
@@ -20,7 +22,11 @@ notificationRouter.get(
   asyncHandler(notificationController.list)
 );
 
-notificationRouter.get('/unread-count', asyncHandler(notificationController.countUnread));
+notificationRouter.get(
+  '/unread-count',
+  validateMiddleware(countUnreadQuerySchema),
+  asyncHandler(notificationController.countUnread)
+);
 
 notificationRouter.get(
   '/:id',
@@ -40,7 +46,11 @@ notificationRouter.patch(
   asyncHandler(notificationController.markAsRead)
 );
 
-notificationRouter.patch('/read-all', asyncHandler(notificationController.markAllAsRead));
+notificationRouter.patch(
+  '/read-all',
+  validateMiddleware(markAllAsReadSchema),
+  asyncHandler(notificationController.markAllAsRead)
+);
 
 notificationRouter.delete(
   '/:id',

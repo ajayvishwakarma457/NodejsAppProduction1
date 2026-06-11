@@ -21,20 +21,20 @@ const bootstrap = async () => {
         server = http_1.default.createServer(app_1.app);
         const io = new socket_io_1.Server(server, {
             cors: {
-                origin: env_1.env.CLIENT_URL
-            }
+                origin: env_1.env.CLIENT_URL,
+            },
         });
         socket_service_1.socketService.setIO(io);
         (0, sockets_1.registerSockets)(io);
         server.listen(env_1.env.PORT, () => {
             logger_1.logger.info(`${env_1.env.APP_NAME} listening on port ${env_1.env.PORT}`, {
-                env: env_1.env.NODE_ENV
+                env: env_1.env.NODE_ENV,
             });
         });
         jobs_1.jobOrchestrator.startAll();
     }
     catch (error) {
-        logger_1.logger.error("Failed to bootstrap application", { error });
+        logger_1.logger.error('Failed to bootstrap application', { error });
         process.exit(1);
     }
 };
@@ -42,35 +42,36 @@ const gracefulShutdown = async (signal) => {
     logger_1.logger.info(`Received ${signal}. Starting graceful shutdown...`);
     if (server) {
         server.close(() => {
-            logger_1.logger.info("HTTP server closed");
+            logger_1.logger.info('HTTP server closed');
         });
     }
     try {
         const io = socket_service_1.socketService.getIO();
         if (io) {
             io.close(() => {
-                logger_1.logger.info("Socket.IO server closed");
+                logger_1.logger.info('Socket.IO server closed');
             });
         }
         jobs_1.jobOrchestrator.stopAll();
         await db_1.db.disconnect();
         await redis_service_1.redisService.disconnect();
-        logger_1.logger.info("Graceful shutdown completed");
+        logger_1.logger.info('Graceful shutdown completed');
         process.exit(0);
     }
     catch (error) {
-        logger_1.logger.error("Error during graceful shutdown", { error });
+        logger_1.logger.error('Error during graceful shutdown', { error });
         process.exit(1);
     }
 };
-process.on("unhandledRejection", (reason) => {
-    logger_1.logger.error("Unhandled Rejection", { reason });
-    gracefulShutdown("unhandledRejection");
+process.on('unhandledRejection', (reason) => {
+    logger_1.logger.error('Unhandled Rejection', { reason });
+    gracefulShutdown('unhandledRejection');
 });
-process.on("uncaughtException", (error) => {
-    logger_1.logger.error("Uncaught Exception", { error });
-    gracefulShutdown("uncaughtException");
+process.on('uncaughtException', (error) => {
+    logger_1.logger.error('Uncaught Exception', { error });
+    gracefulShutdown('uncaughtException');
 });
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 void bootstrap();
+//# sourceMappingURL=server.js.map

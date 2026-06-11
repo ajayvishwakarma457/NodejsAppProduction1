@@ -15,23 +15,13 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.emailJob = void 0;
 const cron = __importStar(require("node-cron"));
@@ -39,7 +29,7 @@ const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const email_service_1 = require("../services/email.service");
 const queue_1 = require("../utils/queue");
-const emailQueue = (0, queue_1.createQueue)("email");
+const emailQueue = (0, queue_1.createQueue)('email');
 let task = null;
 const processEmail = async (payload) => {
     try {
@@ -55,9 +45,9 @@ exports.emailJob = {
     /** Enqueue an email to be sent by the background job. */
     async enqueue(payload) {
         await emailQueue.enqueue(payload);
-        logger_1.logger.debug("Email enqueued", {
+        logger_1.logger.debug('Email enqueued', {
             to: payload.to,
-            subject: payload.subject
+            subject: payload.subject,
         });
     },
     /** Process a single batch of queued emails. */
@@ -72,10 +62,10 @@ exports.emailJob = {
             const result = await processEmail(item.payload);
             if (result.success) {
                 succeeded++;
-                logger_1.logger.info("Email job sent successfully", {
+                logger_1.logger.info('Email job sent successfully', {
                     id: item.id,
                     to: item.payload.to,
-                    messageId: result.messageId
+                    messageId: result.messageId,
                 });
                 continue;
             }
@@ -84,21 +74,21 @@ exports.emailJob = {
             item.lastError = result.error;
             if (item.retries <= maxRetries) {
                 await emailQueue.requeue(item);
-                logger_1.logger.warn("Email job failed, requeued for retry", {
+                logger_1.logger.warn('Email job failed, requeued for retry', {
                     id: item.id,
                     to: item.payload.to,
                     retries: item.retries,
-                    error: result.error
+                    error: result.error,
                 });
             }
             else {
                 await emailQueue.moveToDLQ(item);
                 movedToDLQ++;
-                logger_1.logger.error("Email job failed permanently, moved to DLQ", {
+                logger_1.logger.error('Email job failed permanently, moved to DLQ', {
                     id: item.id,
                     to: item.payload.to,
                     retries: item.retries,
-                    error: result.error
+                    error: result.error,
                 });
             }
         }
@@ -106,51 +96,48 @@ exports.emailJob = {
             processed: items.length,
             succeeded,
             failed,
-            movedToDLQ
+            movedToDLQ,
         };
     },
     /** Get current queue and DLQ sizes. */
     async stats() {
-        const [queueSize, dlqSize] = await Promise.all([
-            emailQueue.size(),
-            emailQueue.dlqSize()
-        ]);
+        const [queueSize, dlqSize] = await Promise.all([emailQueue.size(), emailQueue.dlqSize()]);
         return { queueSize, dlqSize };
     },
     /** Start the scheduled email job. */
     start() {
         if (task) {
-            logger_1.logger.warn("Email job already running");
+            logger_1.logger.warn('Email job already running');
             return;
         }
         if (!env_1.env.EMAIL_JOB_ENABLED) {
-            logger_1.logger.info("Email job is disabled (EMAIL_JOB_ENABLED=false)");
+            logger_1.logger.info('Email job is disabled (EMAIL_JOB_ENABLED=false)');
             return;
         }
         if (!cron.validate(env_1.env.EMAIL_JOB_CRON)) {
-            logger_1.logger.error("Invalid email job cron expression", {
-                cron: env_1.env.EMAIL_JOB_CRON
+            logger_1.logger.error('Invalid email job cron expression', {
+                cron: env_1.env.EMAIL_JOB_CRON,
             });
             return;
         }
         task = cron.schedule(env_1.env.EMAIL_JOB_CRON, async () => {
             try {
-                logger_1.logger.debug("Email job batch starting");
+                logger_1.logger.debug('Email job batch starting');
                 const result = await this.processBatch();
                 if (result.processed > 0) {
-                    logger_1.logger.info("Email job batch completed", result);
+                    logger_1.logger.info('Email job batch completed', result);
                 }
             }
             catch (error) {
-                logger_1.logger.error("Email job batch crashed", {
-                    error: error instanceof Error ? error.message : error
+                logger_1.logger.error('Email job batch crashed', {
+                    error: error instanceof Error ? error.message : error,
                 });
             }
         });
-        logger_1.logger.info("Email job started", {
+        logger_1.logger.info('Email job started', {
             cron: env_1.env.EMAIL_JOB_CRON,
             batchSize: env_1.env.EMAIL_JOB_BATCH_SIZE,
-            maxRetries: env_1.env.EMAIL_JOB_MAX_RETRIES
+            maxRetries: env_1.env.EMAIL_JOB_MAX_RETRIES,
         });
     },
     /** Stop the scheduled email job. */
@@ -158,7 +145,7 @@ exports.emailJob = {
         if (task) {
             task.stop();
             task = null;
-            logger_1.logger.info("Email job stopped");
+            logger_1.logger.info('Email job stopped');
         }
     },
     /** Peek at the next email in the queue without removing it. */
@@ -168,11 +155,12 @@ exports.emailJob = {
     /** Clear the entire queue (use with caution). */
     async clearQueue() {
         await emailQueue.clear();
-        logger_1.logger.warn("Email queue cleared");
+        logger_1.logger.warn('Email queue cleared');
     },
     /** Clear the dead letter queue (use with caution). */
     async clearDLQ() {
         await emailQueue.clearDLQ();
-        logger_1.logger.warn("Email DLQ cleared");
-    }
+        logger_1.logger.warn('Email DLQ cleared');
+    },
 };
+//# sourceMappingURL=email.job.js.map

@@ -14,7 +14,7 @@ exports.userController = {
         if (!user) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "User not found"
+                message: 'User not found',
             });
             return;
         }
@@ -29,7 +29,7 @@ exports.userController = {
         if (!user) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "User not found"
+                message: 'User not found',
             });
             return;
         }
@@ -40,10 +40,11 @@ exports.userController = {
         if (!deleted) {
             res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
                 success: false,
-                message: "User not found"
+                message: 'User not found',
             });
             return;
         }
         ApiResponse_1.ApiResponse.noContent().send(res);
-    }
+    },
 };
+//# sourceMappingURL=user.controller.js.map

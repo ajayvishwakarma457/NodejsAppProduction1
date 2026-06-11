@@ -24,11 +24,8 @@ const buildFilterQuery = (filter) => {
         query.priority = filter.priority;
     }
     if (filter.search) {
-        const searchRegex = { $regex: filter.search, $options: "i" };
-        query.$or = [
-            { title: searchRegex },
-            { description: searchRegex }
-        ];
+        const searchRegex = { $regex: filter.search, $options: 'i' };
+        query.$or = [{ title: searchRegex }, { description: searchRegex }];
     }
     return query;
 };
@@ -42,18 +39,18 @@ exports.taskRepository = {
     async findAll(options, filter = {}) {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
-        const sortDirection = options.order === "desc" ? -1 : 1;
+        const sortDirection = options.order === 'desc' ? -1 : 1;
         const [data, total] = await Promise.all([
             task_model_1.TaskModel.find(query)
                 .sort({ [options.sort]: sortDirection })
                 .skip(skip)
                 .limit(options.limit)
                 .lean(),
-            task_model_1.TaskModel.countDocuments(query)
+            task_model_1.TaskModel.countDocuments(query),
         ]);
         return {
             data,
-            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total)
+            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total),
         };
     },
     /**
@@ -67,9 +64,9 @@ exports.taskRepository = {
      */
     async findByIdWithDetails(id) {
         return task_model_1.TaskModel.findById(id)
-            .populate("projectId", "name status")
-            .populate("createdBy", "firstName lastName email avatar")
-            .populate("assignedTo", "firstName lastName email avatar")
+            .populate('projectId', 'name status')
+            .populate('createdBy', 'firstName lastName email avatar')
+            .populate('assignedTo', 'firstName lastName email avatar')
             .lean();
     },
     /**
@@ -110,10 +107,10 @@ exports.taskRepository = {
      */
     async findDueInRange(start, end) {
         return task_model_1.TaskModel.find({
-            status: { $nin: ["done"] },
-            dueDate: { $gte: start, $lte: end }
+            status: { $nin: ['done'] },
+            dueDate: { $gte: start, $lte: end },
         })
-            .populate("assignedTo", "email firstName lastName")
+            .populate('assignedTo', 'email firstName lastName')
             .lean();
     },
     /**
@@ -122,10 +119,11 @@ exports.taskRepository = {
      */
     async findOverdue(before) {
         return task_model_1.TaskModel.find({
-            status: { $nin: ["done"] },
-            dueDate: { $lt: before }
+            status: { $nin: ['done'] },
+            dueDate: { $lt: before },
         })
-            .populate("assignedTo", "email firstName lastName")
+            .populate('assignedTo', 'email firstName lastName')
             .lean();
-    }
+    },
 };
+//# sourceMappingURL=task.repository.js.map

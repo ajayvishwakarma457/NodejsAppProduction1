@@ -20,7 +20,7 @@ class ApiResponse {
     toJSON() {
         const payload = {
             success: this.success,
-            message: this.message
+            message: this.message,
         };
         if (this.data !== undefined) {
             payload.data = this.data;
@@ -30,17 +30,18 @@ class ApiResponse {
         }
         return payload;
     }
-    static ok(data, message = "OK") {
+    static ok(data, message = 'OK') {
         return new ApiResponse(200, message, data);
     }
-    static created(data, message = "Created") {
+    static created(data, message = 'Created') {
         return new ApiResponse(201, message, data);
     }
-    static noContent(message = "No content") {
+    static noContent(message = 'No content') {
         return new ApiResponse(204, message);
     }
-    static paginated(data, meta, message = "OK") {
+    static paginated(data, meta, message = 'OK') {
         return new ApiResponse(200, message, data, meta);
     }
 }
 exports.ApiResponse = ApiResponse;
+//# sourceMappingURL=ApiResponse.js.map

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
+import { authMiddleware } from '../../middleware/auth.middleware';
 import { validateMiddleware } from '../../middleware/validate.middleware';
 import { teamController } from './team.controller';
 import {
@@ -12,6 +13,8 @@ import {
 } from './team.validation';
 
 export const teamRouter = Router();
+
+teamRouter.use(authMiddleware);
 
 teamRouter.get('/', validateMiddleware(listTeamsQuerySchema), asyncHandler(teamController.list));
 

@@ -20,18 +20,18 @@ const parseSocketUser = (socket) => {
     }
 };
 const registerSockets = (io) => {
-    io.on("connection", (socket) => {
+    io.on('connection', (socket) => {
         try {
-            logger_1.logger.info("Socket connected", {
+            logger_1.logger.info('Socket connected', {
                 socketId: socket.id,
-                ip: socket.handshake.address
+                ip: socket.handshake.address,
             });
             const user = parseSocketUser(socket);
             if (!user) {
-                logger_1.logger.warn("Socket connection rejected: invalid or missing auth token", {
-                    socketId: socket.id
+                logger_1.logger.warn('Socket connection rejected: invalid or missing auth token', {
+                    socketId: socket.id,
                 });
-                socket.emit(constants_1.SOCKET_EVENTS.connection.error, { message: "Authentication required" });
+                socket.emit(constants_1.SOCKET_EVENTS.connection.error, { message: 'Authentication required' });
                 socket.disconnect(true);
                 return;
             }
@@ -39,27 +39,28 @@ const registerSockets = (io) => {
             (0, task_socket_1.registerTaskSocket)(io, socket);
             (0, notification_socket_1.registerNotificationSocket)(socket);
             (0, team_socket_1.registerTeamSocket)(io, socket);
-            socket.on("disconnect", (reason) => {
-                logger_1.logger.info("Socket disconnected", {
+            socket.on('disconnect', (reason) => {
+                logger_1.logger.info('Socket disconnected', {
                     socketId: socket.id,
-                    reason
+                    reason,
                 });
             });
-            socket.on("error", (err) => {
-                logger_1.logger.error("Socket error", {
+            socket.on('error', (err) => {
+                logger_1.logger.error('Socket error', {
                     socketId: socket.id,
-                    error: err instanceof Error ? err.message : String(err)
+                    error: err instanceof Error ? err.message : String(err),
                 });
             });
         }
         catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
-            logger_1.logger.error("Unhandled error in socket connection handler", {
+            logger_1.logger.error('Unhandled error in socket connection handler', {
                 socketId: socket.id,
-                error: error.message
+                error: error.message,
             });
             socket.disconnect(true);
         }
     });
 };
 exports.registerSockets = registerSockets;
+//# sourceMappingURL=index.js.map

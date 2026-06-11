@@ -13,7 +13,7 @@ const sanitizeUrl = (url) => {
     try {
         const parsed = new URL(url);
         if (parsed.password) {
-            parsed.password = "****";
+            parsed.password = '****';
         }
         return parsed.toString();
     }
@@ -26,20 +26,20 @@ const getConnectionOptions = () => ({
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
     connectTimeoutMS: 10000,
-    retryWrites: true
+    retryWrites: true,
 });
 const bindConnectionEvents = () => {
-    mongoose_1.default.connection.on("connected", () => {
-        logger_1.logger.info("MongoDB connection established");
+    mongoose_1.default.connection.on('connected', () => {
+        logger_1.logger.info('MongoDB connection established');
     });
-    mongoose_1.default.connection.on("error", (err) => {
-        logger_1.logger.error("MongoDB connection error", { error: err.message });
+    mongoose_1.default.connection.on('error', (err) => {
+        logger_1.logger.error('MongoDB connection error', { error: err.message });
     });
-    mongoose_1.default.connection.on("disconnected", () => {
-        logger_1.logger.warn("MongoDB connection disconnected");
+    mongoose_1.default.connection.on('disconnected', () => {
+        logger_1.logger.warn('MongoDB connection disconnected');
     });
-    mongoose_1.default.connection.on("reconnected", () => {
-        logger_1.logger.info("MongoDB connection reconnected");
+    mongoose_1.default.connection.on('reconnected', () => {
+        logger_1.logger.info('MongoDB connection reconnected');
     });
 };
 exports.db = {
@@ -48,14 +48,14 @@ exports.db = {
         bindConnectionEvents();
         try {
             await mongoose_1.default.connect(env_1.env.MONGODB_URI, getConnectionOptions());
-            logger_1.logger.info("MongoDB connected", { url: sanitizeUrl(env_1.env.MONGODB_URI) });
+            logger_1.logger.info('MongoDB connected', { url: sanitizeUrl(env_1.env.MONGODB_URI) });
         }
         catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger_1.logger.error("MongoDB connection failed", {
+            logger_1.logger.error('MongoDB connection failed', {
                 error: err.message,
                 retriesLeft: retries,
-                url: sanitizeUrl(env_1.env.MONGODB_URI)
+                url: sanitizeUrl(env_1.env.MONGODB_URI),
             });
             if (retries > 0) {
                 logger_1.logger.info(`Retrying MongoDB connection in ${delay}ms...`);
@@ -67,10 +67,11 @@ exports.db = {
     },
     async disconnect() {
         if (mongoose_1.default.connection.readyState === 0) {
-            logger_1.logger.info("MongoDB already disconnected");
+            logger_1.logger.info('MongoDB already disconnected');
             return;
         }
         await mongoose_1.default.disconnect();
-        logger_1.logger.info("MongoDB disconnected");
-    }
+        logger_1.logger.info('MongoDB disconnected');
+    },
 };
+//# sourceMappingURL=db.js.map

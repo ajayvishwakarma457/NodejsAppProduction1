@@ -49,3 +49,11 @@ export const markAsReadSchema = z.object({
     id: z.string().min(1, 'Notification id is required'),
   }),
 });
+
+export const countUnreadQuerySchema = z.object({
+  query: z.object({}).optional(),
+});
+
+export const markAllAsReadSchema = z.object({
+  body: z.object({}).optional(),
+});

@@ -15,12 +15,8 @@ const buildFilterQuery = (filter) => {
         query.isVerified = filter.isVerified;
     }
     if (filter.search) {
-        const searchRegex = { $regex: filter.search, $options: "i" };
-        query.$or = [
-            { firstName: searchRegex },
-            { lastName: searchRegex },
-            { email: searchRegex }
-        ];
+        const searchRegex = { $regex: filter.search, $options: 'i' };
+        query.$or = [{ firstName: searchRegex }, { lastName: searchRegex }, { email: searchRegex }];
     }
     return query;
 };
@@ -34,18 +30,18 @@ exports.userRepository = {
     async findAll(options, filter = {}) {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
-        const sortDirection = options.order === "desc" ? -1 : 1;
+        const sortDirection = options.order === 'desc' ? -1 : 1;
         const [data, total] = await Promise.all([
             user_model_1.UserModel.find(query)
                 .sort({ [options.sort]: sortDirection })
                 .skip(skip)
                 .limit(options.limit)
                 .lean(),
-            user_model_1.UserModel.countDocuments(query)
+            user_model_1.UserModel.countDocuments(query),
         ]);
         return {
             data,
-            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total)
+            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total),
         };
     },
     /**
@@ -67,7 +63,7 @@ exports.userRepository = {
      */
     async findByEmailWithPassword(email) {
         return user_model_1.UserModel.findOne({ email: email.toLowerCase().trim() })
-            .select("+password +refreshToken")
+            .select('+password +refreshToken')
             .lean();
     },
     /**
@@ -107,5 +103,6 @@ exports.userRepository = {
      */
     async updateLastLogin(id) {
         await user_model_1.UserModel.findByIdAndUpdate(id, { lastLogin: new Date() });
-    }
+    },
 };
+//# sourceMappingURL=user.repository.js.map

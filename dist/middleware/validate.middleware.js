@@ -14,18 +14,18 @@ const logger_1 = require("../config/logger");
 const formatZodErrors = (error) => {
     const details = {};
     for (const issue of error.issues) {
-        const path = issue.path.join(".") || "root";
+        const path = issue.path.join('.') || 'root';
         if (!details[path]) {
             details[path] = [];
         }
         details[path].push(issue.message);
     }
     const message = Object.entries(details)
-        .map(([path, msgs]) => `${path}: ${msgs.join(", ")}`)
-        .join("; ");
+        .map(([path, msgs]) => `${path}: ${msgs.join(', ')}`)
+        .join('; ');
     return {
-        message: message || "Validation failed",
-        details
+        message: message || 'Validation failed',
+        details,
     };
 };
 /* ------------------------------------------------------------------ */
@@ -47,15 +47,15 @@ const validateMiddleware = (schema) => {
         const result = schema.safeParse({
             body: req.body,
             params: req.params,
-            query: req.query
+            query: req.query,
         });
         if (!result.success) {
             const { message, details } = formatZodErrors(result.error);
-            logger_1.logger.warn("Request validation failed", {
+            logger_1.logger.warn('Request validation failed', {
                 path: req.path,
                 method: req.method,
                 requestId: req.requestId,
-                details
+                details,
             });
             next(new ApiError_1.ApiError(http_status_codes_1.StatusCodes.BAD_REQUEST, message, details));
             return;
@@ -88,7 +88,7 @@ const validate = (schemas) => {
     return (req, _res, next) => {
         const allErrors = {};
         const errorMessages = [];
-        const parts = ["body", "params", "query"];
+        const parts = ['body', 'params', 'query'];
         for (const part of parts) {
             const schema = schemas[part];
             if (!schema)
@@ -108,16 +108,17 @@ const validate = (schemas) => {
             }
         }
         if (errorMessages.length > 0) {
-            logger_1.logger.warn("Request validation failed", {
+            logger_1.logger.warn('Request validation failed', {
                 path: req.path,
                 method: req.method,
                 requestId: req.requestId,
-                details: allErrors
+                details: allErrors,
             });
-            next(new ApiError_1.ApiError(http_status_codes_1.StatusCodes.BAD_REQUEST, errorMessages.join("; "), allErrors));
+            next(new ApiError_1.ApiError(http_status_codes_1.StatusCodes.BAD_REQUEST, errorMessages.join('; '), allErrors));
             return;
         }
         next();
     };
 };
 exports.validate = validate;
+//# sourceMappingURL=validate.middleware.js.map

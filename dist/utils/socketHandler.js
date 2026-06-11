@@ -11,7 +11,7 @@ const socketHandler = (socket, event, handler) => {
                     const error = err instanceof Error ? err : new Error(String(err));
                     logger_1.logger.error(`Socket event "${event}" failed`, {
                         socketId: socket.id,
-                        error: error.message
+                        error: error.message,
                     });
                 });
             }
@@ -20,9 +20,10 @@ const socketHandler = (socket, event, handler) => {
             const error = err instanceof Error ? err : new Error(String(err));
             logger_1.logger.error(`Socket event "${event}" failed`, {
                 socketId: socket.id,
-                error: error.message
+                error: error.message,
             });
         }
     });
 };
 exports.socketHandler = socketHandler;
+//# sourceMappingURL=socketHandler.js.map

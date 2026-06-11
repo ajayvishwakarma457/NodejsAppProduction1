@@ -12,13 +12,10 @@ const buildFilterQuery = (filter) => {
         query.ownerId = filter.ownerId;
     }
     if (filter.memberId) {
-        query.$or = [
-            { ownerId: filter.memberId },
-            { "members.userId": filter.memberId }
-        ];
+        query.$or = [{ ownerId: filter.memberId }, { 'members.userId': filter.memberId }];
     }
     if (filter.search) {
-        query.name = { $regex: filter.search, $options: "i" };
+        query.name = { $regex: filter.search, $options: 'i' };
     }
     return query;
 };
@@ -32,18 +29,18 @@ exports.teamRepository = {
     async findAll(options, filter = {}) {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
-        const sortDirection = options.order === "desc" ? -1 : 1;
+        const sortDirection = options.order === 'desc' ? -1 : 1;
         const [data, total] = await Promise.all([
             team_model_1.TeamModel.find(query)
                 .sort({ [options.sort]: sortDirection })
                 .skip(skip)
                 .limit(options.limit)
                 .lean(),
-            team_model_1.TeamModel.countDocuments(query)
+            team_model_1.TeamModel.countDocuments(query),
         ]);
         return {
             data,
-            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total)
+            meta: (0, pagination_1.buildPaginationMeta)(options.page, options.limit, total),
         };
     },
     /**
@@ -57,8 +54,8 @@ exports.teamRepository = {
      */
     async findByIdWithMembers(id) {
         return team_model_1.TeamModel.findById(id)
-            .populate("ownerId", "firstName lastName email avatar")
-            .populate("members.userId", "firstName lastName email avatar")
+            .populate('ownerId', 'firstName lastName email avatar')
+            .populate('members.userId', 'firstName lastName email avatar')
             .lean();
     },
     /**
@@ -97,7 +94,7 @@ exports.teamRepository = {
      * Add a member to a team. Returns the existing team if the user is
      * already an owner or member to prevent duplicates.
      */
-    async addMember(teamId, userId, role = "member") {
+    async addMember(teamId, userId, role = 'member') {
         const team = await team_model_1.TeamModel.findById(teamId).lean();
         if (!team)
             return null;
@@ -118,6 +115,7 @@ exports.teamRepository = {
      * Update a member's role within a team.
      */
     async updateMemberRole(teamId, userId, role) {
-        return team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, "members.userId": userId }, { $set: { "members.$.role": role } }, { new: true }).lean();
-    }
+        return team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, 'members.userId': userId }, { $set: { 'members.$.role': role } }, { new: true }).lean();
+    },
 };
+//# sourceMappingURL=team.repository.js.map

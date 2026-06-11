@@ -15,23 +15,13 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.notificationJob = void 0;
 const cron = __importStar(require("node-cron"));
@@ -42,23 +32,23 @@ const socket_service_1 = require("../services/socket.service");
 const email_service_1 = require("../services/email.service");
 const queue_1 = require("../utils/queue");
 const constants_1 = require("../utils/constants");
-const notificationQueue = (0, queue_1.createQueue)("notification");
+const notificationQueue = (0, queue_1.createQueue)('notification');
 let task = null;
 const deliverViaSocket = (payload) => {
     try {
         const room = `${constants_1.SOCKET_ROOM_PREFIX.notification}${payload.userId}`;
-        socket_service_1.socketService.emitToRoom(room, "notification:new", {
+        socket_service_1.socketService.emitToRoom(room, 'notification:new', {
             id: payload.notificationId,
             title: payload.title,
             message: payload.message,
-            type: payload.type
+            type: payload.type,
         });
         return true;
     }
     catch (err) {
-        logger_1.logger.warn("Socket delivery failed", {
+        logger_1.logger.warn('Socket delivery failed', {
             notificationId: payload.notificationId,
-            error: err instanceof Error ? err.message : err
+            error: err instanceof Error ? err.message : err,
         });
         return false;
     }
@@ -68,41 +58,41 @@ const deliverViaEmail = async (payload) => {
         await email_service_1.emailService.send({
             to: payload.userId,
             subject: payload.title,
-            html: `<p>${payload.message}</p>`
+            html: `<p>${payload.message}</p>`,
         });
         return true;
     }
     catch (err) {
-        logger_1.logger.warn("Email delivery failed", {
+        logger_1.logger.warn('Email delivery failed', {
             notificationId: payload.notificationId,
-            error: err instanceof Error ? err.message : err
+            error: err instanceof Error ? err.message : err,
         });
         return false;
     }
 };
 const processNotification = async (payload) => {
     const channelsDelivered = [];
-    const channels = payload.channels.length > 0 ? payload.channels : ["in-app"];
+    const channels = payload.channels.length > 0 ? payload.channels : ['in-app'];
     for (const channel of channels) {
         try {
             switch (channel) {
-                case "in-app": {
+                case 'in-app': {
                     const marked = await notification_service_1.notificationService.markDelivered(payload.notificationId);
                     if (marked) {
-                        channelsDelivered.push("in-app");
+                        channelsDelivered.push('in-app');
                     }
                     break;
                 }
-                case "socket": {
+                case 'socket': {
                     const socketOk = deliverViaSocket(payload);
                     if (socketOk)
-                        channelsDelivered.push("socket");
+                        channelsDelivered.push('socket');
                     break;
                 }
-                case "email": {
+                case 'email': {
                     const emailOk = await deliverViaEmail(payload);
                     if (emailOk)
-                        channelsDelivered.push("email");
+                        channelsDelivered.push('email');
                     break;
                 }
             }
@@ -110,7 +100,7 @@ const processNotification = async (payload) => {
         catch (err) {
             logger_1.logger.warn(`Notification channel "${channel}" failed`, {
                 notificationId: payload.notificationId,
-                error: err instanceof Error ? err.message : err
+                error: err instanceof Error ? err.message : err,
             });
         }
     }
@@ -119,7 +109,7 @@ const processNotification = async (payload) => {
         return {
             success: false,
             channelsDelivered,
-            error: "All delivery channels failed"
+            error: 'All delivery channels failed',
         };
     }
     return { success, channelsDelivered };
@@ -128,9 +118,9 @@ exports.notificationJob = {
     /** Enqueue a notification for background delivery. */
     async enqueue(payload) {
         await notificationQueue.enqueue(payload);
-        logger_1.logger.debug("Notification enqueued", {
+        logger_1.logger.debug('Notification enqueued', {
             notificationId: payload.notificationId,
-            channels: payload.channels
+            channels: payload.channels,
         });
     },
     /** Process a single batch of queued notifications. */
@@ -145,34 +135,34 @@ exports.notificationJob = {
             const result = await processNotification(item.payload);
             if (result.success) {
                 succeeded++;
-                logger_1.logger.info("Notification delivered", {
+                logger_1.logger.info('Notification delivered', {
                     id: item.id,
                     notificationId: item.payload.notificationId,
-                    channels: result.channelsDelivered
+                    channels: result.channelsDelivered,
                 });
                 continue;
             }
             failed++;
             item.retries++;
             item.lastError = result.error;
-            await notification_service_1.notificationService.markFailed(item.payload.notificationId, result.error || "Unknown error");
+            await notification_service_1.notificationService.markFailed(item.payload.notificationId, result.error || 'Unknown error');
             if (item.retries <= maxRetries) {
                 await notificationQueue.requeue(item);
-                logger_1.logger.warn("Notification failed, requeued for retry", {
+                logger_1.logger.warn('Notification failed, requeued for retry', {
                     id: item.id,
                     notificationId: item.payload.notificationId,
                     retries: item.retries,
-                    error: result.error
+                    error: result.error,
                 });
             }
             else {
                 await notificationQueue.moveToDLQ(item);
                 movedToDLQ++;
-                logger_1.logger.error("Notification failed permanently, moved to DLQ", {
+                logger_1.logger.error('Notification failed permanently, moved to DLQ', {
                     id: item.id,
                     notificationId: item.payload.notificationId,
                     retries: item.retries,
-                    error: result.error
+                    error: result.error,
                 });
             }
         }
@@ -182,9 +172,9 @@ exports.notificationJob = {
     async cleanup() {
         const deleted = await notification_service_1.notificationService.cleanupOldReadNotifications(env_1.env.NOTIFICATION_CLEANUP_DAYS);
         if (deleted > 0) {
-            logger_1.logger.info("Old notifications cleaned up", {
+            logger_1.logger.info('Old notifications cleaned up', {
                 deleted,
-                olderThanDays: env_1.env.NOTIFICATION_CLEANUP_DAYS
+                olderThanDays: env_1.env.NOTIFICATION_CLEANUP_DAYS,
             });
         }
         return { deleted };
@@ -193,49 +183,49 @@ exports.notificationJob = {
     async stats() {
         const [queueSize, dlqSize] = await Promise.all([
             notificationQueue.size(),
-            notificationQueue.dlqSize()
+            notificationQueue.dlqSize(),
         ]);
         return { queueSize, dlqSize };
     },
     /** Start the scheduled notification job. */
     start() {
         if (task) {
-            logger_1.logger.warn("Notification job already running");
+            logger_1.logger.warn('Notification job already running');
             return;
         }
         if (!env_1.env.NOTIFICATION_JOB_ENABLED) {
-            logger_1.logger.info("Notification job is disabled (NOTIFICATION_JOB_ENABLED=false)");
+            logger_1.logger.info('Notification job is disabled (NOTIFICATION_JOB_ENABLED=false)');
             return;
         }
         if (!cron.validate(env_1.env.NOTIFICATION_JOB_CRON)) {
-            logger_1.logger.error("Invalid notification job cron expression", {
-                cron: env_1.env.NOTIFICATION_JOB_CRON
+            logger_1.logger.error('Invalid notification job cron expression', {
+                cron: env_1.env.NOTIFICATION_JOB_CRON,
             });
             return;
         }
         task = cron.schedule(env_1.env.NOTIFICATION_JOB_CRON, async () => {
             try {
-                logger_1.logger.debug("Notification job batch starting");
+                logger_1.logger.debug('Notification job batch starting');
                 const result = await this.processBatch();
                 const cleanupResult = await this.cleanup();
                 if (result.processed > 0 || cleanupResult.deleted > 0) {
-                    logger_1.logger.info("Notification job cycle completed", {
+                    logger_1.logger.info('Notification job cycle completed', {
                         ...result,
-                        cleanedUp: cleanupResult.deleted
+                        cleanedUp: cleanupResult.deleted,
                     });
                 }
             }
             catch (error) {
-                logger_1.logger.error("Notification job cycle crashed", {
-                    error: error instanceof Error ? error.message : error
+                logger_1.logger.error('Notification job cycle crashed', {
+                    error: error instanceof Error ? error.message : error,
                 });
             }
         });
-        logger_1.logger.info("Notification job started", {
+        logger_1.logger.info('Notification job started', {
             cron: env_1.env.NOTIFICATION_JOB_CRON,
             batchSize: env_1.env.NOTIFICATION_JOB_BATCH_SIZE,
             maxRetries: env_1.env.NOTIFICATION_JOB_MAX_RETRIES,
-            cleanupDays: env_1.env.NOTIFICATION_CLEANUP_DAYS
+            cleanupDays: env_1.env.NOTIFICATION_CLEANUP_DAYS,
         });
     },
     /** Stop the scheduled notification job. */
@@ -243,7 +233,7 @@ exports.notificationJob = {
         if (task) {
             task.stop();
             task = null;
-            logger_1.logger.info("Notification job stopped");
+            logger_1.logger.info('Notification job stopped');
         }
     },
     /** Peek at the next notification in the queue without removing it. */
@@ -253,11 +243,12 @@ exports.notificationJob = {
     /** Clear the entire queue (use with caution). */
     async clearQueue() {
         await notificationQueue.clear();
-        logger_1.logger.warn("Notification queue cleared");
+        logger_1.logger.warn('Notification queue cleared');
     },
     /** Clear the dead letter queue (use with caution). */
     async clearDLQ() {
         await notificationQueue.clearDLQ();
-        logger_1.logger.warn("Notification DLQ cleared");
-    }
+        logger_1.logger.warn('Notification DLQ cleared');
+    },
 };
+//# sourceMappingURL=notification.job.js.map

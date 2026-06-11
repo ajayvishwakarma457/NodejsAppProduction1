@@ -15,23 +15,13 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const vitest_1 = require("vitest");
 const reminder_job_1 = require("../jobs/reminder.job");
@@ -41,29 +31,29 @@ const task_model_1 = require("../modules/tasks/task.model");
 const user_model_1 = require("../modules/users/user.model");
 const db_1 = require("../config/db");
 const mongoose_1 = require("mongoose");
-(0, vitest_1.describe)("reminderJob", () => {
+(0, vitest_1.describe)('reminderJob', () => {
     let userId;
     let userEmail;
     const createUser = async () => {
         const user = await user_model_1.UserModel.create({
-            firstName: "Test",
-            lastName: "User",
+            firstName: 'Test',
+            lastName: 'User',
             email: `test-${Date.now()}@example.com`,
-            password: "password123"
+            password: 'password123',
         });
         userId = user._id.toString();
         userEmail = user.email;
         return { userId, userEmail };
     };
-    const createTask = async (dueDate, title = "Test Task") => {
+    const createTask = async (dueDate, title = 'Test Task') => {
         const task = await task_model_1.TaskModel.create({
             title,
-            description: "Test description",
+            description: 'Test description',
             projectId: new mongoose_1.Types.ObjectId(),
             createdBy: new mongoose_1.Types.ObjectId(userId),
             assignedTo: new mongoose_1.Types.ObjectId(userId),
             dueDate,
-            status: "todo"
+            status: 'todo',
         });
         return task._id.toString();
     };
@@ -82,7 +72,7 @@ const mongoose_1 = require("mongoose");
         await redis_service_1.redisService.disconnect();
         await db_1.db.disconnect();
     });
-    (0, vitest_1.it)("should scan and enqueue reminders for upcoming tasks", async () => {
+    (0, vitest_1.it)('should scan and enqueue reminders for upcoming tasks', async () => {
         const dueDate = new Date(Date.now() + 20 * 60 * 1000); // 20 min from now (matches only 15m window)
         await createTask(dueDate);
         const result = await reminder_job_1.reminderJob.scan();
@@ -91,7 +81,7 @@ const mongoose_1 = require("mongoose");
         const stats = await reminder_job_1.reminderJob.stats();
         (0, vitest_1.expect)(stats.queueSize).toBe(1);
     });
-    (0, vitest_1.it)("should skip tasks that already have reminders sent", async () => {
+    (0, vitest_1.it)('should skip tasks that already have reminders sent', async () => {
         const dueDate = new Date(Date.now() + 30 * 60 * 1000);
         await createTask(dueDate);
         const r1 = await reminder_job_1.reminderJob.scan();
@@ -100,7 +90,7 @@ const mongoose_1 = require("mongoose");
         (0, vitest_1.expect)(r2.enqueued).toBe(0);
         (0, vitest_1.expect)(r2.skipped).toBe(1);
     });
-    (0, vitest_1.it)("should scan and enqueue overdue reminders", async () => {
+    (0, vitest_1.it)('should scan and enqueue overdue reminders', async () => {
         const dueDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 1 day ago
         const taskId = await createTask(dueDate);
         // Verify the task exists and is findable as overdue
@@ -112,21 +102,21 @@ const mongoose_1 = require("mongoose");
         const peeked = await reminder_job_1.reminderJob.stats();
         (0, vitest_1.expect)(peeked.queueSize).toBe(1);
     });
-    (0, vitest_1.it)("should not enqueue done tasks", async () => {
+    (0, vitest_1.it)('should not enqueue done tasks', async () => {
         const dueDate = new Date(Date.now() + 30 * 60 * 1000);
         await task_model_1.TaskModel.create({
-            title: "Done Task",
-            description: "Test",
+            title: 'Done Task',
+            description: 'Test',
             projectId: new mongoose_1.Types.ObjectId(),
             createdBy: new mongoose_1.Types.ObjectId(userId),
             assignedTo: new mongoose_1.Types.ObjectId(userId),
             dueDate,
-            status: "done"
+            status: 'done',
         });
         const result = await reminder_job_1.reminderJob.scan();
         (0, vitest_1.expect)(result.enqueued).toBe(0);
     });
-    (0, vitest_1.it)("should process a batch of reminders", async () => {
+    (0, vitest_1.it)('should process a batch of reminders', async () => {
         const dueDate = new Date(Date.now() + 30 * 60 * 1000);
         await createTask(dueDate);
         await reminder_job_1.reminderJob.scan();
@@ -137,17 +127,17 @@ const mongoose_1 = require("mongoose");
         const stats = await reminder_job_1.reminderJob.stats();
         (0, vitest_1.expect)(stats.queueSize).toBe(0);
     });
-    (0, vitest_1.it)("should move failed reminders to DLQ after retry", async () => {
+    (0, vitest_1.it)('should move failed reminders to DLQ after retry', async () => {
         // Manually inject a bad reminder (missing email)
-        const { createQueue } = await Promise.resolve().then(() => __importStar(require("../utils/queue")));
-        const q = createQueue("reminder");
+        const { createQueue } = await Promise.resolve().then(() => __importStar(require('../utils/queue')));
+        const q = createQueue('reminder');
         await q.enqueue({
-            taskId: "bad-task",
-            userId: "bad-user",
-            email: "invalid", // Will cause email validation to fail
-            taskTitle: "Bad",
+            taskId: 'bad-task',
+            userId: 'bad-user',
+            email: 'invalid', // Will cause email validation to fail
+            taskTitle: 'Bad',
             dueDate: new Date().toISOString(),
-            reminderType: "60m"
+            reminderType: '60m',
         });
         // First attempt fails and requeues
         const r1 = await reminder_job_1.reminderJob.processBatch();
@@ -160,7 +150,7 @@ const mongoose_1 = require("mongoose");
         const stats = await reminder_job_1.reminderJob.stats();
         (0, vitest_1.expect)(stats.dlqSize).toBe(1);
     });
-    (0, vitest_1.it)("should clear queue and dlq", async () => {
+    (0, vitest_1.it)('should clear queue and dlq', async () => {
         const dueDate = new Date(Date.now() + 30 * 60 * 1000);
         await createTask(dueDate);
         await reminder_job_1.reminderJob.scan();
@@ -173,3 +163,4 @@ const mongoose_1 = require("mongoose");
         (0, vitest_1.expect)(stats.dlqSize).toBe(0);
     });
 });
+//# sourceMappingURL=reminder-job.test.js.map

@@ -11,7 +11,7 @@ const createQueue = (name) => {
                 id: id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
                 payload,
                 retries: 0,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
             };
             await redis_service_1.redisService.client.lPush(queueKey, JSON.stringify(item));
         },
@@ -54,7 +54,8 @@ const createQueue = (name) => {
         },
         async clearDLQ() {
             await redis_service_1.redisService.client.del(dlqKey);
-        }
+        },
     };
 };
 exports.createQueue = createQueue;
+//# sourceMappingURL=queue.js.map
