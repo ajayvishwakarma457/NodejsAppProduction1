@@ -91,7 +91,18 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 if (env.STORAGE_PROVIDER === 'local') {
   const uploadsPath = path.resolve(env.STORAGE_LOCAL_PATH);
-  app.use('/uploads', express.static(uploadsPath));
+  app.use(
+    '/uploads',
+    express.static(uploadsPath, {
+      index: false,
+      immutable: true,
+      maxAge: '1y',
+      setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
+    })
+  );
 }
 
 /* ------------------------------------------------------------------ */

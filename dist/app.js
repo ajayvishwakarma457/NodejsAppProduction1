@@ -78,7 +78,15 @@ exports.app.use(express_1.default.urlencoded({ extended: true, limit: '10kb' }))
 /* ------------------------------------------------------------------ */
 if (env_1.env.STORAGE_PROVIDER === 'local') {
     const uploadsPath = path_1.default.resolve(env_1.env.STORAGE_LOCAL_PATH);
-    exports.app.use('/uploads', express_1.default.static(uploadsPath));
+    exports.app.use('/uploads', express_1.default.static(uploadsPath, {
+        index: false,
+        immutable: true,
+        maxAge: '1y',
+        setHeaders: (res) => {
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        },
+    }));
 }
 /* ------------------------------------------------------------------ */
 // Health check
