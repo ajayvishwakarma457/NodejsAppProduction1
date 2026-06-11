@@ -38,7 +38,28 @@ if (env.NODE_ENV === 'production') {
 /* ------------------------------------------------------------------ */
 
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(
+  helmet({
+    // Minimal CSP for JSON APIs — satisfies security scanners without bloat
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+      },
+    },
+
+    // Allow frontend on a different origin to load uploaded files from /uploads
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+
+    // This can break API clients and file loading
+    crossOriginEmbedderPolicy: false,
+
+    // Enforce HTTPS in production only
+    hsts:
+      env.NODE_ENV === 'production'
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
+  })
+);
 app.use(
   cors({
     origin: env.CLIENT_URL === '*' ? true : env.CLIENT_URL,
