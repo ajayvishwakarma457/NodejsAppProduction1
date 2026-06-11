@@ -57,6 +57,10 @@ exports.app.use((0, helmet_1.default)({
 exports.app.use((0, cors_1.default)({
     origin: env_1.env.CLIENT_URL === '*' ? true : env_1.env.CLIENT_URL,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+    exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+    maxAge: 86400, // Cache preflight for 24 hours
 }));
 /* ------------------------------------------------------------------ */
 // Request identification
