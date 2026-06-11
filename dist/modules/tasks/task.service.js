@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskService = void 0;
 const task_repository_1 = require("./task.repository");
 const pagination_1 = require("../../utils/pagination");
+const ApiError_1 = require("../../utils/ApiError");
+const rbac_1 = require("../../utils/rbac");
 exports.taskService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -38,10 +40,22 @@ exports.taskService = {
     async create(data) {
         return task_repository_1.taskRepository.create(data);
     },
-    async update(id, data) {
+    async update(id, data, userId, role) {
+        const existing = await task_repository_1.taskRepository.findById(id);
+        if (!existing)
+            return null;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.createdBy, userId, role)) {
+            throw ApiError_1.ApiError.forbidden('You can only update tasks you created');
+        }
         return task_repository_1.taskRepository.updateById(id, data);
     },
-    async remove(id) {
+    async remove(id, userId, role) {
+        const existing = await task_repository_1.taskRepository.findById(id);
+        if (!existing)
+            return false;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.createdBy, userId, role)) {
+            throw ApiError_1.ApiError.forbidden('You can only delete tasks you created');
+        }
         return task_repository_1.taskRepository.deleteById(id);
     },
     async findDueInRange(start, end) {

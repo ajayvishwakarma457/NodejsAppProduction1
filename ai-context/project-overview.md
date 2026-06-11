@@ -6,29 +6,31 @@ NodejsAppProduction1
 
 ## Purpose
 
-Node.js backend structured as a modular production-style application.
+Production-grade Node.js API backend for team/project/task management. Supports multi-tenant teams, project tracking, task assignment, real-time notifications, and background job processing.
 
 ## Tech Stack
 
-- Node.js
-- JavaScript
-- Modular feature-based backend structure
-- MongoDB
-- Mongoose
-- Redis support
-- Socket support
-- Background jobs
-- Validation layer
-- Role-based and upload middleware
+- **Runtime**: Node.js >= 18.0.0, TypeScript 5.6.2
+- **Framework**: Express 4.x with typed Request/Response augmentation
+- **Database**: MongoDB (Mongoose ODM)
+- **Cache/Queues**: Redis (ioredis)
+- **Auth**: JWT Bearer tokens (access 15m + refresh 7d with rotation), OAuth2 (Google, GitHub)
+- **Validation**: Zod (env, request bodies, query params)
+- **File Uploads**: Multer (memoryStorage) → storageService (local filesystem / S3 placeholder)
+- **Realtime**: Socket.IO
+- **Background Jobs**: Node-cron + Redis-backed queues (email, notification, reminder)
+- **Security**: Helmet, CORS, bcryptjs (12 rounds), custom Redis-backed rate limiting
 
 ## Main Goals
 
-- Build a scalable backend with clear module boundaries
-- Keep business logic separated by feature
-- Support auth, teams, projects, tasks, comments, and notifications
-- Support realtime updates and background notification processing
+- Scalable feature-module architecture with clear boundaries
+- Secure RBAC enforcement (admin, manager, member roles)
+- Real-time collaboration via WebSockets
+- Resilient background job processing with retry and DLQ
+- Production-ready observability (structured logging, request IDs)
 
 ## Constraints
 
-- Structure should stay easy for AI tools and developers to navigate
-- Shared services and middleware should remain centralized
+- Structure stays easy for AI tools and developers to navigate
+- Shared services and middleware remain centralized
+- All endpoints versioned under `/api/v1/`

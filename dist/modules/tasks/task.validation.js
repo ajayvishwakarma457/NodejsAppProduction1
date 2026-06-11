@@ -12,7 +12,6 @@ exports.createTaskSchema = zod_1.z.object({
         priority: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium'),
         status: zod_1.z.enum(['todo', 'in-progress', 'review', 'done']).optional().default('todo'),
         projectId: zod_1.z.string().min(1, 'Project id is required'),
-        createdBy: zod_1.z.string().min(1, 'Creator id is required'),
         assignedTo: zod_1.z.string().min(1, 'Assignee id is required'),
         dueDate: zod_1.z.string().datetime().optional(),
         estimatedHours: zod_1.z.coerce.number().min(0).optional().default(0),

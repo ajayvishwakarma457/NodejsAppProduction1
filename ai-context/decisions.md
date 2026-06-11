@@ -20,7 +20,7 @@ New features should follow the same module pattern and avoid mixing shared infra
 
 Decision:
 
-Each main feature module should include controller, service, repository, routes, validation, and model files. Auth also includes `auth.utils.js`.
+Each main feature module should include controller, service, repository, routes, validation, and model files. Auth also includes `auth.utils.ts`.
 
 Reason:
 
@@ -53,3 +53,58 @@ Impact:
 - `npm-check-updates` added as a dev dependency.
 - `.npmrc` enforces `package-lock=true` and `engine-strict=true`.
 - New npm scripts added for dependency management and versioning.
+
+## 2026-06-11 - Keep Custom Rate Limiter Over express-rate-limit
+
+Decision:
+
+Retain the existing custom Redis-backed rate limiter instead of replacing it with `express-rate-limit`.
+
+Reason:
+
+Swapping middleware would require rewriting all 9+ rate-limit tests due to signature differences. The custom implementation is production-grade with equivalent features (dual headers, Retry-After, fails-open).
+
+Impact:
+
+- `express-rate-limit` remains installed but unused.
+- Rate limiting continues to use the custom middleware with IETF Draft-7 + legacy header support.
+
+## 2026-06-11 - OAuth Account Linking by Email
+
+Decision:
+
+When a user signs in via Google or GitHub, link to an existing local account if the email matches. If no account exists, create a new OAuth-only user.
+
+Reason:
+
+Prevents duplicate accounts and provides backward compatibility with local auth.
+
+Impact:
+
+- `oauthService.findOrCreate` handles both linking and creation.
+- Passport strategies normalize profiles into a common `OAuthProfile` shape.
+
+## 2026-06-11 - RBAC Ownership Enforcement Pattern
+
+Decision:
+
+Enforce ownership and role checks in both controllers and services using a shared `accessControl.ts` utility. Auto-inject `req.user.id` for ownership fields and strip forged client fields before validation reaches the service layer.
+
+Reason:
+
+- Prevents critical vulnerabilities where any authenticated user could update/delete any resource.
+- Prevents privilege escalation (e.g., self-promotion to admin via forged `role`).
+- Centralizes access logic for consistency across modules.
+
+Rules:
+
+- **Users**: Admin-only list/create/delete. Self-or-admin get/update. Non-admins cannot change `role`.
+- **Teams**: Owner-only update/delete/member-management. Scoped list (owned or member of).
+- **Projects**: Owner-only update/delete. Scoped list (owned or team member). `ownerId` injected server-side.
+- **Tasks**: Creator or assignee access. Scoped list (created by or assigned to). `createdBy` injected server-side.
+- **Validation**: Remove forgeable fields (`ownerId`, `createdBy`) from Zod schemas.
+
+Impact:
+
+- `src/utils/accessControl.ts` created with `isOwnerOrAdmin`, `setUserId`, `sanitizeBody`.
+- All module controllers, services, routes, and validation schemas updated.

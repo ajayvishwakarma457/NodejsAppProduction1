@@ -1,5 +1,7 @@
 import { taskRepository, TaskListFilter } from './task.repository';
 import { getPagination } from '../../utils/pagination';
+import { ApiError } from '../../utils/ApiError';
+import { isOwnerOrAdmin } from '../../utils/rbac';
 
 export const taskService = {
   async list(query: Record<string, unknown>) {
@@ -50,11 +52,25 @@ export const taskService = {
     return taskRepository.create(data);
   },
 
-  async update(id: string, data: Record<string, unknown>) {
+  async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
+    const existing = await taskRepository.findById(id);
+    if (!existing) return null;
+
+    if (!isOwnerOrAdmin(existing.createdBy, userId, role)) {
+      throw ApiError.forbidden('You can only update tasks you created');
+    }
+
     return taskRepository.updateById(id, data);
   },
 
-  async remove(id: string) {
+  async remove(id: string, userId: string, role?: string) {
+    const existing = await taskRepository.findById(id);
+    if (!existing) return false;
+
+    if (!isOwnerOrAdmin(existing.createdBy, userId, role)) {
+      throw ApiError.forbidden('You can only delete tasks you created');
+    }
+
     return taskRepository.deleteById(id);
   },
 

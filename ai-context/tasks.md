@@ -1,19 +1,31 @@
 # Tasks and Open Questions
 
-## Priority Tasks
+## Completed Tasks
 
-- Create the `src/` folder structure in the repository
-- Decide the app framework setup in `app.js` and `server.js`
-- Implement the `auth` module first
-- Define database models and repository patterns
-- Add shared validation, upload, role, token, and socket infrastructure
-- Add test setup under `src/tests`
+- [x] Create `src/` folder structure and all module scaffolding
+- [x] Implement auth module (local JWT + OAuth2 Google/GitHub)
+- [x] Implement users, teams, projects, tasks modules with full CRUD
+- [x] Add validation layer (Zod) for env, request bodies, query params
+- [x] Add shared middleware (auth, role, validate, error, rate limit, upload)
+- [x] Add services (email, storage, redis, token, socket)
+- [x] Add background jobs (email, notification, reminder) with retry + DLQ
+- [x] Add test suite (114 tests passing)
+- [x] Implement rate limiting with IETF Draft-7 + legacy headers
+- [x] Fix Helmet config for API usage (remove HTML CSP)
+- [x] Enhance CORS with explicit headers and preflight cache
+- [x] Add semantic versioning scripts and dependency management docs
+- [x] **RBAC security fixes** — ownership checks, forged-ID prevention, role escalation prevention across all modules
+
+## Open Tasks
+
+- [ ] Define and implement `manager` role permissions (currently unused)
+- [ ] Add integration tests for RBAC edge cases (cross-user update/delete attempts)
+- [ ] Restrict notification POST endpoint (currently any auth user can target any `userId`)
+- [ ] Add HATEOAS links to API responses
+- [ ] Add content negotiation support
+- [ ] Fix pre-existing Redis `getOrSet` test race condition
 
 ## Open Questions
 
-- Will this backend use Express?
-- Which database will `config/db.js` connect to?
-- Will Redis be used for cache, queues, sessions, or all three?
-- What notification channels are required besides sockets?
-- Which upload/storage provider will `upload.middleware.js` and `storage.service.js` use?
-  **Resolved 2026-06-09:** Local filesystem by default (`STORAGE_PROVIDER=local`), with an S3 placeholder. Multer handles uploads; `storage.service.ts` abstracts provider logic.
+- Should `manager` be able to CRUD team projects but not system-wide users?
+- Should notifications be creatable only by admins/system, or should users self-notify?

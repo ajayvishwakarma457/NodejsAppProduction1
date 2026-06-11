@@ -39,7 +39,8 @@ src/
 │   ├── db.ts
 │   ├── redis.ts
 │   ├── env.ts
-│   └── logger.ts
+│   ├── logger.ts
+│   └── passport.ts
 │
 ├── modules/
 │   ├── auth/
@@ -131,7 +132,8 @@ src/
 │   ├── asyncHandler.ts
 │   ├── constants.ts
 │   ├── helpers.ts
-│   └── pagination.ts
+│   ├── pagination.ts
+│   └── accessControl.ts
 │
 ├── tests/
 │   ├── auth.test.ts

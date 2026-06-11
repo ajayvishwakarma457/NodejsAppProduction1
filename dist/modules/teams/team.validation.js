@@ -9,14 +9,12 @@ exports.createTeamSchema = zod_1.z.object({
     body: zod_1.z.object({
         name: zod_1.z.string().min(1, 'Team name is required').max(100),
         description: zod_1.z.string().min(1, 'Team description is required').max(500),
-        ownerId: zod_1.z.string().min(1, 'Owner id is required'),
     }),
 });
 exports.updateTeamSchema = zod_1.z.object({
     body: zod_1.z.object({
         name: zod_1.z.string().min(1).max(100).optional(),
         description: zod_1.z.string().min(1).max(500).optional(),
-        ownerId: zod_1.z.string().min(1).optional(),
     }),
     params: zod_1.z.object({
         id: zod_1.z.string().min(1, 'Team id is required'),

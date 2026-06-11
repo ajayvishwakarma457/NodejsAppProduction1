@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamService = void 0;
 const team_repository_1 = require("./team.repository");
 const pagination_1 = require("../../utils/pagination");
+const ApiError_1 = require("../../utils/ApiError");
+const rbac_1 = require("../../utils/rbac");
 exports.teamService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -29,16 +31,40 @@ exports.teamService = {
     async create(data) {
         return team_repository_1.teamRepository.create(data);
     },
-    async update(id, data) {
+    async update(id, data, userId, role) {
+        const existing = await team_repository_1.teamRepository.findById(id);
+        if (!existing)
+            return null;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
+            throw ApiError_1.ApiError.forbidden('You can only update teams you own');
+        }
         return team_repository_1.teamRepository.updateById(id, data);
     },
-    async remove(id) {
+    async remove(id, userId, role) {
+        const existing = await team_repository_1.teamRepository.findById(id);
+        if (!existing)
+            return false;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
+            throw ApiError_1.ApiError.forbidden('You can only delete teams you own');
+        }
         return team_repository_1.teamRepository.deleteById(id);
     },
-    async addMember(teamId, userId, role) {
+    async addMember(teamId, userId, role, requesterId, requesterRole) {
+        const existing = await team_repository_1.teamRepository.findById(teamId);
+        if (!existing)
+            return null;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, requesterId, requesterRole)) {
+            throw ApiError_1.ApiError.forbidden('Only team owners can add members');
+        }
         return team_repository_1.teamRepository.addMember(teamId, userId, role);
     },
-    async removeMember(teamId, userId) {
+    async removeMember(teamId, userId, requesterId, requesterRole) {
+        const existing = await team_repository_1.teamRepository.findById(teamId);
+        if (!existing)
+            return null;
+        if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, requesterId, requesterRole)) {
+            throw ApiError_1.ApiError.forbidden('Only team owners can remove members');
+        }
         return team_repository_1.teamRepository.removeMember(teamId, userId);
     },
 };

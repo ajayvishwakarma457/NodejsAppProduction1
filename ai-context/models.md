@@ -18,6 +18,9 @@
 
   isVerified: Boolean,
 
+  provider: String, // local, google, github
+  providerId: String,
+
   refreshToken: String,
 
   lastLogin: Date,

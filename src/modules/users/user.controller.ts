@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { userService } from './user.service';
 import { ApiResponse } from '../../utils/ApiResponse';
+import { ApiError } from '../../utils/ApiError';
+import { isAdmin, isOwnerOrAdmin } from '../../utils/rbac';
 
 export const userController = {
   async list(req: Request, res: Response) {
@@ -10,7 +12,15 @@ export const userController = {
   },
 
   async getById(req: Request, res: Response) {
-    const user = await userService.getById(req.params.id as string);
+    const targetId = req.params.id as string;
+    const currentUserId = req.user!.id;
+    const currentRole = req.user!.role;
+
+    if (!isOwnerOrAdmin(targetId, currentUserId, currentRole)) {
+      throw ApiError.forbidden('You can only view your own profile or require admin access');
+    }
+
+    const user = await userService.getById(targetId);
 
     if (!user) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -29,7 +39,21 @@ export const userController = {
   },
 
   async update(req: Request, res: Response) {
-    const user = await userService.update(req.params.id as string, req.body);
+    const targetId = req.params.id as string;
+    const currentUserId = req.user!.id;
+    const currentRole = req.user!.role;
+
+    if (!isOwnerOrAdmin(targetId, currentUserId, currentRole)) {
+      throw ApiError.forbidden('You can only update your own profile or require admin access');
+    }
+
+    // Non-admins cannot change their own role
+    const body = { ...req.body };
+    if (!isAdmin(currentRole)) {
+      delete body.role;
+    }
+
+    const user = await userService.update(targetId, body);
 
     if (!user) {
       res.status(StatusCodes.NOT_FOUND).json({

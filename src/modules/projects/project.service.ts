@@ -1,5 +1,7 @@
 import { projectRepository, ProjectListFilter } from './project.repository';
 import { getPagination } from '../../utils/pagination';
+import { ApiError } from '../../utils/ApiError';
+import { isOwnerOrAdmin } from '../../utils/rbac';
 
 export const projectService = {
   async list(query: Record<string, unknown>) {
@@ -42,11 +44,25 @@ export const projectService = {
     return projectRepository.create(data);
   },
 
-  async update(id: string, data: Record<string, unknown>) {
+  async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
+    const existing = await projectRepository.findById(id);
+    if (!existing) return null;
+
+    if (!isOwnerOrAdmin(existing.ownerId, userId, role)) {
+      throw ApiError.forbidden('You can only update projects you own');
+    }
+
     return projectRepository.updateById(id, data);
   },
 
-  async remove(id: string) {
+  async remove(id: string, userId: string, role?: string) {
+    const existing = await projectRepository.findById(id);
+    if (!existing) return false;
+
+    if (!isOwnerOrAdmin(existing.ownerId, userId, role)) {
+      throw ApiError.forbidden('You can only delete projects you own');
+    }
+
     return projectRepository.deleteById(id);
   },
 };
