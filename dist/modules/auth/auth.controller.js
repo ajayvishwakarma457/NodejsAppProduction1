@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authController = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const auth_service_1 = require("./auth.service");
+const oauth_service_1 = require("./oauth.service");
 const ApiResponse_1 = require("../../utils/ApiResponse");
 const extractBearerToken = (req) => {
     const authHeader = req.headers.authorization;
@@ -57,6 +58,11 @@ exports.authController = {
         const { oldPassword, newPassword } = req.body;
         await auth_service_1.authService.changePassword(userId, oldPassword, newPassword);
         ApiResponse_1.ApiResponse.ok(null, 'Password changed successfully').send(res);
+    },
+    async oauthCallback(req, res) {
+        const profile = req.user;
+        const result = await oauth_service_1.oauthService.handleOAuth(profile);
+        ApiResponse_1.ApiResponse.ok(result, `${profile.provider} login successful`).send(res);
     },
 };
 //# sourceMappingURL=auth.controller.js.map

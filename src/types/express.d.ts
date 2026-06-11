@@ -1,15 +1,15 @@
 import 'express';
 
-export interface UserContext {
-  id: string;
-  email: string;
-  role: string;
-}
-
 declare global {
   namespace Express {
+    interface User {
+      id: string;
+      email: string;
+      role?: string;
+    }
+
     interface Request {
-      user?: UserContext;
+      user?: User;
       requestId?: string;
     }
   }

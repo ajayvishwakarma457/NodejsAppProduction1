@@ -32,6 +32,9 @@ exports.authService = {
         if (!user) {
             throw ApiError_1.ApiError.unauthorized('Invalid email or password');
         }
+        if (!user.password) {
+            throw ApiError_1.ApiError.badRequest('This account uses social login. Please sign in with Google or GitHub.');
+        }
         const isPasswordValid = await bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
             throw ApiError_1.ApiError.unauthorized('Invalid email or password');

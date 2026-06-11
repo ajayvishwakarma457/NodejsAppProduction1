@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import passport from '../../config/passport';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { validateMiddleware } from '../../middleware/validate.middleware';
@@ -37,4 +38,30 @@ authRouter.patch(
   authMiddleware,
   validateMiddleware(changePasswordSchema),
   asyncHandler(authController.changePassword)
+);
+
+/* ------------------------------------------------------------------ */
+// OAuth routes
+/* ------------------------------------------------------------------ */
+
+authRouter.get(
+  '/google',
+  passport.authenticate('google', { session: false, scope: ['profile', 'email'] })
+);
+
+authRouter.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failWithError: true }),
+  asyncHandler(authController.oauthCallback)
+);
+
+authRouter.get(
+  '/github',
+  passport.authenticate('github', { session: false, scope: ['user:email'] })
+);
+
+authRouter.get(
+  '/github/callback',
+  passport.authenticate('github', { session: false, failWithError: true }),
+  asyncHandler(authController.oauthCallback)
 );

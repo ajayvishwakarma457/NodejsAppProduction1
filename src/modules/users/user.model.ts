@@ -37,9 +37,9 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
+      default: null,
     },
     avatar: {
       type: String,
@@ -62,6 +62,16 @@ const userSchema = new Schema(
     lastLogin: {
       type: Date,
       default: null,
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google', 'github'],
+      default: 'local',
+    },
+    providerId: {
+      type: String,
+      default: null,
+      sparse: true,
     },
   },
   {
@@ -103,6 +113,12 @@ userSchema.index({ role: 1, createdAt: -1 }, { name: 'role_createdat_idx' });
 // Index for filtering unverified users (e.g. cleanup jobs or re-send flows).
 userSchema.index({ isVerified: 1 }, { name: 'isverified_idx' });
 
+// Sparse index for OAuth provider lookups.
+userSchema.index(
+  { provider: 1, providerId: 1 },
+  { unique: true, sparse: true, name: 'provider_providerid_idx' }
+);
+
 /* ------------------------------------------------------------------ */
 // Virtuals
 /* ------------------------------------------------------------------ */
@@ -120,7 +136,7 @@ userSchema.virtual('fullName').get(function () {
  * Only hashes when the password field has been modified (new doc or password change).
  */
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
 
@@ -138,6 +154,7 @@ userSchema.pre('save', async function (next) {
 /* ------------------------------------------------------------------ */
 
 userSchema.methods.comparePassword = async function (candidatePassword: string) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

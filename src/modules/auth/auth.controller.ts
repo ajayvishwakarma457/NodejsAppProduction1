@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authService } from './auth.service';
+import { oauthService } from './oauth.service';
+import { OAuthProfile } from '../../config/passport';
 import { ApiResponse } from '../../utils/ApiResponse';
 
 const extractBearerToken = (req: Request): string | null => {
@@ -68,5 +70,11 @@ export const authController = {
 
     await authService.changePassword(userId, oldPassword, newPassword);
     ApiResponse.ok(null, 'Password changed successfully').send(res);
+  },
+
+  async oauthCallback(req: Request, res: Response) {
+    const profile = req.user as unknown as OAuthProfile;
+    const result = await oauthService.handleOAuth(profile);
+    ApiResponse.ok(result, `${profile.provider} login successful`).send(res);
   },
 };

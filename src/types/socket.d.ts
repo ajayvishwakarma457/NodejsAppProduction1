@@ -1,5 +1,3 @@
-import { UserContext } from './express';
-
 declare module 'socket.io' {
   interface Handshake {
     auth: {
@@ -9,7 +7,11 @@ declare module 'socket.io' {
   }
 
   interface Socket {
-    user?: UserContext;
+    user?: {
+      id: string;
+      email: string;
+      role: string;
+    };
   }
 }
 

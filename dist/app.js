@@ -24,10 +24,15 @@ const notFound_middleware_1 = require("./middleware/notFound.middleware");
 const requestId_middleware_1 = require("./middleware/requestId.middleware");
 const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const auth_middleware_1 = require("./middleware/auth.middleware");
+const passport_1 = require("./config/passport");
 /* ------------------------------------------------------------------ */
 // App instance
 /* ------------------------------------------------------------------ */
 exports.app = (0, express_1.default)();
+/* ------------------------------------------------------------------ */
+// Passport initialization
+/* ------------------------------------------------------------------ */
+(0, passport_1.configurePassport)();
 /* ------------------------------------------------------------------ */
 // Trust proxy (required for correct req.ip behind load balancers)
 /* ------------------------------------------------------------------ */

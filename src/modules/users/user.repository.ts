@@ -101,6 +101,13 @@ export const userRepository = {
   },
 
   /**
+   * Find a user by OAuth provider and providerId.
+   */
+  async findByProvider(provider: string, providerId: string): Promise<UserDocument | null> {
+    return UserModel.findOne({ provider, providerId }).lean();
+  },
+
+  /**
    * Create a new user document.
    */
   async create(data: Partial<UserDocument>): Promise<UserDocument> {

@@ -67,6 +67,12 @@ exports.userRepository = {
             .lean();
     },
     /**
+     * Find a user by OAuth provider and providerId.
+     */
+    async findByProvider(provider, providerId) {
+        return user_model_1.UserModel.findOne({ provider, providerId }).lean();
+    },
+    /**
      * Create a new user document.
      */
     async create(data) {

@@ -18,12 +18,19 @@ import { notFoundMiddleware } from './middleware/notFound.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { optionalAuthMiddleware } from './middleware/auth.middleware';
+import { configurePassport } from './config/passport';
 
 /* ------------------------------------------------------------------ */
 // App instance
 /* ------------------------------------------------------------------ */
 
 export const app = express();
+
+/* ------------------------------------------------------------------ */
+// Passport initialization
+/* ------------------------------------------------------------------ */
+
+configurePassport();
 
 /* ------------------------------------------------------------------ */
 // Trust proxy (required for correct req.ip behind load balancers)

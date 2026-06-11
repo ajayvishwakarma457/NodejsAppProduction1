@@ -76,6 +76,22 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1000).max(3600000).default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(100),
   RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(200),
+
+  // OAuth
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
+  GOOGLE_CALLBACK_URL: z
+    .string()
+    .url()
+    .optional()
+    .default('http://localhost:4000/api/v1/auth/google/callback'),
+  GITHUB_CLIENT_ID: z.string().optional().default(''),
+  GITHUB_CLIENT_SECRET: z.string().optional().default(''),
+  GITHUB_CALLBACK_URL: z
+    .string()
+    .url()
+    .optional()
+    .default('http://localhost:4000/api/v1/auth/github/callback'),
 });
 
 const parsed = envSchema.safeParse(process.env);
