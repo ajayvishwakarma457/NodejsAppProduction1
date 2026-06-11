@@ -55,11 +55,7 @@ export const taskController = {
   },
 
   async remove(req: Request, res: Response) {
-    const deleted = await taskService.remove(
-      req.params.id as string,
-      req.user!.id,
-      req.user!.role
-    );
+    const deleted = await taskService.remove(req.params.id as string, req.user!.id, req.user!.role);
 
     if (!deleted) {
       res.status(StatusCodes.NOT_FOUND).json({

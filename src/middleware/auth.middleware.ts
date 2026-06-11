@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
+import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { tokenService } from '../services/token.service';
+import { apiKeyService } from '../modules/api-keys/api-key.service';
 
 const extractBearerToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
@@ -12,31 +14,70 @@ const extractBearerToken = (req: Request): string | null => {
   return token;
 };
 
-/** Require a valid access token. Attaches decoded user to req.user. */
+const extractApiKey = (req: Request): string | null => {
+  const value = req.headers[env.API_KEY_HEADER_NAME.toLowerCase()];
+  if (!value || typeof value !== 'string') return null;
+  return value.trim();
+};
+
+const authenticateJwt = async (req: Request): Promise<boolean> => {
+  const token = extractBearerToken(req);
+  if (!token) return false;
+
+  const isBlacklisted = await tokenService.isBlacklisted(token);
+  if (isBlacklisted) {
+    throw ApiError.unauthorized('Token has been revoked');
+  }
+
+  const payload = tokenService.verifyAccessToken(token);
+
+  req.user = {
+    id: payload.sub,
+    email: payload.email,
+    role: payload.role,
+  };
+  req.authType = 'jwt';
+
+  return true;
+};
+
+const authenticateApiKey = async (req: Request): Promise<boolean> => {
+  const apiKey = extractApiKey(req);
+  if (!apiKey) return false;
+
+  const result = await apiKeyService.validateApiKey(apiKey);
+  if (!result) {
+    throw ApiError.unauthorized('Invalid API key');
+  }
+
+  req.user = {
+    id: result.id,
+    email: result.email,
+    role: result.role,
+  };
+  req.authType = 'apiKey';
+
+  return true;
+};
+
+/** Require a valid access token or API key. Attaches decoded user to req.user. */
 export const authMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const token = extractBearerToken(req);
-
-    if (!token) {
-      next(ApiError.unauthorized('Access token required'));
+    const hasBearerToken = extractBearerToken(req) !== null;
+    if (hasBearerToken) {
+      await authenticateJwt(req);
+      next();
       return;
     }
 
-    const isBlacklisted = await tokenService.isBlacklisted(token);
-    if (isBlacklisted) {
-      next(ApiError.unauthorized('Token has been revoked'));
+    const hasApiKey = extractApiKey(req) !== null;
+    if (hasApiKey) {
+      await authenticateApiKey(req);
+      next();
       return;
     }
 
-    const payload = tokenService.verifyAccessToken(token);
-
-    req.user = {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    };
-
-    next();
+    next(ApiError.unauthorized('Access token or API key required'));
   } catch (error) {
     if (error instanceof ApiError) {
       next(error);
@@ -46,29 +87,16 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
   }
 };
 
-/** Optional auth: attaches user if token is present and valid, otherwise continues anonymously. */
+/** Optional auth: attaches user if token or API key is present and valid, otherwise continues anonymously. */
 export const optionalAuthMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const isJwtAuthenticated = await authenticateJwt(req);
+    if (isJwtAuthenticated) {
       next();
       return;
     }
 
-    const isBlacklisted = await tokenService.isBlacklisted(token);
-    if (isBlacklisted) {
-      next();
-      return;
-    }
-
-    const payload = tokenService.verifyAccessToken(token);
-
-    req.user = {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    };
-
+    await authenticateApiKey(req);
     next();
   } catch {
     next();

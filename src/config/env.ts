@@ -77,6 +77,13 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(100),
   RATE_LIMIT_AUTHENTICATED_MAX_REQUESTS: z.coerce.number().min(1).max(10000).default(200),
 
+  // API Key authentication
+  API_KEY_HEADER_NAME: z.string().min(1).default('X-API-Key'),
+  API_KEY_PREFIX: z.string().min(1).default('npak_'),
+  API_KEY_HASH_SALT_ROUNDS: z.coerce.number().min(4).max(20).default(10),
+  API_KEY_MAX_KEYS_PER_USER: z.coerce.number().min(1).max(100).default(10),
+  API_KEY_DEFAULT_EXPIRY_DAYS: z.coerce.number().min(1).max(365).default(365),
+
   // OAuth
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(''),

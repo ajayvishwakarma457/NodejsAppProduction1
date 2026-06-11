@@ -63,7 +63,7 @@ exports.app.use((0, cors_1.default)({
     origin: env_1.env.CLIENT_URL === '*' ? true : env_1.env.CLIENT_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', env_1.env.API_KEY_HEADER_NAME],
     exposedHeaders: [
         'X-Request-Id',
         'X-RateLimit-Limit',

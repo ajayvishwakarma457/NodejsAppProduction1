@@ -11,6 +11,7 @@ import {
   refreshTokenSchema,
   changePasswordSchema,
 } from './auth.validation';
+import { apiKeyRouter } from '../api-keys/api-key.routes';
 
 export const authRouter = Router();
 
@@ -65,3 +66,9 @@ authRouter.get(
   passport.authenticate('github', { session: false, failWithError: true }),
   asyncHandler(authController.oauthCallback)
 );
+
+/* ------------------------------------------------------------------ */
+// API key management routes (mounted under /api/v1/auth/api-keys)
+/* ------------------------------------------------------------------ */
+
+authRouter.use('/api-keys', apiKeyRouter);

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.middleware';
 import { tokenService } from '../services/token.service';
+import { apiKeyService } from '../modules/api-keys/api-key.service';
 import { redisService } from '../services/redis.service';
 import { ApiError } from '../utils/ApiError';
 
@@ -95,6 +96,69 @@ describe('authMiddleware', () => {
       email: 'a@example.com',
       role: 'admin',
     });
+    expect(req.authType).toBe('jwt');
+  });
+
+  it('should reject request with invalid API key', async () => {
+    vi.spyOn(apiKeyService, 'validateApiKey').mockResolvedValue(null);
+
+    const req = mockRequest({ 'x-api-key': 'npak_invalid_key' }) as Request;
+    const res = mockResponse() as Response;
+    const next = mockNext();
+
+    await authMiddleware(req, res, next);
+
+    expect((next as any).calls[0]).toBeInstanceOf(ApiError);
+    expect((next as any).calls[0].statusCode).toBe(401);
+  });
+
+  it('should allow valid API key and attach user', async () => {
+    vi.spyOn(apiKeyService, 'validateApiKey').mockResolvedValue({
+      id: 'user-1',
+      email: 'a@example.com',
+      role: 'member',
+      apiKeyId: 'key-1',
+      scopes: ['read'],
+    });
+
+    const req = mockRequest({ 'x-api-key': 'npak_pubid_secretvalue' }) as Request;
+    const res = mockResponse() as Response;
+    const next = mockNext();
+
+    await authMiddleware(req, res, next);
+
+    expect((next as any).calls[0]).toBeUndefined();
+    expect(req.user).toEqual({
+      id: 'user-1',
+      email: 'a@example.com',
+      role: 'member',
+    });
+    expect(req.authType).toBe('apiKey');
+  });
+
+  it('should prefer JWT over API key when both are provided', async () => {
+    const token = tokenService.generateAccessToken('user-jwt', 'jwt@example.com', 'admin');
+    const validateSpy = vi.spyOn(apiKeyService, 'validateApiKey').mockResolvedValue({
+      id: 'user-api',
+      email: 'api@example.com',
+      role: 'member',
+      apiKeyId: 'key-1',
+      scopes: ['read'],
+    });
+
+    const req = mockRequest({
+      authorization: `Bearer ${token}`,
+      'x-api-key': 'npak_pubid_secretvalue',
+    }) as Request;
+    const res = mockResponse() as Response;
+    const next = mockNext();
+
+    await authMiddleware(req, res, next);
+
+    expect((next as any).calls[0]).toBeUndefined();
+    expect(req.user?.id).toBe('user-jwt');
+    expect(req.authType).toBe('jwt');
+    expect(validateSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -144,5 +208,30 @@ describe('optionalAuthMiddleware', () => {
       email: 'b@example.com',
       role: 'member',
     });
+    expect(req.authType).toBe('jwt');
+  });
+
+  it('should attach user when valid API key provided', async () => {
+    vi.spyOn(apiKeyService, 'validateApiKey').mockResolvedValue({
+      id: 'user-3',
+      email: 'c@example.com',
+      role: 'admin',
+      apiKeyId: 'key-2',
+      scopes: ['read', 'write'],
+    });
+
+    const req = mockRequest({ 'x-api-key': 'npak_pubid_secretvalue' }) as Request;
+    const res = mockResponse() as Response;
+    const next = mockNext();
+
+    await optionalAuthMiddleware(req, res, next);
+
+    expect((next as any).calls[0]).toBeUndefined();
+    expect(req.user).toEqual({
+      id: 'user-3',
+      email: 'c@example.com',
+      role: 'admin',
+    });
+    expect(req.authType).toBe('apiKey');
   });
 });

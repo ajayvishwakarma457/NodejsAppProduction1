@@ -239,3 +239,34 @@ Project
   createdAt: Date
 }
 ```
+
+## 10. API Key Model
+
+```js
+{
+  id: UUID,
+
+  userId: UUID,
+
+  name: String,
+
+  publicId: String, // unique lookup identifier
+
+  keyHash: String,  // bcrypt hash of the full key (select: false)
+
+  keyPrefix: String, // first characters of the key for display
+
+  role: String, // admin, manager, member (snapshot at creation)
+
+  scopes: [String], // read, write, admin
+
+  expiresAt: Date,
+
+  lastUsedAt: Date,
+
+  isActive: Boolean,
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```

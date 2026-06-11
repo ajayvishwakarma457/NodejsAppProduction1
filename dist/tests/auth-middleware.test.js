@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vitest_1 = require("vitest");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const token_service_1 = require("../services/token.service");
+const api_key_service_1 = require("../modules/api-keys/api-key.service");
 const redis_service_1 = require("../services/redis.service");
 const ApiError_1 = require("../utils/ApiError");
 const mockRequest = (headers = {}) => ({
@@ -74,6 +75,57 @@ const mockNext = () => {
             email: 'a@example.com',
             role: 'admin',
         });
+        (0, vitest_1.expect)(req.authType).toBe('jwt');
+    });
+    (0, vitest_1.it)('should reject request with invalid API key', async () => {
+        vitest_1.vi.spyOn(api_key_service_1.apiKeyService, 'validateApiKey').mockResolvedValue(null);
+        const req = mockRequest({ 'x-api-key': 'npak_invalid_key' });
+        const res = mockResponse();
+        const next = mockNext();
+        await (0, auth_middleware_1.authMiddleware)(req, res, next);
+        (0, vitest_1.expect)(next.calls[0]).toBeInstanceOf(ApiError_1.ApiError);
+        (0, vitest_1.expect)(next.calls[0].statusCode).toBe(401);
+    });
+    (0, vitest_1.it)('should allow valid API key and attach user', async () => {
+        vitest_1.vi.spyOn(api_key_service_1.apiKeyService, 'validateApiKey').mockResolvedValue({
+            id: 'user-1',
+            email: 'a@example.com',
+            role: 'member',
+            apiKeyId: 'key-1',
+            scopes: ['read'],
+        });
+        const req = mockRequest({ 'x-api-key': 'npak_pubid_secretvalue' });
+        const res = mockResponse();
+        const next = mockNext();
+        await (0, auth_middleware_1.authMiddleware)(req, res, next);
+        (0, vitest_1.expect)(next.calls[0]).toBeUndefined();
+        (0, vitest_1.expect)(req.user).toEqual({
+            id: 'user-1',
+            email: 'a@example.com',
+            role: 'member',
+        });
+        (0, vitest_1.expect)(req.authType).toBe('apiKey');
+    });
+    (0, vitest_1.it)('should prefer JWT over API key when both are provided', async () => {
+        const token = token_service_1.tokenService.generateAccessToken('user-jwt', 'jwt@example.com', 'admin');
+        const validateSpy = vitest_1.vi.spyOn(api_key_service_1.apiKeyService, 'validateApiKey').mockResolvedValue({
+            id: 'user-api',
+            email: 'api@example.com',
+            role: 'member',
+            apiKeyId: 'key-1',
+            scopes: ['read'],
+        });
+        const req = mockRequest({
+            authorization: `Bearer ${token}`,
+            'x-api-key': 'npak_pubid_secretvalue',
+        });
+        const res = mockResponse();
+        const next = mockNext();
+        await (0, auth_middleware_1.authMiddleware)(req, res, next);
+        (0, vitest_1.expect)(next.calls[0]).toBeUndefined();
+        (0, vitest_1.expect)(req.user?.id).toBe('user-jwt');
+        (0, vitest_1.expect)(req.authType).toBe('jwt');
+        (0, vitest_1.expect)(validateSpy).not.toHaveBeenCalled();
     });
 });
 (0, vitest_1.describe)('optionalAuthMiddleware', () => {
@@ -111,6 +163,27 @@ const mockNext = () => {
             email: 'b@example.com',
             role: 'member',
         });
+        (0, vitest_1.expect)(req.authType).toBe('jwt');
+    });
+    (0, vitest_1.it)('should attach user when valid API key provided', async () => {
+        vitest_1.vi.spyOn(api_key_service_1.apiKeyService, 'validateApiKey').mockResolvedValue({
+            id: 'user-3',
+            email: 'c@example.com',
+            role: 'admin',
+            apiKeyId: 'key-2',
+            scopes: ['read', 'write'],
+        });
+        const req = mockRequest({ 'x-api-key': 'npak_pubid_secretvalue' });
+        const res = mockResponse();
+        const next = mockNext();
+        await (0, auth_middleware_1.optionalAuthMiddleware)(req, res, next);
+        (0, vitest_1.expect)(next.calls[0]).toBeUndefined();
+        (0, vitest_1.expect)(req.user).toEqual({
+            id: 'user-3',
+            email: 'c@example.com',
+            role: 'admin',
+        });
+        (0, vitest_1.expect)(req.authType).toBe('apiKey');
     });
 });
 //# sourceMappingURL=auth-middleware.test.js.map

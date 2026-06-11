@@ -8,7 +8,6 @@ export const createTeamSchema = z.object({
   body: z.object({
     name: z.string().min(1, 'Team name is required').max(100),
     description: z.string().min(1, 'Team description is required').max(500),
-
   }),
 });
 
@@ -16,7 +15,6 @@ export const updateTeamSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(100).optional(),
     description: z.string().min(1).max(500).optional(),
-
   }),
   params: z.object({
     id: z.string().min(1, 'Team id is required'),

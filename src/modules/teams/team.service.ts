@@ -79,12 +79,7 @@ export const teamService = {
     return teamRepository.addMember(teamId, userId, role);
   },
 
-  async removeMember(
-    teamId: string,
-    userId: string,
-    requesterId: string,
-    requesterRole?: string
-  ) {
+  async removeMember(teamId: string, userId: string, requesterId: string, requesterRole?: string) {
     const existing = await teamRepository.findById(teamId);
     if (!existing) return null;
 

@@ -7,6 +7,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 ## Main Modules
 
 - `auth`
+- `api-keys`
 - `users`
 - `teams`
 - `projects`
@@ -50,6 +51,14 @@ src/
 │   │   ├── auth.routes.ts
 │   │   ├── auth.validation.ts
 │   │   └── auth.utils.ts
+│   │
+│   ├── api-keys/
+│   │   ├── api-key.controller.ts
+│   │   ├── api-key.service.ts
+│   │   ├── api-key.repository.ts
+│   │   ├── api-key.routes.ts
+│   │   ├── api-key.validation.ts
+│   │   └── api-key.model.ts
 │   │
 │   ├── users/
 │   │   ├── user.controller.ts

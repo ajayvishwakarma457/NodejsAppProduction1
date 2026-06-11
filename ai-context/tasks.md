@@ -15,6 +15,7 @@
 - [x] Enhance CORS with explicit headers and preflight cache
 - [x] Add semantic versioning scripts and dependency management docs
 - [x] **RBAC security fixes** — ownership checks, forged-ID prevention, role escalation prevention across all modules
+- [x] Implement API key authentication (generate, validate, revoke, middleware integration)
 
 ## Open Tasks
 
@@ -23,6 +24,7 @@
 - [ ] Restrict notification POST endpoint (currently any auth user can target any `userId`)
 - [ ] Add HATEOAS links to API responses
 - [ ] Add content negotiation support
+- [ ] Add scope-based authorization middleware for API keys
 - [ ] Fix pre-existing Redis `getOrSet` test race condition
 
 ## Open Questions

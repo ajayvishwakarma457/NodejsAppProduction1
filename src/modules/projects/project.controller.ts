@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { projectService } from './project.service';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { ApiError } from '../../utils/ApiError';
 import { isAdmin } from '../../utils/rbac';
 
 export const projectController = {

@@ -7,7 +7,7 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 ## What Exists
 
 ### Modules
-- **auth** — Local register/login, JWT token rotation, OAuth2 (Google + GitHub), logout/blacklist
+- **auth** — Local register/login, JWT token rotation, OAuth2 (Google + GitHub), logout/blacklist, API key authentication
 - **users** — CRUD with self-or-admin access controls, role-restricted updates
 - **teams** — CRUD with owner enforcement, member management (owner/admin only)
 - **projects** — CRUD scoped to owner/team membership, auto-assigned `ownerId`
@@ -28,6 +28,7 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 - Helmet with API-appropriate CSP
 - Explicit CORS with preflight caching
 - JWT access + refresh tokens with JTI blacklisting
+- API key authentication with bcrypt-hashed keys, scopes, expiration, and per-user limits
 - bcryptjs password hashing (12 rounds) via Mongoose pre-save hook
 - RBAC ownership checks enforced in controllers and services
 - Sanitized request bodies (forged `ownerId`, `createdBy`, `role` stripped)
@@ -38,6 +39,7 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 - Implement manager role permissions (currently defined but unused)
 - Add HATEOAS / content negotiation (noted as missing)
 - Add notification POST endpoint restrictions (currently any auth user can create for any user)
+- Add scope-based authorization middleware to enforce API key scopes beyond role checks
 
 ## Risks or Unknowns
 

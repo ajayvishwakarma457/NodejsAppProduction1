@@ -108,3 +108,34 @@ Impact:
 
 - `src/utils/accessControl.ts` created with `isOwnerOrAdmin`, `setUserId`, `sanitizeBody`.
 - All module controllers, services, routes, and validation schemas updated.
+
+## 2026-06-11 - API Key Authentication
+
+Decision:
+
+Add production-grade API key authentication as a secondary credential type alongside JWT Bearer tokens. API keys are scoped, expirable, revocable, and stored only as bcrypt hashes.
+
+Reason:
+
+- Service-to-service and programmatic access often requires long-lived credentials that JWT session tokens are not designed for.
+- Separating API keys from user passwords and JWT tokens limits blast radius: a leaked API key can be revoked without resetting passwords or invalidating all sessions.
+- Storing only hashes and returning plaintext keys exactly once prevents accidental exposure in database dumps or logs.
+
+Rules:
+
+- **Key format**: `npak_<publicId>_<secret>` with a configurable prefix. Public ID enables O(1) lookup; secret is verified with bcrypt.
+- **Storage**: Only the bcrypt hash, public ID, and metadata are persisted. Plaintext keys are returned only at creation.
+- **Ownership**: Keys belong to a single user and inherit that user's role at creation time (fixed permissions).
+- **Lifecycle**: Keys support expiration (TTL index), revocation, and a per-user active key limit.
+- **Authentication order**: `authMiddleware` attempts Bearer JWT first, then falls back to the configured API key header (`X-API-Key` by default).
+- **Rate limiting**: API-key-authenticated requests are treated as authenticated users.
+- **Scopes**: Keys carry scopes (`read`, `write`, `admin`) for future fine-grained authorization.
+
+Impact:
+
+- New `api-keys` module under `src/modules/api-keys/` with model, repository, service, controller, routes, and validation.
+- `src/middleware/auth.middleware.ts` extended to support API keys and track `req.authType`.
+- `src/types/express.d.ts` extended with `authType`.
+- `src/config/env.ts` extended with API key configuration.
+- New environment variables added to `.env.example`.
+- New tests in `src/tests/api-key.test.ts` and additional middleware tests in `src/tests/auth-middleware.test.ts`.
