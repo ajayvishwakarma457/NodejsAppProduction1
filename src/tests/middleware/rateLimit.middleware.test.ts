@@ -148,6 +148,7 @@ describe('rateLimitMiddleware', () => {
         message: 'Too many requests, please try again later',
       })
     );
+    expect(res.setHeader).toHaveBeenCalledWith('Retry-After', '30');
     expect(next).not.toHaveBeenCalled();
     expect(logger.warn).toHaveBeenCalledWith(
       'Rate limit exceeded',
@@ -180,6 +181,24 @@ describe('rateLimitMiddleware', () => {
     const after = Math.ceil(Date.now() / 1000) + 60;
     expect(resetValue).toBeGreaterThanOrEqual(before + 55);
     expect(resetValue).toBeLessThanOrEqual(after);
+  });
+
+  it('should set draft-7 RateLimit headers', async () => {
+    vi.spyOn(envModule.env, 'RATE_LIMIT_ENABLED', 'get').mockReturnValue(true);
+    vi.spyOn(envModule.env, 'RATE_LIMIT_MAX_REQUESTS', 'get').mockReturnValue(5);
+
+    (redisClient.incr as ReturnType<typeof vi.fn>).mockResolvedValue(3);
+    (redisClient.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(45);
+
+    const req = mockRequest();
+    const res = mockResponse();
+    const next = vi.fn();
+
+    await rateLimitMiddleware(req, res, next);
+
+    expect(res.setHeader).toHaveBeenCalledWith('RateLimit-Limit', '5');
+    expect(res.setHeader).toHaveBeenCalledWith('RateLimit-Remaining', '2');
+    expect(res.setHeader).toHaveBeenCalledWith('RateLimit-Reset', expect.any(String));
   });
 
   it('should fail open when Redis is unavailable', async () => {

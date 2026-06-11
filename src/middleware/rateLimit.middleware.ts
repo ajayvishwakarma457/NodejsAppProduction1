@@ -44,11 +44,19 @@ export const rateLimitMiddleware = async (req: Request, res: Response, next: Nex
     }
     const resetTime = Math.ceil(Date.now() / 1000) + ttl;
 
+    // Legacy headers (backward compatible)
     res.setHeader('X-RateLimit-Limit', String(maxRequests));
     res.setHeader('X-RateLimit-Remaining', String(Math.max(0, maxRequests - current)));
     res.setHeader('X-RateLimit-Reset', String(resetTime));
 
+    // Draft-7 standard headers
+    res.setHeader('RateLimit-Limit', String(maxRequests));
+    res.setHeader('RateLimit-Remaining', String(Math.max(0, maxRequests - current)));
+    res.setHeader('RateLimit-Reset', String(resetTime));
+
     if (current > maxRequests) {
+      const retryAfter = Math.max(0, ttl);
+
       logger.warn('Rate limit exceeded', {
         method: req.method,
         url: req.originalUrl,
@@ -57,6 +65,8 @@ export const rateLimitMiddleware = async (req: Request, res: Response, next: Nex
         type,
         count: current,
       });
+
+      res.setHeader('Retry-After', String(retryAfter));
 
       return res.status(StatusCodes.TOO_MANY_REQUESTS).json({
         success: false,

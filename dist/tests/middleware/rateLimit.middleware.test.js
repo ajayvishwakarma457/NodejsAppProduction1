@@ -143,6 +143,7 @@ const redis_1 = require("../../config/redis");
             success: false,
             message: 'Too many requests, please try again later',
         }));
+        (0, vitest_1.expect)(res.setHeader).toHaveBeenCalledWith('Retry-After', '30');
         (0, vitest_1.expect)(next).not.toHaveBeenCalled();
         (0, vitest_1.expect)(logger_1.logger.warn).toHaveBeenCalledWith('Rate limit exceeded', vitest_1.expect.objectContaining({
             identifier: '127.0.0.1',
@@ -165,6 +166,19 @@ const redis_1 = require("../../config/redis");
         const after = Math.ceil(Date.now() / 1000) + 60;
         (0, vitest_1.expect)(resetValue).toBeGreaterThanOrEqual(before + 55);
         (0, vitest_1.expect)(resetValue).toBeLessThanOrEqual(after);
+    });
+    (0, vitest_1.it)('should set draft-7 RateLimit headers', async () => {
+        vitest_1.vi.spyOn(envModule.env, 'RATE_LIMIT_ENABLED', 'get').mockReturnValue(true);
+        vitest_1.vi.spyOn(envModule.env, 'RATE_LIMIT_MAX_REQUESTS', 'get').mockReturnValue(5);
+        redis_1.redisClient.incr.mockResolvedValue(3);
+        redis_1.redisClient.ttl.mockResolvedValue(45);
+        const req = mockRequest();
+        const res = mockResponse();
+        const next = vitest_1.vi.fn();
+        await (0, rateLimit_middleware_1.rateLimitMiddleware)(req, res, next);
+        (0, vitest_1.expect)(res.setHeader).toHaveBeenCalledWith('RateLimit-Limit', '5');
+        (0, vitest_1.expect)(res.setHeader).toHaveBeenCalledWith('RateLimit-Remaining', '2');
+        (0, vitest_1.expect)(res.setHeader).toHaveBeenCalledWith('RateLimit-Reset', vitest_1.expect.any(String));
     });
     (0, vitest_1.it)('should fail open when Redis is unavailable', async () => {
         vitest_1.vi.spyOn(envModule.env, 'RATE_LIMIT_ENABLED', 'get').mockReturnValue(true);
