@@ -17,7 +17,19 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
-    "ci": "npm run format:check && npm run lint && npm run test && npm run build"
+    "ci": "npm run format:check && npm run lint && npm run test && npm run build",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major",
+    "preversion": "npm run ci",
+    "postversion": "git push && git push --tags",
+    "deps:check": "ncu",
+    "deps:check:minor": "ncu --target minor",
+    "deps:check:major": "ncu --target major",
+    "deps:update:patch": "ncu --target patch -u && npm install",
+    "deps:update:minor": "ncu --target minor -u && npm install",
+    "deps:update:major": "ncu --target major -u && npm install",
+    "deps:update:interactive": "ncu -i"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
@@ -51,6 +63,7 @@
     "eslint": "9.39.4",
     "globals": "17.6.0",
     "jiti": "2.7.0",
+    "npm-check-updates": "18.3.1",
     "prettier": "3.8.4",
     "tsx": "4.22.4",
     "typescript": "5.6.2",
