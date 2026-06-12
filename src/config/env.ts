@@ -104,6 +104,13 @@ const envSchema = z.object({
     z.boolean().default(true)
   ),
 
+  // Lightweight raw WebSocket server (ws) running alongside Socket.IO
+  WS_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean().default(true)
+  ),
+  WS_PORT: z.coerce.number().min(1).max(65535).default(3001),
+
   RATE_LIMIT_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

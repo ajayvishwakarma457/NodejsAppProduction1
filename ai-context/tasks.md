@@ -31,6 +31,7 @@
 - [x] Add job priority support to the legacy custom queue and BullMQ report queue (additive; lower number = higher priority)
 - [x] Add production-grade, typed event bus for application-level event-driven patterns (additive; services emit domain events without replacing existing logic)
 - [x] Extend Socket.IO layer with additive namespaces (`/tasks`, `/teams`, `/notifications`) alongside existing rooms/broadcasting
+- [x] Add lightweight raw WebSocket (`ws`) server as an alternative transport alongside Socket.IO
 
 ## Open Tasks
 

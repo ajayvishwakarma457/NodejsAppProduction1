@@ -284,6 +284,12 @@ src/
 │       ├── teams.namespace.ts
 │       └── notifications.namespace.ts
 │
+├── ws/
+│   ├── index.ts
+│   ├── helpers.ts
+│   └── handlers/
+│       └── message.handler.ts
+│
 ## Background Jobs
 
 - `jobs/index.ts` orchestrates background jobs.
@@ -317,6 +323,11 @@ src/
   - `/teams` — team room join/leave events.
   - `/notifications` — per-user notification room for push delivery.
 - Existing default-namespace behavior is unchanged; namespaces are an opt-in entry point for clients.
+- Lightweight `ws` alternative (`services/ws.service.ts`, `ws/index.ts`):
+  - Runs on a separate port (`WS_PORT`, default `3001`) so it never conflicts with Socket.IO.
+  - JWT auth via query param `?token=` or `sec-websocket-protocol` header.
+  - Per-user delivery (`emitToUser`), channel subscriptions (`subscribe:<channel>` / `unsubscribe:<channel>`), broadcasting, and ping/pong heartbeat.
+  - `socketService.emitToUser` also pushes to connected `ws` clients, so notifications reach both Socket.IO and `ws` users.
 
 ## Event Bus
 

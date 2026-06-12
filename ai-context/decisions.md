@@ -246,3 +246,30 @@ Impact:
 - `src/services/socket.service.ts` extended with namespace-aware helpers.
 - `src/server.ts` calls `initializeNamespaces(io)` after `registerSockets(io)`.
 - Added `src/tests/sockets/namespaces.test.ts` covering auth rejection, namespace connection, and user-specific broadcasts on both default and `/notifications` namespaces.
+
+## 2026-06-12 - Add a Lightweight `ws` Server Alongside Socket.IO
+
+Decision:
+
+Add a raw WebSocket server using the `ws` library as an alternative transport, running on its own port so it does not interfere with the existing Socket.IO server.
+
+Reason:
+
+Some clients prefer a lightweight protocol without the Socket.IO fallback/negotiation overhead. Offering both lets consumers choose while keeping Socket.IO untouched.
+
+Rules:
+
+- Run `ws` on a dedicated port (`WS_PORT`, default `3001`). Do not share the HTTP server with Socket.IO to avoid upgrade conflicts.
+- Authenticate `ws` connections via query param `?token=` or `sec-websocket-protocol` header using the same JWT access tokens as Socket.IO.
+- Support per-user emit, channel subscriptions (`subscribe:<channel>`), broadcasting, and ping/pong heartbeat.
+- Integrate with existing push notifications by extending `socketService.emitToUser` to also call `wsService.emitToUser`.
+- Keep all Socket.IO code unchanged.
+- Add `WS_ENABLED` and `WS_PORT` env vars.
+- Install `ws` as a runtime dependency and `@types/ws` as a dev dependency.
+
+Impact:
+
+- New `src/services/ws.service.ts`, `src/ws/index.ts`, `src/ws/helpers.ts`, `src/ws/handlers/message.handler.ts`.
+- `src/services/socket.service.ts` `emitToUser` now also pushes to `ws` clients.
+- `src/server.ts` starts/stops the `ws` server alongside Socket.IO.
+- Added `src/tests/ws/ws.test.ts` covering auth, user emit, channel subscription, and unsubscribed isolation.
