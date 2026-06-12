@@ -118,10 +118,7 @@ export const taskRepository = {
   /**
    * Create a new task document.
    */
-  async create(
-    data: Partial<TaskDocument>,
-    session?: ClientSession
-  ): Promise<TaskDocument> {
+  async create(data: Partial<TaskDocument>, session?: ClientSession): Promise<TaskDocument> {
     const doc = new TaskModel(data);
     return doc.save({ session });
   },
@@ -266,7 +263,11 @@ export const taskRepository = {
           total: { $sum: 1 },
           overdue: {
             $sum: {
-              $cond: [{ $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] }, 1, 0],
+              $cond: [
+                { $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] },
+                1,
+                0,
+              ],
             },
           },
         },

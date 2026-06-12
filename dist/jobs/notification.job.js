@@ -32,6 +32,7 @@ const socket_service_1 = require("../services/socket.service");
 const email_service_1 = require("../services/email.service");
 const queue_1 = require("../utils/queue");
 const constants_1 = require("../utils/constants");
+const distributed_lock_1 = require("../utils/distributed-lock");
 const notificationQueue = (0, queue_1.createQueue)('notification');
 let task = null;
 const deliverViaSocket = (payload) => {
@@ -203,16 +204,17 @@ exports.notificationJob = {
             });
             return;
         }
+        const lockedCycle = (0, distributed_lock_1.createLockedCronHandler)('notification-job', async () => {
+            const result = await this.processBatch();
+            const cleanupResult = await this.cleanup();
+            return { ...result, cleanedUp: cleanupResult.deleted };
+        });
         task = cron.schedule(env_1.env.NOTIFICATION_JOB_CRON, async () => {
             try {
                 logger_1.logger.debug('Notification job batch starting');
-                const result = await this.processBatch();
-                const cleanupResult = await this.cleanup();
-                if (result.processed > 0 || cleanupResult.deleted > 0) {
-                    logger_1.logger.info('Notification job cycle completed', {
-                        ...result,
-                        cleanedUp: cleanupResult.deleted,
-                    });
+                const result = await lockedCycle();
+                if (result && (result.processed > 0 || result.cleanedUp > 0)) {
+                    logger_1.logger.info('Notification job cycle completed', result);
                 }
             }
             catch (error) {

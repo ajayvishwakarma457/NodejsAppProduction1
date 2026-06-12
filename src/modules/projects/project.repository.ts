@@ -99,10 +99,7 @@ export const projectRepository = {
   /**
    * Create a new project document.
    */
-  async create(
-    data: Partial<ProjectDocument>,
-    session?: ClientSession
-  ): Promise<ProjectDocument> {
+  async create(data: Partial<ProjectDocument>, session?: ClientSession): Promise<ProjectDocument> {
     const doc = new ProjectModel(data);
     return doc.save({ session });
   },
@@ -172,9 +169,15 @@ export const projectRepository = {
   /**
    * Task summary per project: total, completed, and overdue tasks.
    */
-  async getProjectTaskSummary(
-    userId?: string
-  ): Promise<{ _id: string; name: string; totalTasks: number; completedTasks: number; overdueTasks: number }[]> {
+  async getProjectTaskSummary(userId?: string): Promise<
+    {
+      _id: string;
+      name: string;
+      totalTasks: number;
+      completedTasks: number;
+      overdueTasks: number;
+    }[]
+  > {
     const match: Record<string, unknown> = {};
     if (userId) {
       match.ownerId = new Types.ObjectId(userId);
@@ -223,8 +226,12 @@ export const projectRepository = {
       { $sort: { totalTasks: -1 } },
     ];
 
-    return timedAggregate<
-      { _id: string; name: string; totalTasks: number; completedTasks: number; overdueTasks: number }
-    >(ProjectModel, pipeline, { operation: 'getProjectTaskSummary' });
+    return timedAggregate<{
+      _id: string;
+      name: string;
+      totalTasks: number;
+      completedTasks: number;
+      overdueTasks: number;
+    }>(ProjectModel, pipeline, { operation: 'getProjectTaskSummary' });
   },
 };

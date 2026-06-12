@@ -106,10 +106,7 @@ apiKeySchema.index({ userId: 1, createdAt: -1 }, { name: 'apikey_user_createdat_
 apiKeySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0, name: 'apikey_expiresat_ttl_idx' });
 
 // Compound index for active API key validation.
-apiKeySchema.index(
-  { publicId: 1, isActive: 1, expiresAt: 1 },
-  { name: 'apikey_validation_idx' }
-);
+apiKeySchema.index({ publicId: 1, isActive: 1, expiresAt: 1 }, { name: 'apikey_validation_idx' });
 
 // Compound index for user listings scoped to active keys.
 apiKeySchema.index(

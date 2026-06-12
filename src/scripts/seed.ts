@@ -21,7 +21,12 @@ Options:
   `);
 };
 
-const parseArgs = (): { command: Command; dryRun: boolean; force: boolean; environment?: string } => {
+const parseArgs = (): {
+  command: Command;
+  dryRun: boolean;
+  force: boolean;
+  environment?: string;
+} => {
   const args = process.argv.slice(2);
   const command = args[0] as Command;
 

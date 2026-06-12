@@ -30,6 +30,7 @@ const logger_1 = require("../config/logger");
 const task_service_1 = require("../modules/tasks/task.service");
 const redis_service_1 = require("../services/redis.service");
 const queue_1 = require("../utils/queue");
+const distributed_lock_1 = require("../utils/distributed-lock");
 const email_job_1 = require("./email.job");
 const notification_job_1 = require("./notification.job");
 const reminderQueue = (0, queue_1.createQueue)('reminder');
@@ -227,16 +228,17 @@ exports.reminderJob = {
             });
             return;
         }
+        const lockedCycle = (0, distributed_lock_1.createLockedCronHandler)('reminder-job', async () => {
+            const scanResult = await this.scan();
+            const batchResult = await this.processBatch();
+            return { ...scanResult, ...batchResult };
+        });
         task = cron.schedule(env_1.env.REMINDER_JOB_CRON, async () => {
             try {
                 logger_1.logger.debug('Reminder job cycle starting');
-                const scanResult = await this.scan();
-                const batchResult = await this.processBatch();
-                if (scanResult.enqueued > 0 || batchResult.processed > 0) {
-                    logger_1.logger.info('Reminder job cycle completed', {
-                        ...scanResult,
-                        ...batchResult,
-                    });
+                const result = await lockedCycle();
+                if (result && (result.enqueued > 0 || result.processed > 0)) {
+                    logger_1.logger.info('Reminder job cycle completed', result);
                 }
             }
             catch (error) {

@@ -201,7 +201,11 @@ exports.taskRepository = {
                     total: { $sum: 1 },
                     overdue: {
                         $sum: {
-                            $cond: [{ $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] }, 1, 0],
+                            $cond: [
+                                { $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] },
+                                1,
+                                0,
+                            ],
                         },
                     },
                 },

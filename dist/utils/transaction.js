@@ -35,7 +35,10 @@ const isTransactionSupported = async () => {
         if (!description)
             return false;
         const type = description.type?.toLowerCase?.() ?? '';
-        return type === 'replset' || type === 'sharded' || type.includes('replica') || type.includes('sharded');
+        return (type === 'replset' ||
+            type === 'sharded' ||
+            type.includes('replica') ||
+            type.includes('sharded'));
     }
     catch (error) {
         logger_1.logger.debug('Could not determine transaction support', { error });

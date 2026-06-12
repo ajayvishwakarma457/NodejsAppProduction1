@@ -45,9 +45,7 @@ const loadSeederFiles = async () => {
         throw error;
     }
     const seeders = [];
-    const sortedFiles = files
-        .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
-        .sort();
+    const sortedFiles = files.filter((file) => file.endsWith('.ts') || file.endsWith('.js')).sort();
     for (const file of sortedFiles) {
         const fullPath = path_1.default.join(SEEDERS_DIR, file);
         const module = (await Promise.resolve(`${fullPath}`).then(s => __importStar(require(s))));

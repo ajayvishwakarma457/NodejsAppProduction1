@@ -124,10 +124,7 @@ export const userRepository = {
   /**
    * Create a new user document.
    */
-  async create(
-    data: Partial<UserDocument>,
-    session?: ClientSession
-  ): Promise<UserDocument> {
+  async create(data: Partial<UserDocument>, session?: ClientSession): Promise<UserDocument> {
     const doc = new UserModel(data);
     return doc.save({ session });
   },

@@ -87,6 +87,8 @@ notificationSchema.index(
   { name: 'user_type_createdat_idx' }
 );
 
-export type NotificationDocument = InferSchemaType<typeof notificationSchema> & { _id: Types.ObjectId };
+export type NotificationDocument = InferSchemaType<typeof notificationSchema> & {
+  _id: Types.ObjectId;
+};
 
 export const NotificationModel = model<NotificationDocument>('Notification', notificationSchema);

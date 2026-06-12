@@ -103,10 +103,7 @@ export const teamRepository = {
   /**
    * Create a new team document.
    */
-  async create(
-    data: Partial<TeamDocument>,
-    session?: ClientSession
-  ): Promise<TeamDocument> {
+  async create(data: Partial<TeamDocument>, session?: ClientSession): Promise<TeamDocument> {
     const doc = new TeamModel(data);
     return doc.save({ session });
   },

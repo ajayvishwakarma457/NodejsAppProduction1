@@ -57,9 +57,7 @@ exports.apiKeyRepository = {
      * Find an API key by its public id.
      */
     async findByPublicId(publicId) {
-        const query = api_key_model_1.ApiKeyModel.findOne({ publicId })
-            .select((0, query_optimizer_1.buildListProjection)())
-            .lean();
+        const query = api_key_model_1.ApiKeyModel.findOne({ publicId }).select((0, query_optimizer_1.buildListProjection)()).lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'api_keys', operation: 'findByPublicId' });
     },
     /**
@@ -79,9 +77,7 @@ exports.apiKeyRepository = {
      * Find an API key by its hashed key value.
      */
     async findByKeyHash(keyHash) {
-        const query = api_key_model_1.ApiKeyModel.findOne({ keyHash })
-            .select((0, query_optimizer_1.buildListProjection)())
-            .lean();
+        const query = api_key_model_1.ApiKeyModel.findOne({ keyHash }).select((0, query_optimizer_1.buildListProjection)()).lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'api_keys', operation: 'findByKeyHash' });
     },
     /**

@@ -95,6 +95,9 @@ const envSchema = z.object({
     return val === 'true' || val === true;
   }, z.boolean()),
 
+  // Distributed cron job locking (prevents multiple server instances from running the same cron job)
+  CRON_JOB_LOCK_TTL_SECONDS: z.coerce.number().min(1).max(3600).default(60),
+
   RATE_LIMIT_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

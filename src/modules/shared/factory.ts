@@ -5,7 +5,11 @@ import { StatusCodes } from 'http-status-codes';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { getPagination, buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
-import { timedQuery, buildListProjection, buildRegexSearchFilter } from '../../utils/query-optimizer';
+import {
+  timedQuery,
+  buildListProjection,
+  buildRegexSearchFilter,
+} from '../../utils/query-optimizer';
 import { validateMiddleware } from '../../middleware/validate.middleware';
 import { logger } from '../../config/logger';
 

@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { emailService, SendEmailOptions } from '../services/email.service';
+import { createLockedCronHandler } from '../utils/distributed-lock';
 import { createQueue } from '../utils/queue';
 
 export interface EmailQueuePayload extends SendEmailOptions {
@@ -119,12 +120,14 @@ export const emailJob = {
       return;
     }
 
+    const lockedProcessBatch = createLockedCronHandler('email-job', () => this.processBatch());
+
     task = cron.schedule(env.EMAIL_JOB_CRON, async () => {
       try {
         logger.debug('Email job batch starting');
-        const result = await this.processBatch();
+        const result = await lockedProcessBatch();
 
-        if (result.processed > 0) {
+        if (result && result.processed > 0) {
           logger.info('Email job batch completed', result);
         }
       } catch (error) {

@@ -47,7 +47,12 @@ export const isTransactionSupported = async (): Promise<boolean> => {
     if (!description) return false;
 
     const type = description.type?.toLowerCase?.() ?? '';
-    return type === 'replset' || type === 'sharded' || type.includes('replica') || type.includes('sharded');
+    return (
+      type === 'replset' ||
+      type === 'sharded' ||
+      type.includes('replica') ||
+      type.includes('sharded')
+    );
   } catch (error) {
     logger.debug('Could not determine transaction support', { error });
     return false;
@@ -95,9 +100,7 @@ export const withTransaction = async <T>(
       return result as T;
     } catch (error) {
       if (!session && isTransactionError(error)) {
-        logger.warn(
-          'MongoDB transactions unavailable. Running operation without transaction.'
-        );
+        logger.warn('MongoDB transactions unavailable. Running operation without transaction.');
         return operation({ session: null });
       }
 

@@ -19,9 +19,7 @@ const loadSeederFiles = async (): Promise<Seeder[]> => {
   }
 
   const seeders: Seeder[] = [];
-  const sortedFiles = files
-    .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
-    .sort();
+  const sortedFiles = files.filter((file) => file.endsWith('.ts') || file.endsWith('.js')).sort();
 
   for (const file of sortedFiles) {
     const fullPath = path.join(SEEDERS_DIR, file);

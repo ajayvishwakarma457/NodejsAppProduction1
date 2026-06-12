@@ -110,10 +110,7 @@ export const commentRepository = {
   /**
    * Create a new comment document.
    */
-  async create(
-    data: Record<string, unknown>,
-    session?: ClientSession
-  ): Promise<CommentDocument> {
+  async create(data: Record<string, unknown>, session?: ClientSession): Promise<CommentDocument> {
     const doc = new CommentModel(data);
     return doc.save({ session });
   },

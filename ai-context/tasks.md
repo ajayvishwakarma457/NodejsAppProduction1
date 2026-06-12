@@ -27,6 +27,7 @@
 - [x] Implement production-grade MongoDB aggregation pipelines and dashboard endpoints
 - [x] Implement production-grade Redis fundamentals (strings, hashes, sorted sets, TTL) with helper methods and tests
 - [x] Implement cache-aside pattern for entity reads across users, teams, projects, and tasks with invalidation on writes
+- [x] Add Redis distributed locks for all node-cron jobs (email, notification, reminder) so only one instance executes each scheduled job
 
 ## Open Tasks
 

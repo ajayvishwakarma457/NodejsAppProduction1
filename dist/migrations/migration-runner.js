@@ -76,9 +76,7 @@ const loadMigrationFiles = async () => {
         throw error;
     }
     const migrations = [];
-    const sortedFiles = files
-        .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
-        .sort();
+    const sortedFiles = files.filter((file) => file.endsWith('.ts') || file.endsWith('.js')).sort();
     for (const file of sortedFiles) {
         const fullPath = path_1.default.join(MIGRATIONS_DIR, file);
         const module = (await Promise.resolve(`${fullPath}`).then(s => __importStar(require(s))));

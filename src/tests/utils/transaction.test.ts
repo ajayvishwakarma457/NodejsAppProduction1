@@ -29,10 +29,11 @@ vi.mock('mongoose', () => ({
 
 import mongoose from 'mongoose';
 
-const getMockConnection = () => mongoose.connection as unknown as {
-  startSession: ReturnType<typeof vi.fn>;
-  client: { topology: { description: { type: string } } };
-};
+const getMockConnection = () =>
+  mongoose.connection as unknown as {
+    startSession: ReturnType<typeof vi.fn>;
+    client: { topology: { description: { type: string } } };
+  };
 
 describe('transaction utils', () => {
   beforeEach(() => {
@@ -56,9 +57,11 @@ describe('transaction utils', () => {
   describe('withTransaction', () => {
     it('should execute operation inside transaction when supported', async () => {
       getMockConnection().startSession.mockResolvedValue(mockSession);
-      mockSession.withTransaction.mockImplementation(async (fn: (s: unknown) => Promise<unknown>) => {
-        return fn({});
-      });
+      mockSession.withTransaction.mockImplementation(
+        async (fn: (s: unknown) => Promise<unknown>) => {
+          return fn({});
+        }
+      );
 
       const operation = vi.fn().mockResolvedValue('done');
       const result = await withTransaction(operation);
@@ -69,7 +72,9 @@ describe('transaction utils', () => {
     });
 
     it('should run without session on transaction errors', async () => {
-      getMockConnection().startSession.mockRejectedValue(new Error('transactions are not supported'));
+      getMockConnection().startSession.mockRejectedValue(
+        new Error('transactions are not supported')
+      );
 
       const operation = vi.fn().mockResolvedValue('fallback');
       const result = await withTransaction(operation);

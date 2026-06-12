@@ -19,10 +19,7 @@ commentSchema.index({ taskId: 1, createdAt: -1 }, { name: 'comment_task_createda
 commentSchema.index({ content: 'text' }, { name: 'comment_text_search_idx' });
 
 // Compound index for user activity feeds.
-commentSchema.index(
-  { userId: 1, createdAt: -1 },
-  { name: 'user_createdat_idx' }
-);
+commentSchema.index({ userId: 1, createdAt: -1 }, { name: 'user_createdat_idx' });
 
 // Compound index for nested comment threads.
 commentSchema.index(

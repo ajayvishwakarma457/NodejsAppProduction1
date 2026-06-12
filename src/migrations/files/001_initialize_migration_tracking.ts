@@ -17,9 +17,7 @@ const migration: Migration = {
     await db.collection('migrations').createIndex({ name: 1 }, { unique: true });
     await db.collection('migrations').createIndex({ appliedAt: 1 });
 
-    await db
-      .collection('migrationlocks')
-      .createIndex({ lockedAt: 1 }, { expireAfterSeconds: 300 });
+    await db.collection('migrationlocks').createIndex({ lockedAt: 1 }, { expireAfterSeconds: 300 });
   },
 
   async down({ connection }) {

@@ -93,16 +93,10 @@ teamSchema.index(
 );
 
 // Compound index for owner-centric listings.
-teamSchema.index(
-  { ownerId: 1, createdAt: -1 },
-  { name: 'owner_createdat_idx' }
-);
+teamSchema.index({ ownerId: 1, createdAt: -1 }, { name: 'owner_createdat_idx' });
 
 // Compound index for member-centric listings with sort.
-teamSchema.index(
-  { 'members.userId': 1, createdAt: -1 },
-  { name: 'member_createdat_idx' }
-);
+teamSchema.index({ 'members.userId': 1, createdAt: -1 }, { name: 'member_createdat_idx' });
 
 /* ------------------------------------------------------------------ */
 // Virtuals

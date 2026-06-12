@@ -42,7 +42,11 @@ const buildDateGroupStage = (options) => {
     };
     return {
         $group: {
-            _id: { [outputField]: { $dateToString: { format: dateToStringFormat[granularity], date: `$${field}` } } },
+            _id: {
+                [outputField]: {
+                    $dateToString: { format: dateToStringFormat[granularity], date: `$${field}` },
+                },
+            },
             count: { $sum: 1 },
         },
     };
@@ -93,7 +97,7 @@ const paginatedAggregate = async (model, pipeline, options = {}) => {
     const result = await (0, exports.timedAggregate)(model, [...pipeline, facetStage], aggregateOptions);
     const first = result[0] ?? {};
     const data = (first.data ?? []);
-    const total = (first.total?.[0]?.count) ?? 0;
+    const total = first.total?.[0]?.count ?? 0;
     return { data, total };
 };
 exports.paginatedAggregate = paginatedAggregate;

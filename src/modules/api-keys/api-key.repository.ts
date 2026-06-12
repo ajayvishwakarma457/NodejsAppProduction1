@@ -93,9 +93,7 @@ export const apiKeyRepository = {
    * Find an API key by its public id.
    */
   async findByPublicId(publicId: string): Promise<ApiKeyDocument | null> {
-    const query = ApiKeyModel.findOne({ publicId })
-      .select(buildListProjection())
-      .lean();
+    const query = ApiKeyModel.findOne({ publicId }).select(buildListProjection()).lean();
     return timedQuery(query, { collection: 'api_keys', operation: 'findByPublicId' });
   },
 
@@ -117,9 +115,7 @@ export const apiKeyRepository = {
    * Find an API key by its hashed key value.
    */
   async findByKeyHash(keyHash: string): Promise<ApiKeyDocument | null> {
-    const query = ApiKeyModel.findOne({ keyHash })
-      .select(buildListProjection())
-      .lean();
+    const query = ApiKeyModel.findOne({ keyHash }).select(buildListProjection()).lean();
     return timedQuery(query, { collection: 'api_keys', operation: 'findByKeyHash' });
   },
 
@@ -137,10 +133,7 @@ export const apiKeyRepository = {
   /**
    * Create a new API key document.
    */
-  async create(
-    data: Partial<ApiKeyDocument>,
-    session?: ClientSession
-  ): Promise<ApiKeyDocument> {
+  async create(data: Partial<ApiKeyDocument>, session?: ClientSession): Promise<ApiKeyDocument> {
     const doc = new ApiKeyModel(data);
     return doc.save({ session });
   },
@@ -182,11 +175,7 @@ export const apiKeyRepository = {
    * Revoke an API key by id and owner userId.
    * Returns true if a document was modified.
    */
-  async revokeByIdAndUserId(
-    id: string,
-    userId: string,
-    session?: ClientSession
-  ): Promise<boolean> {
+  async revokeByIdAndUserId(id: string, userId: string, session?: ClientSession): Promise<boolean> {
     const result = await ApiKeyModel.updateOne(
       { _id: id, userId },
       { isActive: false, revokedAt: new Date() },

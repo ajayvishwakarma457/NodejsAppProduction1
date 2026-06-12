@@ -122,10 +122,7 @@ taskSchema.index(
 );
 
 // Compound index for reminder and overdue scans.
-taskSchema.index(
-  { status: 1, dueDate: 1, assignedTo: 1 },
-  { name: 'status_duedate_assignee_idx' }
-);
+taskSchema.index({ status: 1, dueDate: 1, assignedTo: 1 }, { name: 'status_duedate_assignee_idx' });
 
 /* ------------------------------------------------------------------ */
 // Export

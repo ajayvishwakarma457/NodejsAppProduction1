@@ -77,6 +77,8 @@ const envSchema = zod_1.z.object({
             return true;
         return val === 'true' || val === true;
     }, zod_1.z.boolean()),
+    // Distributed cron job locking (prevents multiple server instances from running the same cron job)
+    CRON_JOB_LOCK_TTL_SECONDS: zod_1.z.coerce.number().min(1).max(3600).default(60),
     RATE_LIMIT_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     RATE_LIMIT_WINDOW_MS: zod_1.z.coerce.number().min(1000).max(3600000).default(900000),
     RATE_LIMIT_MAX_REQUESTS: zod_1.z.coerce.number().min(1).max(10000).default(100),

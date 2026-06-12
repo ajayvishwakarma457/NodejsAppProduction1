@@ -139,3 +139,26 @@ Impact:
 - `src/config/env.ts` extended with API key configuration.
 - New environment variables added to `.env.example`.
 - New tests in `src/tests/api-key.test.ts` and additional middleware tests in `src/tests/auth-middleware.test.ts`.
+
+## 2026-06-12 - Use Redis Distributed Locks for Cron Jobs
+
+Decision:
+
+Wrap every legacy node-cron job (`email`, `notification`, `reminder`) with a Redis-based distributed lock so only one server instance executes a given scheduled job per tick.
+
+Reason:
+
+In multi-instance deployments, cron jobs scheduled on every node would otherwise run duplicate work, send duplicate emails/notifications, and enqueue duplicate reminders. Redis SET NX EX provides a simple, safe lock primitive already available through `redisService.lock()`.
+
+Rules:
+
+- Use `utils/distributed-lock.ts` helpers (`withDistributedLock`, `createLockedCronHandler`) with the `cron` namespace.
+- Lock TTL defaults to `env.CRON_JOB_LOCK_TTL_SECONDS` (default 60s) and can be overridden per handler.
+- Each job uses a unique lock key matching its job name (`email-job`, `notification-job`, `reminder-job`).
+- Keep the change additive: existing `node-cron`, custom queue, and BullMQ code is not replaced.
+- Release the lock in a `finally` block; the key auto-expires if release fails, preventing permanent deadlocks.
+
+Impact:
+
+- `email.job.ts`, `notification.job.ts`, and `reminder.job.ts` now schedule locked handlers.
+- Added `src/tests/utils/distributed-lock.test.ts` covering successful lock acquisition, skip-when-held behavior, and single execution under concurrency.

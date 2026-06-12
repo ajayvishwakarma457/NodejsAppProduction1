@@ -126,10 +126,7 @@ userSchema.index(
 );
 
 // Compound index for listing users by verification status and creation time.
-userSchema.index(
-  { isVerified: 1, createdAt: -1 },
-  { name: 'isverified_createdat_idx' }
-);
+userSchema.index({ isVerified: 1, createdAt: -1 }, { name: 'isverified_createdat_idx' });
 
 /* ------------------------------------------------------------------ */
 // Virtuals

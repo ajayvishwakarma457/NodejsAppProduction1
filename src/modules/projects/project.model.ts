@@ -79,10 +79,7 @@ projectSchema.index(
 );
 
 // Compound index for team dashboards filtered by status.
-projectSchema.index(
-  { teamId: 1, status: 1, createdAt: -1 },
-  { name: 'team_status_createdat_idx' }
-);
+projectSchema.index({ teamId: 1, status: 1, createdAt: -1 }, { name: 'team_status_createdat_idx' });
 
 // Compound index for owner listings filtered by status.
 projectSchema.index(
@@ -91,10 +88,7 @@ projectSchema.index(
 );
 
 // Compound index for overdue/completed analytics.
-projectSchema.index(
-  { status: 1, dueDate: 1 },
-  { name: 'status_duedate_idx' }
-);
+projectSchema.index({ status: 1, dueDate: 1 }, { name: 'status_duedate_idx' });
 
 /* ------------------------------------------------------------------ */
 // Virtuals

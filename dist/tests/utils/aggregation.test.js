@@ -78,7 +78,10 @@ const createMockModel = (execResult) => {
     (0, vitest_1.describe)('timedAggregate', () => {
         (0, vitest_1.it)('should execute a pipeline and return typed results', async () => {
             const mockModel = createMockModel([{ _id: 'active', count: 5 }]);
-            const result = await (0, aggregation_1.timedAggregate)(mockModel, [{ $match: {} }, { $group: { _id: '$status' } }]);
+            const result = await (0, aggregation_1.timedAggregate)(mockModel, [
+                { $match: {} },
+                { $group: { _id: '$status' } },
+            ]);
             (0, vitest_1.expect)(result).toEqual([{ _id: 'active', count: 5 }]);
             (0, vitest_1.expect)(mockModel.aggregate).toHaveBeenCalled();
         });

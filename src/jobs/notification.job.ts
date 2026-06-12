@@ -6,6 +6,7 @@ import { socketService } from '../services/socket.service';
 import { emailService } from '../services/email.service';
 import { createQueue } from '../utils/queue';
 import { SOCKET_ROOM_PREFIX } from '../utils/constants';
+import { createLockedCronHandler } from '../utils/distributed-lock';
 
 export interface NotificationQueuePayload {
   notificationId: string;
@@ -218,17 +219,19 @@ export const notificationJob = {
       return;
     }
 
+    const lockedCycle = createLockedCronHandler('notification-job', async () => {
+      const result = await this.processBatch();
+      const cleanupResult = await this.cleanup();
+      return { ...result, cleanedUp: cleanupResult.deleted };
+    });
+
     task = cron.schedule(env.NOTIFICATION_JOB_CRON, async () => {
       try {
         logger.debug('Notification job batch starting');
-        const result = await this.processBatch();
-        const cleanupResult = await this.cleanup();
+        const result = await lockedCycle();
 
-        if (result.processed > 0 || cleanupResult.deleted > 0) {
-          logger.info('Notification job cycle completed', {
-            ...result,
-            cleanedUp: cleanupResult.deleted,
-          });
+        if (result && (result.processed > 0 || result.cleanedUp > 0)) {
+          logger.info('Notification job cycle completed', result);
         }
       } catch (error) {
         logger.error('Notification job cycle crashed', {

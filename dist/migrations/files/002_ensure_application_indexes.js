@@ -16,7 +16,9 @@ const migration = {
         await db.collection('users').createIndex({ email: 1 }, { unique: true });
         await db.collection('users').createIndex({ role: 1, createdAt: -1 });
         await db.collection('users').createIndex({ isVerified: 1 });
-        await db.collection('users').createIndex({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
+        await db
+            .collection('users')
+            .createIndex({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
         await db.collection('teams').createIndex({ ownerId: 1 });
         await db.collection('teams').createIndex({ 'members.userId': 1 });
         await db.collection('teams').createIndex({ createdAt: -1 });

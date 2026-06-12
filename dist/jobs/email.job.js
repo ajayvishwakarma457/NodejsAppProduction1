@@ -28,6 +28,7 @@ const cron = __importStar(require("node-cron"));
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const email_service_1 = require("../services/email.service");
+const distributed_lock_1 = require("../utils/distributed-lock");
 const queue_1 = require("../utils/queue");
 const emailQueue = (0, queue_1.createQueue)('email');
 let task = null;
@@ -120,11 +121,12 @@ exports.emailJob = {
             });
             return;
         }
+        const lockedProcessBatch = (0, distributed_lock_1.createLockedCronHandler)('email-job', () => this.processBatch());
         task = cron.schedule(env_1.env.EMAIL_JOB_CRON, async () => {
             try {
                 logger_1.logger.debug('Email job batch starting');
-                const result = await this.processBatch();
-                if (result.processed > 0) {
+                const result = await lockedProcessBatch();
+                if (result && result.processed > 0) {
                     logger_1.logger.info('Email job batch completed', result);
                 }
             }

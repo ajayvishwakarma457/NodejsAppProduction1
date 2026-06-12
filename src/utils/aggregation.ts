@@ -73,7 +73,11 @@ export const buildDateGroupStage = (options: DateGroupStageOptions): PipelineSta
 
   return {
     $group: {
-      _id: { [outputField]: { $dateToString: { format: dateToStringFormat[granularity], date: `$${field}` } } },
+      _id: {
+        [outputField]: {
+          $dateToString: { format: dateToStringFormat[granularity], date: `$${field}` },
+        },
+      },
       count: { $sum: 1 },
     },
   };
@@ -161,7 +165,7 @@ export const paginatedAggregate = async <T>(
 
   const first = result[0] ?? {};
   const data = (first.data ?? []) as T[];
-  const total = ((first.total?.[0] as { count?: number } | undefined)?.count) ?? 0;
+  const total = (first.total?.[0] as { count?: number } | undefined)?.count ?? 0;
 
   return { data, total };
 };

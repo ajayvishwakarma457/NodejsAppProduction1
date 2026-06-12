@@ -29,7 +29,10 @@ export interface CursorPaginationResult<T> {
  * Apply a maximum execution time to a Mongoose query.
  * Prevents runaway queries from consuming database resources.
  */
-export const withTimeout = <T>(query: Query<T, unknown>, ms = DEFAULT_QUERY_TIMEOUT_MS): Query<T, unknown> => {
+export const withTimeout = <T>(
+  query: Query<T, unknown>,
+  ms = DEFAULT_QUERY_TIMEOUT_MS
+): Query<T, unknown> => {
   return query.maxTimeMS(ms);
 };
 
@@ -85,7 +88,10 @@ export const timedQuery = async <T>(
  * Prefer text indexes for large collections; this helper is suitable for
  * smaller datasets or fields that need substring matching.
  */
-export const buildRegexSearchFilter = (search: string, fields: string[]): Record<string, unknown> => {
+export const buildRegexSearchFilter = (
+  search: string,
+  fields: string[]
+): Record<string, unknown> => {
   const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = { $regex: escaped, $options: 'i' };
   return { $or: fields.map((field) => ({ [field]: regex })) };

@@ -5,6 +5,7 @@ import { logger } from '../config/logger';
 import { taskService } from '../modules/tasks/task.service';
 import { redisService } from '../services/redis.service';
 import { createQueue } from '../utils/queue';
+import { createLockedCronHandler } from '../utils/distributed-lock';
 import { emailJob } from './email.job';
 import { notificationJob } from './notification.job';
 
@@ -261,17 +262,19 @@ export const reminderJob = {
       return;
     }
 
+    const lockedCycle = createLockedCronHandler('reminder-job', async () => {
+      const scanResult = await this.scan();
+      const batchResult = await this.processBatch();
+      return { ...scanResult, ...batchResult };
+    });
+
     task = cron.schedule(env.REMINDER_JOB_CRON, async () => {
       try {
         logger.debug('Reminder job cycle starting');
-        const scanResult = await this.scan();
-        const batchResult = await this.processBatch();
+        const result = await lockedCycle();
 
-        if (scanResult.enqueued > 0 || batchResult.processed > 0) {
-          logger.info('Reminder job cycle completed', {
-            ...scanResult,
-            ...batchResult,
-          });
+        if (result && (result.enqueued > 0 || result.processed > 0)) {
+          logger.info('Reminder job cycle completed', result);
         }
       } catch (error) {
         logger.error('Reminder job cycle crashed', {

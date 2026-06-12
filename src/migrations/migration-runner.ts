@@ -4,12 +4,7 @@ import mongoose, { ClientSession } from 'mongoose';
 import { logger } from '../config/logger';
 import { MigrationModel } from './migration.model';
 import { migrationLock } from './migration-lock';
-import {
-  Migration,
-  MigrationContext,
-  MigrationOptions,
-  MigrationStatus,
-} from './migration.types';
+import { Migration, MigrationContext, MigrationOptions, MigrationStatus } from './migration.types';
 
 const MIGRATIONS_DIR = path.join(__dirname, 'files');
 
@@ -62,9 +57,7 @@ const loadMigrationFiles = async (): Promise<Migration[]> => {
   }
 
   const migrations: Migration[] = [];
-  const sortedFiles = files
-    .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
-    .sort();
+  const sortedFiles = files.filter((file) => file.endsWith('.ts') || file.endsWith('.js')).sort();
 
   for (const file of sortedFiles) {
     const fullPath = path.join(MIGRATIONS_DIR, file);
@@ -214,7 +207,10 @@ export const migrationRunner = {
           await migration.down(context);
 
           if (!options.dryRun) {
-            await MigrationModel.deleteOne({ name: record.name }, session ? { session } : undefined);
+            await MigrationModel.deleteOne(
+              { name: record.name },
+              session ? { session } : undefined
+            );
           }
         }, options.dryRun ?? false);
 

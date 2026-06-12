@@ -99,10 +99,10 @@ describe('aggregation utils', () => {
     it('should execute a pipeline and return typed results', async () => {
       const mockModel = createMockModel([{ _id: 'active', count: 5 }]) as any;
 
-      const result = await timedAggregate<{ _id: string; count: number }>(
-        mockModel,
-        [{ $match: {} }, { $group: { _id: '$status' } }]
-      );
+      const result = await timedAggregate<{ _id: string; count: number }>(mockModel, [
+        { $match: {} },
+        { $group: { _id: '$status' } },
+      ]);
 
       expect(result).toEqual([{ _id: 'active', count: 5 }]);
       expect(mockModel.aggregate).toHaveBeenCalled();
