@@ -23,6 +23,8 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 - Reusable MongoDB transaction helper with replica-set detection and standalone fallback
 - Compensating transaction (saga) utility for cross-system rollback
 - Multi-document service operations wrapped in transactions with cascade deletes
+- Production-grade indexing strategy with named MongoDB indexes and query optimization utilities (`query-optimizer`, `index-manager`)
+- Optimized list/find endpoints across all repositories using projections, pagination, and slow-query logging
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
 - Structured logging (Winston) with request correlation IDs
 - Email service with SMTP fallback to mock logging

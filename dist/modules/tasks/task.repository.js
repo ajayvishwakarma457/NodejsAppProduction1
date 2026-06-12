@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskRepository = void 0;
 const task_model_1 = require("./task.model");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -40,12 +41,14 @@ exports.taskRepository = {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
         const sortDirection = options.order === 'desc' ? -1 : 1;
+        const listQuery = task_model_1.TaskModel.find(query)
+            .sort({ [options.sort]: sortDirection })
+            .skip(skip)
+            .limit(options.limit)
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
         const [data, total] = await Promise.all([
-            task_model_1.TaskModel.find(query)
-                .sort({ [options.sort]: sortDirection })
-                .skip(skip)
-                .limit(options.limit)
-                .lean(),
+            (0, query_optimizer_1.timedQuery)(listQuery, { collection: 'tasks', operation: 'findAll' }),
             task_model_1.TaskModel.countDocuments(query),
         ]);
         return {
@@ -57,17 +60,19 @@ exports.taskRepository = {
      * Find a task by its MongoDB _id.
      */
     async findById(id) {
-        return task_model_1.TaskModel.findById(id).lean();
+        const query = task_model_1.TaskModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'findById' });
     },
     /**
      * Find a task by id with project and user details populated.
      */
     async findByIdWithDetails(id) {
-        return task_model_1.TaskModel.findById(id)
+        const query = task_model_1.TaskModel.findById(id)
             .populate('projectId', 'name status')
             .populate('createdBy', 'firstName lastName email avatar')
             .populate('assignedTo', 'firstName lastName email avatar')
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'findByIdWithDetails' });
     },
     /**
      * Create a new task document.
@@ -80,7 +85,10 @@ exports.taskRepository = {
      * Update a task by id. Returns the updated document or null if not found.
      */
     async updateById(id, data, session) {
-        return task_model_1.TaskModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+        const query = task_model_1.TaskModel.findByIdAndUpdate(id, data, { new: true, session })
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'updateById' });
     },
     /**
      * Delete a task by id. Returns true if a document was deleted.
@@ -114,24 +122,26 @@ exports.taskRepository = {
      * Populates assignedTo for reminder job usage.
      */
     async findDueInRange(start, end) {
-        return task_model_1.TaskModel.find({
+        const query = task_model_1.TaskModel.find({
             status: { $nin: ['done'] },
             dueDate: { $gte: start, $lte: end },
         })
             .populate('assignedTo', 'email firstName lastName')
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'findDueInRange' });
     },
     /**
      * Find overdue tasks that are not done.
      * Populates assignedTo for reminder job usage.
      */
     async findOverdue(before) {
-        return task_model_1.TaskModel.find({
+        const query = task_model_1.TaskModel.find({
             status: { $nin: ['done'] },
             dueDate: { $lt: before },
         })
             .populate('assignedTo', 'email firstName lastName')
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'findOverdue' });
     },
 };
 //# sourceMappingURL=task.repository.js.map

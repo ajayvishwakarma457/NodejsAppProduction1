@@ -172,12 +172,12 @@ const mockedUserRepository = vitest_1.vi.mocked(user_repository_1.userRepository
     });
     (0, vitest_1.describe)('revokeApiKey', () => {
         (0, vitest_1.it)('should revoke a key owned by the user', async () => {
-            mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue({ _id: 'key-1' });
+            mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(true);
             await api_key_service_1.apiKeyService.revokeApiKey('user-1', 'key-1');
             (0, vitest_1.expect)(mockedApiKeyRepository.revokeByIdAndUserId).toHaveBeenCalledWith('key-1', 'user-1');
         });
         (0, vitest_1.it)('should throw not found when the key does not belong to the user', async () => {
-            mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(null);
+            mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(false);
             await (0, vitest_1.expect)(api_key_service_1.apiKeyService.revokeApiKey('user-1', 'key-1')).rejects.toThrow(ApiError_1.ApiError);
         });
     });

@@ -211,14 +211,14 @@ describe('apiKeyService', () => {
 
   describe('revokeApiKey', () => {
     it('should revoke a key owned by the user', async () => {
-      mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue({ _id: 'key-1' } as any);
+      mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(true);
 
       await apiKeyService.revokeApiKey('user-1', 'key-1');
       expect(mockedApiKeyRepository.revokeByIdAndUserId).toHaveBeenCalledWith('key-1', 'user-1');
     });
 
     it('should throw not found when the key does not belong to the user', async () => {
-      mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(null);
+      mockedApiKeyRepository.revokeByIdAndUserId.mockResolvedValue(false);
 
       await expect(apiKeyService.revokeApiKey('user-1', 'key-1')).rejects.toThrow(ApiError);
     });

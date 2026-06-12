@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.commentRepository = void 0;
 const comment_model_1 = require("./comment.model");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -27,12 +28,14 @@ exports.commentRepository = {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
         const sortDirection = options.order === 'desc' ? -1 : 1;
+        const listQuery = comment_model_1.CommentModel.find(query)
+            .sort({ [options.sort]: sortDirection })
+            .skip(skip)
+            .limit(options.limit)
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
         const [data, total] = await Promise.all([
-            comment_model_1.CommentModel.find(query)
-                .sort({ [options.sort]: sortDirection })
-                .skip(skip)
-                .limit(options.limit)
-                .lean(),
+            (0, query_optimizer_1.timedQuery)(listQuery, { collection: 'comments', operation: 'findAll' }),
             comment_model_1.CommentModel.countDocuments(query),
         ]);
         return {
@@ -44,22 +47,28 @@ exports.commentRepository = {
      * Find a comment by its MongoDB _id.
      */
     async findById(id) {
-        return comment_model_1.CommentModel.findById(id).lean();
+        const query = comment_model_1.CommentModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'comments', operation: 'findById' });
     },
     /**
      * Find a comment by id with user details populated.
      */
     async findByIdWithUser(id) {
-        return comment_model_1.CommentModel.findById(id).populate('userId', 'firstName lastName email avatar').lean();
+        const query = comment_model_1.CommentModel.findById(id)
+            .populate('userId', 'firstName lastName email avatar')
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'comments', operation: 'findByIdWithUser' });
     },
     /**
      * Find comments for a specific task.
      */
     async findByTaskId(taskId) {
-        return comment_model_1.CommentModel.find({ taskId })
+        const query = comment_model_1.CommentModel.find({ taskId })
             .sort({ createdAt: -1 })
             .populate('userId', 'firstName lastName email avatar')
+            .select((0, query_optimizer_1.buildListProjection)())
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'comments', operation: 'findByTaskId' });
     },
     /**
      * Create a new comment document.
@@ -72,7 +81,10 @@ exports.commentRepository = {
      * Update a comment by id. Returns the updated document or null.
      */
     async updateById(id, data, session) {
-        return comment_model_1.CommentModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+        const query = comment_model_1.CommentModel.findByIdAndUpdate(id, data, { new: true, session })
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'comments', operation: 'updateById' });
     },
     /**
      * Delete a comment by id. Returns true if a document was deleted.

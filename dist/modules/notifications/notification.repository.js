@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.notificationRepository = void 0;
 const notification_model_1 = require("./notification.model");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -30,12 +31,14 @@ exports.notificationRepository = {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
         const sortDirection = options.order === 'desc' ? -1 : 1;
+        const listQuery = notification_model_1.NotificationModel.find(query)
+            .sort({ [options.sort]: sortDirection })
+            .skip(skip)
+            .limit(options.limit)
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
         const [data, total] = await Promise.all([
-            notification_model_1.NotificationModel.find(query)
-                .sort({ [options.sort]: sortDirection })
-                .skip(skip)
-                .limit(options.limit)
-                .lean(),
+            (0, query_optimizer_1.timedQuery)(listQuery, { collection: 'notifications', operation: 'findAll' }),
             notification_model_1.NotificationModel.countDocuments(query),
         ]);
         return {
@@ -47,32 +50,40 @@ exports.notificationRepository = {
      * Find a notification by its MongoDB _id.
      */
     async findById(id) {
-        return notification_model_1.NotificationModel.findById(id).lean();
+        const query = notification_model_1.NotificationModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'findById' });
     },
     /**
      * Find notifications for a specific user.
      */
     async findByUserId(userId) {
-        return notification_model_1.NotificationModel.find({ userId }).sort({ createdAt: -1 }).lean();
+        const query = notification_model_1.NotificationModel.find({ userId })
+            .sort({ createdAt: -1 })
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'findByUserId' });
     },
     /**
      * Find pending notifications that are ready to be delivered.
      */
     async findPending(limit) {
-        return notification_model_1.NotificationModel.find({
+        const query = notification_model_1.NotificationModel.find({
             status: 'pending',
             $or: [{ scheduledAt: null }, { scheduledAt: { $lte: new Date() } }],
         })
             .sort({ createdAt: 1 })
             .limit(limit)
+            .select((0, query_optimizer_1.buildListProjection)())
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'findPending' });
     },
     /**
      * Mark a single notification as read for a user.
      * Returns the updated document or null if not found / already read.
      */
     async markAsRead(id, userId, session) {
-        return notification_model_1.NotificationModel.findOneAndUpdate({ _id: id, userId, isRead: false }, { isRead: true, readAt: new Date() }, { new: true, session }).lean();
+        const query = notification_model_1.NotificationModel.findOneAndUpdate({ _id: id, userId, isRead: false }, { isRead: true, readAt: new Date() }, { new: true, session }).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'markAsRead' });
     },
     /**
      * Mark all unread notifications as read for a user.

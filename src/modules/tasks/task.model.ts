@@ -97,6 +97,36 @@ taskSchema.index({ createdBy: 1 }, { name: 'creator_idx' });
 // Index for date-based sorting and overdue queries.
 taskSchema.index({ dueDate: 1 }, { name: 'duedate_idx' });
 
+// Text index for task search.
+taskSchema.index(
+  { title: 'text', description: 'text' },
+  { name: 'task_text_search_idx', weights: { title: 10, description: 5 } }
+);
+
+// Compound index for assignee task boards with status and priority.
+taskSchema.index(
+  { assignedTo: 1, status: 1, priority: 1, dueDate: 1 },
+  { name: 'assignee_status_priority_duedate_idx' }
+);
+
+// Compound index for project task listings with status.
+taskSchema.index(
+  { projectId: 1, status: 1, priority: 1, createdAt: -1 },
+  { name: 'project_status_priority_createdat_idx' }
+);
+
+// Compound index for creator listings.
+taskSchema.index(
+  { createdBy: 1, status: 1, createdAt: -1 },
+  { name: 'creator_status_createdat_idx' }
+);
+
+// Compound index for reminder and overdue scans.
+taskSchema.index(
+  { status: 1, dueDate: 1, assignedTo: 1 },
+  { name: 'status_duedate_assignee_idx' }
+);
+
 /* ------------------------------------------------------------------ */
 // Export
 /* ------------------------------------------------------------------ */

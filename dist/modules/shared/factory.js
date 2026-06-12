@@ -7,6 +7,7 @@ const http_status_codes_1 = require("http-status-codes");
 const asyncHandler_1 = require("../../utils/asyncHandler");
 const ApiResponse_1 = require("../../utils/ApiResponse");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 const validate_middleware_1 = require("../../middleware/validate.middleware");
 const logger_1 = require("../../config/logger");
 /* ------------------------------------------------------------------ */
@@ -60,16 +61,17 @@ const createCrudModule = (options) => {
         async findAll(opts, filter = {}) {
             const skip = (opts.page - 1) * opts.limit;
             const sortDirection = opts.order === 'desc' ? -1 : 1;
+            const listQuery = model
+                .find(filter)
+                .sort({ [opts.sort]: sortDirection })
+                .skip(skip)
+                .limit(opts.limit)
+                .select((0, query_optimizer_1.buildListProjection)())
+                .lean();
             const [data, total] = await Promise.all([
-                model
-                    .find(filter)
-                    .sort({ [opts.sort]: sortDirection })
-                    .skip(skip)
-                    .limit(opts.limit)
-                    .lean(),
+                (0, query_optimizer_1.timedQuery)(listQuery, { collection: name, operation: 'findAll' }),
                 model.countDocuments(filter),
             ]);
-            logger_1.logger.debug(`${name} repository.findAll`, { filter, count: data.length, total });
             return {
                 data: data,
                 meta: (0, pagination_1.buildPaginationMeta)(opts.page, opts.limit, total),
@@ -115,10 +117,7 @@ const createCrudModule = (options) => {
                 filter = buildFilter(query);
             }
             else if (searchFields.length > 0 && query.search) {
-                const searchRegex = { $regex: String(query.search), $options: 'i' };
-                filter.$or = searchFields.map((field) => ({
-                    [field]: searchRegex,
-                }));
+                filter = (0, query_optimizer_1.buildRegexSearchFilter)(String(query.search), searchFields);
             }
             return repository.findAll({
                 page: pagination.page,

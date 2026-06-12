@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { UserDocument, UserModel } from './user.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -60,12 +61,15 @@ export const userRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = UserModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection(['password', 'refreshToken']))
+      .lean();
+
     const [data, total] = await Promise.all([
-      UserModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'users', operation: 'findAll' }),
       UserModel.countDocuments(query),
     ]);
 
@@ -79,7 +83,10 @@ export const userRepository = {
    * Find a user by their MongoDB _id.
    */
   async findById(id: string): Promise<UserDocument | null> {
-    return UserModel.findById(id).lean();
+    const query = UserModel.findById(id)
+      .select(buildListProjection(['password', 'refreshToken']))
+      .lean();
+    return timedQuery(query, { collection: 'users', operation: 'findById' });
   },
 
   /**
@@ -87,7 +94,10 @@ export const userRepository = {
    * Excludes password and refreshToken by default.
    */
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
+    const query = UserModel.findOne({ email: email.toLowerCase().trim() })
+      .select(buildListProjection(['password', 'refreshToken']))
+      .lean();
+    return timedQuery(query, { collection: 'users', operation: 'findByEmail' });
   },
 
   /**
@@ -95,16 +105,20 @@ export const userRepository = {
    * (password + refreshToken). Intended for authentication flows.
    */
   async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
-    return UserModel.findOne({ email: email.toLowerCase().trim() })
+    const query = UserModel.findOne({ email: email.toLowerCase().trim() })
       .select('+password +refreshToken')
       .lean();
+    return timedQuery(query, { collection: 'users', operation: 'findByEmailWithPassword' });
   },
 
   /**
    * Find a user by OAuth provider and providerId.
    */
   async findByProvider(provider: string, providerId: string): Promise<UserDocument | null> {
-    return UserModel.findOne({ provider, providerId }).lean();
+    const query = UserModel.findOne({ provider, providerId })
+      .select(buildListProjection(['password', 'refreshToken']))
+      .lean();
+    return timedQuery(query, { collection: 'users', operation: 'findByProvider' });
   },
 
   /**
@@ -126,7 +140,10 @@ export const userRepository = {
     data: Partial<UserDocument>,
     session?: ClientSession
   ): Promise<UserDocument | null> {
-    return UserModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+    const query = UserModel.findByIdAndUpdate(id, data, { new: true, session })
+      .select(buildListProjection(['password', 'refreshToken']))
+      .lean();
+    return timedQuery(query, { collection: 'users', operation: 'updateById' });
   },
 
   /**

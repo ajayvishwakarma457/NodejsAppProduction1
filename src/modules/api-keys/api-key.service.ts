@@ -99,12 +99,12 @@ export const apiKeyService = {
     }
 
     const metadata = await apiKeyRepository.create({
-      userId,
+      userId: userId as unknown as ApiKeyDocument['userId'],
       name: options.name,
       publicId,
       keyHash,
       keyPrefix,
-      role: options.role,
+      role: options.role as ApiKeyDocument['role'],
       scopes,
       expiresAt,
     });

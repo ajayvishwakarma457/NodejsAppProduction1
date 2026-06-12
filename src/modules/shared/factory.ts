@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { getPagination, buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection, buildRegexSearchFilter } from '../../utils/query-optimizer';
 import { validateMiddleware } from '../../middleware/validate.middleware';
 import { logger } from '../../config/logger';
 
@@ -112,17 +113,18 @@ export const createCrudModule = <TDoc extends Document>(options: CrudModuleOptio
       const skip = (opts.page - 1) * opts.limit;
       const sortDirection = opts.order === 'desc' ? -1 : 1;
 
+      const listQuery = model
+        .find(filter)
+        .sort({ [opts.sort]: sortDirection })
+        .skip(skip)
+        .limit(opts.limit)
+        .select(buildListProjection())
+        .lean();
+
       const [data, total] = await Promise.all([
-        model
-          .find(filter)
-          .sort({ [opts.sort]: sortDirection })
-          .skip(skip)
-          .limit(opts.limit)
-          .lean(),
+        timedQuery(listQuery, { collection: name, operation: 'findAll' }),
         model.countDocuments(filter),
       ]);
-
-      logger.debug(`${name} repository.findAll`, { filter, count: data.length, total });
 
       return {
         data: data as TDoc[],
@@ -176,10 +178,7 @@ export const createCrudModule = <TDoc extends Document>(options: CrudModuleOptio
       if (buildFilter) {
         filter = buildFilter(query);
       } else if (searchFields.length > 0 && query.search) {
-        const searchRegex = { $regex: String(query.search), $options: 'i' };
-        filter.$or = searchFields.map((field) => ({
-          [field]: searchRegex,
-        })) as FilterQuery<TDoc>[];
+        filter = buildRegexSearchFilter(String(query.search), searchFields) as FilterQuery<TDoc>;
       }
 
       return repository.findAll(

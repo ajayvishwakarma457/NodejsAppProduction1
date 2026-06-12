@@ -119,6 +119,18 @@ userSchema.index(
   { unique: true, sparse: true, name: 'provider_providerid_idx' }
 );
 
+// Text index for user search across name and email.
+userSchema.index(
+  { firstName: 'text', lastName: 'text', email: 'text' },
+  { name: 'user_text_search_idx', weights: { firstName: 10, lastName: 10, email: 5 } }
+);
+
+// Compound index for listing users by verification status and creation time.
+userSchema.index(
+  { isVerified: 1, createdAt: -1 },
+  { name: 'isverified_createdat_idx' }
+);
+
 /* ------------------------------------------------------------------ */
 // Virtuals
 /* ------------------------------------------------------------------ */

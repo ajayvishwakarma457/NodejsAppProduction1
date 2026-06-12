@@ -64,7 +64,7 @@ exports.apiKeyService = {
             throw ApiError_1.ApiError.badRequest(`Invalid API key scopes: ${invalidScopes.join(', ')}`);
         }
         const metadata = await api_key_repository_1.apiKeyRepository.create({
-            userId,
+            userId: userId,
             name: options.name,
             publicId,
             keyHash,

@@ -47,8 +47,17 @@ const notificationSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-notificationSchema.index({ createdAt: 1 });
-notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
-notificationSchema.index({ status: 1, scheduledAt: 1 });
+notificationSchema.index({ createdAt: 1 }, { name: 'notification_createdat_asc_idx' });
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 }, { name: 'notification_user_read_createdat_idx' });
+notificationSchema.index({ status: 1, scheduledAt: 1 }, { name: 'notification_status_scheduledat_idx' });
+// Text index for notification search.
+notificationSchema.index({ title: 'text', message: 'text' }, { name: 'notification_text_search_idx', weights: { title: 10, message: 5 } });
+// Partial index for pending notifications ready to be delivered.
+notificationSchema.index({ status: 1, scheduledAt: 1, createdAt: 1 }, {
+    name: 'pending_ready_idx',
+    partialFilterExpression: { status: 'pending' },
+});
+// Compound index for type-filtered user feeds.
+notificationSchema.index({ userId: 1, type: 1, createdAt: -1 }, { name: 'user_type_createdat_idx' });
 exports.NotificationModel = (0, mongoose_1.model)('Notification', notificationSchema);
 //# sourceMappingURL=notification.model.js.map

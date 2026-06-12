@@ -74,6 +74,12 @@ teamSchema.index({ ownerId: 1 }, { name: 'owner_idx' });
 teamSchema.index({ 'members.userId': 1 }, { name: 'members_userid_idx' });
 // Compound index for default list ordering.
 teamSchema.index({ createdAt: -1 }, { name: 'createdat_desc_idx' });
+// Text index for team search.
+teamSchema.index({ name: 'text', description: 'text' }, { name: 'team_text_search_idx', weights: { name: 10, description: 5 } });
+// Compound index for owner-centric listings.
+teamSchema.index({ ownerId: 1, createdAt: -1 }, { name: 'owner_createdat_idx' });
+// Compound index for member-centric listings with sort.
+teamSchema.index({ 'members.userId': 1, createdAt: -1 }, { name: 'member_createdat_idx' });
 /* ------------------------------------------------------------------ */
 // Virtuals
 /* ------------------------------------------------------------------ */

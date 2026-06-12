@@ -12,8 +12,23 @@ const commentSchema = new Schema(
   }
 );
 
-commentSchema.index({ createdAt: -1 });
-commentSchema.index({ taskId: 1, createdAt: -1 });
+commentSchema.index({ createdAt: -1 }, { name: 'comment_createdat_desc_idx' });
+commentSchema.index({ taskId: 1, createdAt: -1 }, { name: 'comment_task_createdat_idx' });
+
+// Text index for comment content search.
+commentSchema.index({ content: 'text' }, { name: 'comment_text_search_idx' });
+
+// Compound index for user activity feeds.
+commentSchema.index(
+  { userId: 1, createdAt: -1 },
+  { name: 'user_createdat_idx' }
+);
+
+// Compound index for nested comment threads.
+commentSchema.index(
+  { taskId: 1, parentId: 1, createdAt: -1 },
+  { name: 'task_parent_createdat_idx' }
+);
 
 export type CommentDocument = InferSchemaType<typeof commentSchema> & { _id: Types.ObjectId };
 

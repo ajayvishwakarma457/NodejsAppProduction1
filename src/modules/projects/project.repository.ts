@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { ProjectDocument, ProjectModel } from './project.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -68,12 +69,15 @@ export const projectRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = ProjectModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection())
+      .lean();
+
     const [data, total] = await Promise.all([
-      ProjectModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'projects', operation: 'findAll' }),
       ProjectModel.countDocuments(query),
     ]);
 
@@ -87,7 +91,8 @@ export const projectRepository = {
    * Find a project by its MongoDB _id.
    */
   async findById(id: string): Promise<ProjectDocument | null> {
-    return ProjectModel.findById(id).lean();
+    const query = ProjectModel.findById(id).select(buildListProjection()).lean();
+    return timedQuery(query, { collection: 'projects', operation: 'findById' });
   },
 
   /**
@@ -109,7 +114,10 @@ export const projectRepository = {
     data: Partial<ProjectDocument>,
     session?: ClientSession
   ): Promise<ProjectDocument | null> {
-    return ProjectModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+    const query = ProjectModel.findByIdAndUpdate(id, data, { new: true, session })
+      .select(buildListProjection())
+      .lean();
+    return timedQuery(query, { collection: 'projects', operation: 'updateById' });
   },
 
   /**

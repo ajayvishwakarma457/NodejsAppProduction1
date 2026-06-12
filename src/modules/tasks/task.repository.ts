@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { TaskDocument, TaskModel } from './task.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -75,12 +76,15 @@ export const taskRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = TaskModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection())
+      .lean();
+
     const [data, total] = await Promise.all([
-      TaskModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'tasks', operation: 'findAll' }),
       TaskModel.countDocuments(query),
     ]);
 
@@ -94,18 +98,20 @@ export const taskRepository = {
    * Find a task by its MongoDB _id.
    */
   async findById(id: string): Promise<TaskDocument | null> {
-    return TaskModel.findById(id).lean();
+    const query = TaskModel.findById(id).select(buildListProjection()).lean();
+    return timedQuery(query, { collection: 'tasks', operation: 'findById' });
   },
 
   /**
    * Find a task by id with project and user details populated.
    */
   async findByIdWithDetails(id: string): Promise<TaskDocument | null> {
-    return TaskModel.findById(id)
+    const query = TaskModel.findById(id)
       .populate('projectId', 'name status')
       .populate('createdBy', 'firstName lastName email avatar')
       .populate('assignedTo', 'firstName lastName email avatar')
       .lean();
+    return timedQuery(query, { collection: 'tasks', operation: 'findByIdWithDetails' });
   },
 
   /**
@@ -127,7 +133,10 @@ export const taskRepository = {
     data: Partial<TaskDocument>,
     session?: ClientSession
   ): Promise<TaskDocument | null> {
-    return TaskModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+    const query = TaskModel.findByIdAndUpdate(id, data, { new: true, session })
+      .select(buildListProjection())
+      .lean();
+    return timedQuery(query, { collection: 'tasks', operation: 'updateById' });
   },
 
   /**
@@ -166,12 +175,13 @@ export const taskRepository = {
    * Populates assignedTo for reminder job usage.
    */
   async findDueInRange(start: Date, end: Date): Promise<TaskDocument[]> {
-    return TaskModel.find({
+    const query = TaskModel.find({
       status: { $nin: ['done'] },
       dueDate: { $gte: start, $lte: end },
     })
       .populate('assignedTo', 'email firstName lastName')
       .lean();
+    return timedQuery(query, { collection: 'tasks', operation: 'findDueInRange' });
   },
 
   /**
@@ -179,11 +189,12 @@ export const taskRepository = {
    * Populates assignedTo for reminder job usage.
    */
   async findOverdue(before: Date): Promise<TaskDocument[]> {
-    return TaskModel.find({
+    const query = TaskModel.find({
       status: { $nin: ['done'] },
       dueDate: { $lt: before },
     })
       .populate('assignedTo', 'email firstName lastName')
       .lean();
+    return timedQuery(query, { collection: 'tasks', operation: 'findOverdue' });
   },
 };

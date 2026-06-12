@@ -15,6 +15,17 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 - `comments`
 - `notifications`
 
+## Query Optimization & Indexing
+
+- All schema definitions declare named MongoDB indexes aligned with the dominant read patterns (ownership, membership, status, due dates, feeds, TTL cleanup).
+- `utils/query-optimizer.ts` provides:
+  - `timedQuery()` — wraps Mongoose queries with execution timing and slow-query logging.
+  - `buildListProjection()` — strips internal/version fields from list responses.
+  - `buildRegexSearchFilter()` / `buildTextSearchFilter()` — safe search helpers.
+  - `applyCursorPagination()` — cursor-based pagination helper for high-throughput feeds.
+- `utils/index-manager.ts` lists collection indexes, syncs Mongoose indexes, and reports missing recommended indexes.
+- Repositories consistently use projections, pagination, and `timedQuery()` for read paths.
+
 ## Transactions & Rollbacks
 
 - `utils/transaction.ts` — Reusable MongoDB transaction helper with topology detection and fallback for standalone servers
@@ -185,6 +196,8 @@ src/
 │   ├── constants.ts
 │   ├── helpers.ts
 │   ├── pagination.ts
+│   ├── query-optimizer.ts
+│   ├── index-manager.ts
 │   ├── transaction.ts
 │   ├── compensating-transaction.ts
 │   └── accessControl.ts

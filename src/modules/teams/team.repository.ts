@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { TeamDocument, TeamModel } from './team.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -40,7 +41,10 @@ const buildFilterQuery = (filter: TeamListFilter): FilterQuery<TeamDocument> => 
   }
 
   if (filter.search) {
-    query.name = { $regex: filter.search, $options: 'i' };
+    query.$or = [
+      { name: { $regex: filter.search, $options: 'i' } },
+      { description: { $regex: filter.search, $options: 'i' } },
+    ];
   }
 
   return query;
@@ -59,12 +63,15 @@ export const teamRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = TeamModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection())
+      .lean();
+
     const [data, total] = await Promise.all([
-      TeamModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'teams', operation: 'findAll' }),
       TeamModel.countDocuments(query),
     ]);
 
@@ -78,17 +85,19 @@ export const teamRepository = {
    * Find a team by its MongoDB _id.
    */
   async findById(id: string): Promise<TeamDocument | null> {
-    return TeamModel.findById(id).lean();
+    const query = TeamModel.findById(id).select(buildListProjection()).lean();
+    return timedQuery(query, { collection: 'teams', operation: 'findById' });
   },
 
   /**
    * Find a team by id with owner and member details populated.
    */
   async findByIdWithMembers(id: string): Promise<TeamDocument | null> {
-    return TeamModel.findById(id)
+    const query = TeamModel.findById(id)
       .populate('ownerId', 'firstName lastName email avatar')
       .populate('members.userId', 'firstName lastName email avatar')
       .lean();
+    return timedQuery(query, { collection: 'teams', operation: 'findByIdWithMembers' });
   },
 
   /**
@@ -110,7 +119,10 @@ export const teamRepository = {
     data: Partial<TeamDocument>,
     session?: ClientSession
   ): Promise<TeamDocument | null> {
-    return TeamModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+    const query = TeamModel.findByIdAndUpdate(id, data, { new: true, session })
+      .select(buildListProjection())
+      .lean();
+    return timedQuery(query, { collection: 'teams', operation: 'updateById' });
   },
 
   /**
@@ -164,11 +176,12 @@ export const teamRepository = {
       return team;
     }
 
-    return TeamModel.findByIdAndUpdate(
+    const query = TeamModel.findByIdAndUpdate(
       teamId,
       { $push: { members: { userId, role, joinedAt: new Date() } } },
       { new: true, session }
     ).lean();
+    return timedQuery(query, { collection: 'teams', operation: 'addMember' });
   },
 
   /**
@@ -179,11 +192,12 @@ export const teamRepository = {
     userId: string,
     session?: ClientSession
   ): Promise<TeamDocument | null> {
-    return TeamModel.findByIdAndUpdate(
+    const query = TeamModel.findByIdAndUpdate(
       teamId,
       { $pull: { members: { userId } } },
       { new: true, session }
     ).lean();
+    return timedQuery(query, { collection: 'teams', operation: 'removeMember' });
   },
 
   /**
@@ -195,10 +209,11 @@ export const teamRepository = {
     role: string,
     session?: ClientSession
   ): Promise<TeamDocument | null> {
-    return TeamModel.findOneAndUpdate(
+    const query = TeamModel.findOneAndUpdate(
       { _id: teamId, 'members.userId': userId },
       { $set: { 'members.$.role': role } },
       { new: true, session }
     ).lean();
+    return timedQuery(query, { collection: 'teams', operation: 'updateMemberRole' });
   },
 };

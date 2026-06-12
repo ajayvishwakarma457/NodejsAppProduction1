@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectRepository = void 0;
 const project_model_1 = require("./project.model");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -34,12 +35,14 @@ exports.projectRepository = {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
         const sortDirection = options.order === 'desc' ? -1 : 1;
+        const listQuery = project_model_1.ProjectModel.find(query)
+            .sort({ [options.sort]: sortDirection })
+            .skip(skip)
+            .limit(options.limit)
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
         const [data, total] = await Promise.all([
-            project_model_1.ProjectModel.find(query)
-                .sort({ [options.sort]: sortDirection })
-                .skip(skip)
-                .limit(options.limit)
-                .lean(),
+            (0, query_optimizer_1.timedQuery)(listQuery, { collection: 'projects', operation: 'findAll' }),
             project_model_1.ProjectModel.countDocuments(query),
         ]);
         return {
@@ -51,7 +54,8 @@ exports.projectRepository = {
      * Find a project by its MongoDB _id.
      */
     async findById(id) {
-        return project_model_1.ProjectModel.findById(id).lean();
+        const query = project_model_1.ProjectModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'projects', operation: 'findById' });
     },
     /**
      * Create a new project document.
@@ -64,7 +68,10 @@ exports.projectRepository = {
      * Update a project by id. Returns the updated document or null if not found.
      */
     async updateById(id, data, session) {
-        return project_model_1.ProjectModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+        const query = project_model_1.ProjectModel.findByIdAndUpdate(id, data, { new: true, session })
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'projects', operation: 'updateById' });
     },
     /**
      * Delete a project by id. Returns true if a document was deleted.

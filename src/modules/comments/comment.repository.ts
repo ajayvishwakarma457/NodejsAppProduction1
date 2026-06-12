@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { CommentDocument, CommentModel } from './comment.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -57,12 +58,15 @@ export const commentRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = CommentModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection())
+      .lean();
+
     const [data, total] = await Promise.all([
-      CommentModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'comments', operation: 'findAll' }),
       CommentModel.countDocuments(query),
     ]);
 
@@ -76,24 +80,30 @@ export const commentRepository = {
    * Find a comment by its MongoDB _id.
    */
   async findById(id: string): Promise<CommentDocument | null> {
-    return CommentModel.findById(id).lean();
+    const query = CommentModel.findById(id).select(buildListProjection()).lean();
+    return timedQuery(query, { collection: 'comments', operation: 'findById' });
   },
 
   /**
    * Find a comment by id with user details populated.
    */
   async findByIdWithUser(id: string): Promise<CommentDocument | null> {
-    return CommentModel.findById(id).populate('userId', 'firstName lastName email avatar').lean();
+    const query = CommentModel.findById(id)
+      .populate('userId', 'firstName lastName email avatar')
+      .lean();
+    return timedQuery(query, { collection: 'comments', operation: 'findByIdWithUser' });
   },
 
   /**
    * Find comments for a specific task.
    */
   async findByTaskId(taskId: string): Promise<CommentDocument[]> {
-    return CommentModel.find({ taskId })
+    const query = CommentModel.find({ taskId })
       .sort({ createdAt: -1 })
       .populate('userId', 'firstName lastName email avatar')
+      .select(buildListProjection())
       .lean();
+    return timedQuery(query, { collection: 'comments', operation: 'findByTaskId' });
   },
 
   /**
@@ -115,7 +125,10 @@ export const commentRepository = {
     data: Partial<CommentDocument>,
     session?: ClientSession
   ): Promise<CommentDocument | null> {
-    return CommentModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+    const query = CommentModel.findByIdAndUpdate(id, data, { new: true, session })
+      .select(buildListProjection())
+      .lean();
+    return timedQuery(query, { collection: 'comments', operation: 'updateById' });
   },
 
   /**

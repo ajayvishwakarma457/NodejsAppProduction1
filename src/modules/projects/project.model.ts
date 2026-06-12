@@ -72,6 +72,30 @@ projectSchema.index({ teamId: 1 }, { name: 'teamid_idx' });
 projectSchema.index({ status: 1 }, { name: 'status_idx' });
 projectSchema.index({ createdAt: -1 }, { name: 'createdat_idx' });
 
+// Text index for project search.
+projectSchema.index(
+  { name: 'text', description: 'text' },
+  { name: 'project_text_search_idx', weights: { name: 10, description: 5 } }
+);
+
+// Compound index for team dashboards filtered by status.
+projectSchema.index(
+  { teamId: 1, status: 1, createdAt: -1 },
+  { name: 'team_status_createdat_idx' }
+);
+
+// Compound index for owner listings filtered by status.
+projectSchema.index(
+  { ownerId: 1, status: 1, createdAt: -1 },
+  { name: 'owner_status_createdat_idx' }
+);
+
+// Compound index for overdue/completed analytics.
+projectSchema.index(
+  { status: 1, dueDate: 1 },
+  { name: 'status_duedate_idx' }
+);
+
 /* ------------------------------------------------------------------ */
 // Virtuals
 /* ------------------------------------------------------------------ */

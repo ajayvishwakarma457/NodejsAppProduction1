@@ -1,6 +1,7 @@
 import { ClientSession, FilterQuery } from 'mongoose';
 import { NotificationDocument, NotificationModel } from './notification.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
+import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -62,12 +63,15 @@ export const notificationRepository = {
     const skip = (options.page - 1) * options.limit;
     const sortDirection = options.order === 'desc' ? -1 : 1;
 
+    const listQuery = NotificationModel.find(query)
+      .sort({ [options.sort]: sortDirection })
+      .skip(skip)
+      .limit(options.limit)
+      .select(buildListProjection())
+      .lean();
+
     const [data, total] = await Promise.all([
-      NotificationModel.find(query)
-        .sort({ [options.sort]: sortDirection })
-        .skip(skip)
-        .limit(options.limit)
-        .lean(),
+      timedQuery(listQuery, { collection: 'notifications', operation: 'findAll' }),
       NotificationModel.countDocuments(query),
     ]);
 
@@ -81,27 +85,34 @@ export const notificationRepository = {
    * Find a notification by its MongoDB _id.
    */
   async findById(id: string): Promise<NotificationDocument | null> {
-    return NotificationModel.findById(id).lean();
+    const query = NotificationModel.findById(id).select(buildListProjection()).lean();
+    return timedQuery(query, { collection: 'notifications', operation: 'findById' });
   },
 
   /**
    * Find notifications for a specific user.
    */
   async findByUserId(userId: string): Promise<NotificationDocument[]> {
-    return NotificationModel.find({ userId }).sort({ createdAt: -1 }).lean();
+    const query = NotificationModel.find({ userId })
+      .sort({ createdAt: -1 })
+      .select(buildListProjection())
+      .lean();
+    return timedQuery(query, { collection: 'notifications', operation: 'findByUserId' });
   },
 
   /**
    * Find pending notifications that are ready to be delivered.
    */
   async findPending(limit: number): Promise<NotificationDocument[]> {
-    return NotificationModel.find({
+    const query = NotificationModel.find({
       status: 'pending',
       $or: [{ scheduledAt: null }, { scheduledAt: { $lte: new Date() } }],
     })
       .sort({ createdAt: 1 })
       .limit(limit)
+      .select(buildListProjection())
       .lean();
+    return timedQuery(query, { collection: 'notifications', operation: 'findPending' });
   },
 
   /**
@@ -113,11 +124,12 @@ export const notificationRepository = {
     userId: string,
     session?: ClientSession
   ): Promise<NotificationDocument | null> {
-    return NotificationModel.findOneAndUpdate(
+    const query = NotificationModel.findOneAndUpdate(
       { _id: id, userId, isRead: false },
       { isRead: true, readAt: new Date() },
       { new: true, session }
     ).lean();
+    return timedQuery(query, { collection: 'notifications', operation: 'markAsRead' });
   },
 
   /**
@@ -179,7 +191,10 @@ export const notificationRepository = {
   /**
    * Delete multiple notifications matching a filter.
    */
-  async deleteMany(filter: FilterQuery<NotificationDocument>, session?: ClientSession): Promise<number> {
+  async deleteMany(
+    filter: FilterQuery<NotificationDocument>,
+    session?: ClientSession
+  ): Promise<number> {
     const result = await NotificationModel.deleteMany(filter, { session });
     return result.deletedCount ?? 0;
   },

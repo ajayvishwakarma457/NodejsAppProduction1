@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamRepository = void 0;
 const team_model_1 = require("./team.model");
 const pagination_1 = require("../../utils/pagination");
+const query_optimizer_1 = require("../../utils/query-optimizer");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -15,7 +16,10 @@ const buildFilterQuery = (filter) => {
         query.$or = [{ ownerId: filter.memberId }, { 'members.userId': filter.memberId }];
     }
     if (filter.search) {
-        query.name = { $regex: filter.search, $options: 'i' };
+        query.$or = [
+            { name: { $regex: filter.search, $options: 'i' } },
+            { description: { $regex: filter.search, $options: 'i' } },
+        ];
     }
     return query;
 };
@@ -30,12 +34,14 @@ exports.teamRepository = {
         const query = buildFilterQuery(filter);
         const skip = (options.page - 1) * options.limit;
         const sortDirection = options.order === 'desc' ? -1 : 1;
+        const listQuery = team_model_1.TeamModel.find(query)
+            .sort({ [options.sort]: sortDirection })
+            .skip(skip)
+            .limit(options.limit)
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
         const [data, total] = await Promise.all([
-            team_model_1.TeamModel.find(query)
-                .sort({ [options.sort]: sortDirection })
-                .skip(skip)
-                .limit(options.limit)
-                .lean(),
+            (0, query_optimizer_1.timedQuery)(listQuery, { collection: 'teams', operation: 'findAll' }),
             team_model_1.TeamModel.countDocuments(query),
         ]);
         return {
@@ -47,16 +53,18 @@ exports.teamRepository = {
      * Find a team by its MongoDB _id.
      */
     async findById(id) {
-        return team_model_1.TeamModel.findById(id).lean();
+        const query = team_model_1.TeamModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'findById' });
     },
     /**
      * Find a team by id with owner and member details populated.
      */
     async findByIdWithMembers(id) {
-        return team_model_1.TeamModel.findById(id)
+        const query = team_model_1.TeamModel.findById(id)
             .populate('ownerId', 'firstName lastName email avatar')
             .populate('members.userId', 'firstName lastName email avatar')
             .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'findByIdWithMembers' });
     },
     /**
      * Create a new team document.
@@ -69,7 +77,10 @@ exports.teamRepository = {
      * Update a team by id. Returns the updated document or null if not found.
      */
     async updateById(id, data, session) {
-        return team_model_1.TeamModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
+        const query = team_model_1.TeamModel.findByIdAndUpdate(id, data, { new: true, session })
+            .select((0, query_optimizer_1.buildListProjection)())
+            .lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'updateById' });
     },
     /**
      * Delete a team by id. Returns true if a document was deleted.
@@ -111,19 +122,22 @@ exports.teamRepository = {
         if (isOwner || isMember) {
             return team;
         }
-        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $push: { members: { userId, role, joinedAt: new Date() } } }, { new: true, session }).lean();
+        const query = team_model_1.TeamModel.findByIdAndUpdate(teamId, { $push: { members: { userId, role, joinedAt: new Date() } } }, { new: true, session }).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'addMember' });
     },
     /**
      * Remove a member from a team by userId.
      */
     async removeMember(teamId, userId, session) {
-        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $pull: { members: { userId } } }, { new: true, session }).lean();
+        const query = team_model_1.TeamModel.findByIdAndUpdate(teamId, { $pull: { members: { userId } } }, { new: true, session }).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'removeMember' });
     },
     /**
      * Update a member's role within a team.
      */
     async updateMemberRole(teamId, userId, role, session) {
-        return team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, 'members.userId': userId }, { $set: { 'members.$.role': role } }, { new: true, session }).lean();
+        const query = team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, 'members.userId': userId }, { $set: { 'members.$.role': role } }, { new: true, session }).lean();
+        return (0, query_optimizer_1.timedQuery)(query, { collection: 'teams', operation: 'updateMemberRole' });
     },
 };
 //# sourceMappingURL=team.repository.js.map
