@@ -20,6 +20,7 @@
 - [x] Implement production-grade transactions and rollbacks
 - [x] Implement production-grade indexing strategies and query optimization
 - [x] Implement production-grade MongoDB aggregation pipelines and dashboard endpoints
+- [x] Implement production-grade Redis fundamentals (strings, hashes, sorted sets, TTL) with helper methods and tests
 
 ## Open Tasks
 

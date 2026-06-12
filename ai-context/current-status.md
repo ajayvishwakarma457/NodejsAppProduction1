@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 114 tests passing.
+Production-ready API backend. All core modules implemented, 176 tests passing.
 
 ## What Exists
 
@@ -17,7 +17,7 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 
 ### Infrastructure
 - MongoDB connection with Mongoose models
-- Redis for caching, token blacklisting, rate limiting, and job queues
+- Redis for caching, token blacklisting, rate limiting, and job queues, now with a production-grade service wrapper covering strings (set/get/JSON/cache-aside/counters/locks/pattern delete), hashes (hSet/hSetMultiple/hGet/hGetAll/hDel/hExists/hIncrBy/hKeys/hLen), sorted sets (zAdd/zAddJSON/zRange/zRevRange/zRank/zScore/zCount/zCard/zIncrBy/zRemRangeByScore), and TTL helpers (ttl/persist)
 - Production-grade database migrations with locking, batching, transactions (with fallback), and rollback
 - Environment-aware database seeders with idempotent seeds and execution tracking
 - Reusable MongoDB transaction helper with replica-set detection and standalone fallback
@@ -53,4 +53,4 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 
 - Manager role has zero permission references; needs definition or removal
 - Notification creation endpoint may allow forged `userId` targeting
-- Redis test `getOrSet` intermittently fails (pre-existing race condition / mock timing)
+- Redis `getOrSet` has a pre-existing race condition under concurrent loaders; currently stable in tests but should be hardened with locking or Lua-based set-if-absent if concurrent cache misses become likely

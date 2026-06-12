@@ -33,6 +33,17 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `GET /api/v1/tasks/dashboard`
   - `GET /api/v1/notifications/dashboard`
 
+## Redis Service
+
+- `services/redis.service.ts` is a production-grade Redis wrapper built on the `redis` 4.x client.
+- It provides automatic namespacing, connection management, safe execution with fallbacks, and structured logging.
+- Supported data structure helpers:
+  - **Strings** — `set`, `get`, `setJSON`, `getJSON`, `getOrSet`, `del`, `exists`, `expire`, `incrBy`, `decrBy`, `deletePattern`, `lock`.
+  - **Hashes** — `hSet`, `hSetMultiple`, `hGet`, `hGetAll`, `hDel`, `hExists`, `hIncrBy`, `hKeys`, `hLen`.
+  - **Sorted Sets** — `zAdd`, `zAddJSON`, `zRange`, `zRevRange`, `zRangeWithScores`, `zRevRangeWithScores`, `zRangeJSON`, `zRevRangeJSON`, `zRangeWithScoresJSON`, `zRank`, `zRevRank`, `zScore`, `zCard`, `zCount`, `zIncrBy`, `zRemRangeByScore`.
+  - **TTL helpers** — `ttl`, `persist`.
+- Complex values are serialized with a `__json__:` prefix; the wrapper automatically deserializes them on read, including numeric strings where appropriate.
+
 ## Query Optimization & Indexing
 
 - All schema definitions declare named MongoDB indexes aligned with the dominant read patterns (ownership, membership, status, due dates, feeds, TTL cleanup).
