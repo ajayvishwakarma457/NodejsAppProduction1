@@ -33,7 +33,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `GET /api/v1/tasks/dashboard`
   - `GET /api/v1/notifications/dashboard`
 
-## Redis Service
+## Redis Service & Cache-Aside Pattern
 
 - `services/redis.service.ts` is a production-grade Redis wrapper built on the `redis` 4.x client.
 - It provides automatic namespacing, connection management, safe execution with fallbacks, and structured logging.
@@ -43,6 +43,12 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - **Sorted Sets** — `zAdd`, `zAddJSON`, `zRange`, `zRevRange`, `zRangeWithScores`, `zRevRangeWithScores`, `zRangeJSON`, `zRevRangeJSON`, `zRangeWithScoresJSON`, `zRank`, `zRevRank`, `zScore`, `zCard`, `zCount`, `zIncrBy`, `zRemRangeByScore`.
   - **TTL helpers** — `ttl`, `persist`.
 - Complex values are serialized with a `__json__:` prefix; the wrapper automatically deserializes them on read, including numeric strings where appropriate.
+- `utils/cache.ts` provides a namespace-scoped cache-aside helper (`cacheAside.getOrSet`) and invalidation helpers (`invalidate`, `invalidatePattern`, `invalidateEntity`).
+- Domain services use cache-aside for entity reads and invalidate on writes:
+  - `users` — `getById` cached; invalidated on `update` and `remove`.
+  - `teams` — `getById` cached; invalidated on `create`, `update`, `remove`, `addMember`, and `removeMember`.
+  - `projects` — `getById` cached; invalidated on `create`, `update`, and `remove`.
+  - `tasks` — `getById` cached; invalidated on `create`, `update`, and `remove`.
 
 ## Query Optimization & Indexing
 

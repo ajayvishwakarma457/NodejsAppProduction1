@@ -1,4 +1,5 @@
 import { taskRepository, TaskListFilter } from './task.repository';
+import { cacheAside, CACHE_NAMESPACE } from '../../utils/cache';
 import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
@@ -47,11 +48,13 @@ export const taskService = {
   },
 
   async getById(id: string) {
-    return taskRepository.findById(id);
+    return cacheAside.getOrSet(CACHE_NAMESPACE.tasks, id, () => taskRepository.findById(id));
   },
 
   async create(data: Record<string, unknown>) {
-    return taskRepository.create(data);
+    const created = await taskRepository.create(data);
+    await cacheAside.invalidatePattern(CACHE_NAMESPACE.tasks, 'list:*');
+    return created;
   },
 
   async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
@@ -62,7 +65,11 @@ export const taskService = {
       throw ApiError.forbidden('You can only update tasks you created');
     }
 
-    return taskRepository.updateById(id, data);
+    const updated = await taskRepository.updateById(id, data);
+    if (updated) {
+      await cacheAside.invalidateEntity(CACHE_NAMESPACE.tasks, id);
+    }
+    return updated;
   },
 
   async remove(id: string, userId: string, role?: string) {
@@ -75,7 +82,11 @@ export const taskService = {
 
     return withTransaction(async ({ session }) => {
       await CommentModel.deleteMany({ taskId: id }, { session: session ?? undefined });
-      return taskRepository.deleteById(id, session ?? undefined);
+      const deleted = await taskRepository.deleteById(id, session ?? undefined);
+      if (deleted) {
+        await cacheAside.invalidateEntity(CACHE_NAMESPACE.tasks, id);
+      }
+      return deleted;
     });
   },
 

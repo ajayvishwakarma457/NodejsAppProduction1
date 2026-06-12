@@ -1,4 +1,5 @@
 import { teamRepository, TeamListFilter } from './team.repository';
+import { cacheAside, CACHE_NAMESPACE } from '../../utils/cache';
 import { ProjectModel } from '../projects/project.model';
 import { TaskModel } from '../tasks/task.model';
 import { CommentModel } from '../comments/comment.model';
@@ -37,7 +38,7 @@ export const teamService = {
   },
 
   async getById(id: string) {
-    return teamRepository.findById(id);
+    return cacheAside.getOrSet(CACHE_NAMESPACE.teams, id, () => teamRepository.findById(id));
   },
 
   async create(data: Record<string, unknown>) {
@@ -46,14 +47,13 @@ export const teamService = {
     return withTransaction(async ({ session }) => {
       const team = await teamRepository.create(data, session ?? undefined);
 
-      await teamRepository.addMember(
-        String(team._id),
-        ownerId,
-        'owner',
-        session ?? undefined
-      );
+      await teamRepository.addMember(String(team._id), ownerId, 'owner', session ?? undefined);
 
-      return teamRepository.findById(String(team._id));
+      const created = await teamRepository.findById(String(team._id));
+      if (created) {
+        await cacheAside.invalidatePattern(CACHE_NAMESPACE.teams, 'list:*');
+      }
+      return created;
     });
   },
 
@@ -65,7 +65,11 @@ export const teamService = {
       throw ApiError.forbidden('You can only update teams you own');
     }
 
-    return teamRepository.updateById(id, data);
+    const updated = await teamRepository.updateById(id, data);
+    if (updated) {
+      await cacheAside.invalidateEntity(CACHE_NAMESPACE.teams, id);
+    }
+    return updated;
   },
 
   async remove(id: string, userId: string, role?: string) {
@@ -78,12 +82,26 @@ export const teamService = {
 
     return withTransaction(async ({ session }) => {
       const projectIds = await ProjectModel.distinct('_id', { teamId: id }, { session });
-      const taskIds = await TaskModel.distinct('_id', { projectId: { $in: projectIds } }, { session });
+      const taskIds = await TaskModel.distinct(
+        '_id',
+        { projectId: { $in: projectIds } },
+        { session }
+      );
 
-      await CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
-      await TaskModel.deleteMany({ projectId: { $in: projectIds } }, { session: session ?? undefined });
+      await CommentModel.deleteMany(
+        { taskId: { $in: taskIds } },
+        { session: session ?? undefined }
+      );
+      await TaskModel.deleteMany(
+        { projectId: { $in: projectIds } },
+        { session: session ?? undefined }
+      );
       await ProjectModel.deleteMany({ teamId: id }, { session: session ?? undefined });
       const result = await teamRepository.deleteById(id, session ?? undefined);
+
+      if (result) {
+        await cacheAside.invalidateEntity(CACHE_NAMESPACE.teams, id);
+      }
 
       return result;
     });
@@ -103,7 +121,11 @@ export const teamService = {
       throw ApiError.forbidden('Only team owners can add members');
     }
 
-    return teamRepository.addMember(teamId, userId, role);
+    const updated = await teamRepository.addMember(teamId, userId, role);
+    if (updated) {
+      await cacheAside.invalidateEntity(CACHE_NAMESPACE.teams, teamId);
+    }
+    return updated;
   },
 
   async removeMember(teamId: string, userId: string, requesterId: string, requesterRole?: string) {
@@ -114,6 +136,10 @@ export const teamService = {
       throw ApiError.forbidden('Only team owners can remove members');
     }
 
-    return teamRepository.removeMember(teamId, userId);
+    const updated = await teamRepository.removeMember(teamId, userId);
+    if (updated) {
+      await cacheAside.invalidateEntity(CACHE_NAMESPACE.teams, teamId);
+    }
+    return updated;
   },
 };

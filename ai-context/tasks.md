@@ -21,6 +21,7 @@
 - [x] Implement production-grade indexing strategies and query optimization
 - [x] Implement production-grade MongoDB aggregation pipelines and dashboard endpoints
 - [x] Implement production-grade Redis fundamentals (strings, hashes, sorted sets, TTL) with helper methods and tests
+- [x] Implement cache-aside pattern for entity reads across users, teams, projects, and tasks with invalidation on writes
 
 ## Open Tasks
 
@@ -31,6 +32,7 @@
 - [ ] Add content negotiation support
 - [ ] Add scope-based authorization middleware for API keys
 - [ ] Fix pre-existing Redis `getOrSet` test race condition
+- [ ] Extend cache-aside to list endpoints and dashboard aggregations (currently only `getById` is cached)
 
 ## Open Questions
 

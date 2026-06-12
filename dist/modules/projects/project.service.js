@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectService = void 0;
 const project_repository_1 = require("./project.repository");
+const cache_1 = require("../../utils/cache");
 const task_model_1 = require("../tasks/task.model");
 const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
@@ -32,10 +33,12 @@ exports.projectService = {
         }, filter);
     },
     async getById(id) {
-        return project_repository_1.projectRepository.findById(id);
+        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.projects, id, () => project_repository_1.projectRepository.findById(id));
     },
     async create(data) {
-        return project_repository_1.projectRepository.create(data);
+        const created = await project_repository_1.projectRepository.create(data);
+        await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.projects, 'list:*');
+        return created;
     },
     async update(id, data, userId, role) {
         const existing = await project_repository_1.projectRepository.findById(id);
@@ -44,7 +47,11 @@ exports.projectService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only update projects you own');
         }
-        return project_repository_1.projectRepository.updateById(id, data);
+        const updated = await project_repository_1.projectRepository.updateById(id, data);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.projects, id);
+        }
+        return updated;
     },
     async remove(id, userId, role) {
         const existing = await project_repository_1.projectRepository.findById(id);
@@ -57,7 +64,11 @@ exports.projectService = {
             const taskIds = await task_model_1.TaskModel.distinct('_id', { projectId: id }, { session });
             await comment_model_1.CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
             await task_model_1.TaskModel.deleteMany({ projectId: id }, { session: session ?? undefined });
-            return project_repository_1.projectRepository.deleteById(id, session ?? undefined);
+            const deleted = await project_repository_1.projectRepository.deleteById(id, session ?? undefined);
+            if (deleted) {
+                await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.projects, id);
+            }
+            return deleted;
         });
     },
     async getDashboard(userId, role) {

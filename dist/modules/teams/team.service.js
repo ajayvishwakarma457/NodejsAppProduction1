@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamService = void 0;
 const team_repository_1 = require("./team.repository");
+const cache_1 = require("../../utils/cache");
 const project_model_1 = require("../projects/project.model");
 const task_model_1 = require("../tasks/task.model");
 const comment_model_1 = require("../comments/comment.model");
@@ -30,14 +31,18 @@ exports.teamService = {
         }, filter);
     },
     async getById(id) {
-        return team_repository_1.teamRepository.findById(id);
+        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.teams, id, () => team_repository_1.teamRepository.findById(id));
     },
     async create(data) {
         const ownerId = String(data.ownerId);
         return (0, transaction_1.withTransaction)(async ({ session }) => {
             const team = await team_repository_1.teamRepository.create(data, session ?? undefined);
             await team_repository_1.teamRepository.addMember(String(team._id), ownerId, 'owner', session ?? undefined);
-            return team_repository_1.teamRepository.findById(String(team._id));
+            const created = await team_repository_1.teamRepository.findById(String(team._id));
+            if (created) {
+                await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.teams, 'list:*');
+            }
+            return created;
         });
     },
     async update(id, data, userId, role) {
@@ -47,7 +52,11 @@ exports.teamService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only update teams you own');
         }
-        return team_repository_1.teamRepository.updateById(id, data);
+        const updated = await team_repository_1.teamRepository.updateById(id, data);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.teams, id);
+        }
+        return updated;
     },
     async remove(id, userId, role) {
         const existing = await team_repository_1.teamRepository.findById(id);
@@ -63,6 +72,9 @@ exports.teamService = {
             await task_model_1.TaskModel.deleteMany({ projectId: { $in: projectIds } }, { session: session ?? undefined });
             await project_model_1.ProjectModel.deleteMany({ teamId: id }, { session: session ?? undefined });
             const result = await team_repository_1.teamRepository.deleteById(id, session ?? undefined);
+            if (result) {
+                await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.teams, id);
+            }
             return result;
         });
     },
@@ -73,7 +85,11 @@ exports.teamService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, requesterId, requesterRole)) {
             throw ApiError_1.ApiError.forbidden('Only team owners can add members');
         }
-        return team_repository_1.teamRepository.addMember(teamId, userId, role);
+        const updated = await team_repository_1.teamRepository.addMember(teamId, userId, role);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.teams, teamId);
+        }
+        return updated;
     },
     async removeMember(teamId, userId, requesterId, requesterRole) {
         const existing = await team_repository_1.teamRepository.findById(teamId);
@@ -82,7 +98,11 @@ exports.teamService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, requesterId, requesterRole)) {
             throw ApiError_1.ApiError.forbidden('Only team owners can remove members');
         }
-        return team_repository_1.teamRepository.removeMember(teamId, userId);
+        const updated = await team_repository_1.teamRepository.removeMember(teamId, userId);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.teams, teamId);
+        }
+        return updated;
     },
 };
 //# sourceMappingURL=team.service.js.map

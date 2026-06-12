@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskService = void 0;
 const task_repository_1 = require("./task.repository");
+const cache_1 = require("../../utils/cache");
 const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
@@ -37,10 +38,12 @@ exports.taskService = {
         }, filter);
     },
     async getById(id) {
-        return task_repository_1.taskRepository.findById(id);
+        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.tasks, id, () => task_repository_1.taskRepository.findById(id));
     },
     async create(data) {
-        return task_repository_1.taskRepository.create(data);
+        const created = await task_repository_1.taskRepository.create(data);
+        await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.tasks, 'list:*');
+        return created;
     },
     async update(id, data, userId, role) {
         const existing = await task_repository_1.taskRepository.findById(id);
@@ -49,7 +52,11 @@ exports.taskService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.createdBy, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only update tasks you created');
         }
-        return task_repository_1.taskRepository.updateById(id, data);
+        const updated = await task_repository_1.taskRepository.updateById(id, data);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.tasks, id);
+        }
+        return updated;
     },
     async remove(id, userId, role) {
         const existing = await task_repository_1.taskRepository.findById(id);
@@ -60,7 +67,11 @@ exports.taskService = {
         }
         return (0, transaction_1.withTransaction)(async ({ session }) => {
             await comment_model_1.CommentModel.deleteMany({ taskId: id }, { session: session ?? undefined });
-            return task_repository_1.taskRepository.deleteById(id, session ?? undefined);
+            const deleted = await task_repository_1.taskRepository.deleteById(id, session ?? undefined);
+            if (deleted) {
+                await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.tasks, id);
+            }
+            return deleted;
         });
     },
     async findDueInRange(start, end) {

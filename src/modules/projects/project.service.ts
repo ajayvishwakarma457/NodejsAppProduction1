@@ -1,4 +1,5 @@
 import { projectRepository, ProjectListFilter } from './project.repository';
+import { cacheAside, CACHE_NAMESPACE } from '../../utils/cache';
 import { TaskModel } from '../tasks/task.model';
 import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
@@ -40,11 +41,13 @@ export const projectService = {
   },
 
   async getById(id: string) {
-    return projectRepository.findById(id);
+    return cacheAside.getOrSet(CACHE_NAMESPACE.projects, id, () => projectRepository.findById(id));
   },
 
   async create(data: Record<string, unknown>) {
-    return projectRepository.create(data);
+    const created = await projectRepository.create(data);
+    await cacheAside.invalidatePattern(CACHE_NAMESPACE.projects, 'list:*');
+    return created;
   },
 
   async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
@@ -55,7 +58,11 @@ export const projectService = {
       throw ApiError.forbidden('You can only update projects you own');
     }
 
-    return projectRepository.updateById(id, data);
+    const updated = await projectRepository.updateById(id, data);
+    if (updated) {
+      await cacheAside.invalidateEntity(CACHE_NAMESPACE.projects, id);
+    }
+    return updated;
   },
 
   async remove(id: string, userId: string, role?: string) {
@@ -69,9 +76,16 @@ export const projectService = {
     return withTransaction(async ({ session }) => {
       const taskIds = await TaskModel.distinct('_id', { projectId: id }, { session });
 
-      await CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
+      await CommentModel.deleteMany(
+        { taskId: { $in: taskIds } },
+        { session: session ?? undefined }
+      );
       await TaskModel.deleteMany({ projectId: id }, { session: session ?? undefined });
-      return projectRepository.deleteById(id, session ?? undefined);
+      const deleted = await projectRepository.deleteById(id, session ?? undefined);
+      if (deleted) {
+        await cacheAside.invalidateEntity(CACHE_NAMESPACE.projects, id);
+      }
+      return deleted;
     });
   },
 

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.userService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const user_repository_1 = require("./user.repository");
+const cache_1 = require("../../utils/cache");
 const team_model_1 = require("../teams/team.model");
 const project_model_1 = require("../projects/project.model");
 const task_model_1 = require("../tasks/task.model");
@@ -35,13 +36,17 @@ exports.userService = {
         }, filter);
     },
     async getById(id) {
-        return user_repository_1.userRepository.findById(id);
+        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.users, id, () => user_repository_1.userRepository.findById(id));
     },
     async create(data) {
         return user_repository_1.userRepository.create(data);
     },
     async update(id, data) {
-        return user_repository_1.userRepository.updateById(id, data);
+        const updated = await user_repository_1.userRepository.updateById(id, data);
+        if (updated) {
+            await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.users, id);
+        }
+        return updated;
     },
     async remove(id) {
         return (0, transaction_1.withTransaction)(async ({ session }) => {
@@ -49,10 +54,7 @@ exports.userService = {
             const ownedTeamIds = await team_model_1.TeamModel.distinct('_id', { ownerId: userObjectId }, { session: session ?? undefined });
             const memberTeamIds = await team_model_1.TeamModel.distinct('_id', { 'members.userId': userObjectId }, { session: session ?? undefined });
             const allTeamIds = Array.from(new Set([...ownedTeamIds, ...memberTeamIds]));
-            const projectIds = await project_model_1.ProjectModel.distinct('_id', { $or: [
-                    { ownerId: userObjectId },
-                    { teamId: { $in: allTeamIds } },
-                ] }, { session: session ?? undefined });
+            const projectIds = await project_model_1.ProjectModel.distinct('_id', { $or: [{ ownerId: userObjectId }, { teamId: { $in: allTeamIds } }] }, { session: session ?? undefined });
             const taskIds = await task_model_1.TaskModel.distinct('_id', {
                 $or: [
                     { createdBy: userObjectId },
@@ -77,7 +79,11 @@ exports.userService = {
             await team_model_1.TeamModel.updateMany({ 'members.userId': userObjectId }, { $pull: { members: { userId: userObjectId } } }, { session: session ?? undefined });
             await notification_model_1.NotificationModel.deleteMany({ userId: userObjectId }, { session: session ?? undefined });
             await api_key_repository_1.apiKeyRepository.deleteMany({ userId: userObjectId }, session ?? undefined);
-            return user_repository_1.userRepository.deleteById(id, session ?? undefined);
+            const deleted = await user_repository_1.userRepository.deleteById(id, session ?? undefined);
+            if (deleted) {
+                await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.users, id);
+            }
+            return deleted;
         });
     },
 };

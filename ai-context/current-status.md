@@ -18,6 +18,7 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 ### Infrastructure
 - MongoDB connection with Mongoose models
 - Redis for caching, token blacklisting, rate limiting, and job queues, now with a production-grade service wrapper covering strings (set/get/JSON/cache-aside/counters/locks/pattern delete), hashes (hSet/hSetMultiple/hGet/hGetAll/hDel/hExists/hIncrBy/hKeys/hLen), sorted sets (zAdd/zAddJSON/zRange/zRevRange/zRank/zScore/zCount/zCard/zIncrBy/zRemRangeByScore), and TTL helpers (ttl/persist)
+- Cache-aside pattern implemented at the domain level for `users`, `teams`, `projects`, and `tasks` entity reads (`getById`) with namespace-scoped invalidation on creates/updates/deletes/member changes via `src/utils/cache.ts`
 - Production-grade database migrations with locking, batching, transactions (with fallback), and rollback
 - Environment-aware database seeders with idempotent seeds and execution tracking
 - Reusable MongoDB transaction helper with replica-set detection and standalone fallback
@@ -54,3 +55,4 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 - Manager role has zero permission references; needs definition or removal
 - Notification creation endpoint may allow forged `userId` targeting
 - Redis `getOrSet` has a pre-existing race condition under concurrent loaders; currently stable in tests but should be hardened with locking or Lua-based set-if-absent if concurrent cache misses become likely
+- Cache-aside currently covers entity lookups only; list endpoints and dashboard aggregations are not cached yet
