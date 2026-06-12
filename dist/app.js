@@ -13,6 +13,7 @@ const auth_routes_1 = require("./modules/auth/auth.routes");
 const comment_routes_1 = require("./modules/comments/comment.routes");
 const file_routes_1 = require("./modules/files/file.routes");
 const notification_routes_1 = require("./modules/notifications/notification.routes");
+const sse_routes_1 = require("./routes/sse.routes");
 const project_routes_1 = require("./modules/projects/project.routes");
 const task_routes_1 = require("./modules/tasks/task.routes");
 const team_routes_1 = require("./modules/teams/team.routes");
@@ -166,6 +167,7 @@ exports.app.use('/api/v1/tasks', task_routes_1.taskRouter);
 exports.app.use('/api/v1/comments', comment_routes_1.commentRouter);
 exports.app.use('/api/v1/files', file_routes_1.fileRouter);
 exports.app.use('/api/v1/notifications', notification_routes_1.notificationRouter);
+exports.app.use('/api/v1/events', sse_routes_1.sseRouter);
 /* ------------------------------------------------------------------ */
 // Error handling
 /* ------------------------------------------------------------------ */

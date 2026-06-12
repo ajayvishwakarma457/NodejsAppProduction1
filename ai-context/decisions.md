@@ -273,3 +273,28 @@ Impact:
 - `src/services/socket.service.ts` `emitToUser` now also pushes to `ws` clients.
 - `src/server.ts` starts/stops the `ws` server alongside Socket.IO.
 - Added `src/tests/ws/ws.test.ts` covering auth, user emit, channel subscription, and unsubscribed isolation.
+
+## 2026-06-12 - Add Server-Sent Events (SSE) for One-Way Streaming
+
+Decision:
+
+Add an SSE endpoint as a third realtime transport option alongside Socket.IO and `ws`, without modifying either of those.
+
+Reason:
+
+SSE is ideal for one-way server-to-client streaming over standard HTTP (firewall-friendly, auto-reconnect in browsers, simple client API). Some clients prefer it over persistent bidirectional sockets.
+
+Rules:
+
+- Add `GET /api/v1/events/stream` that returns `text/event-stream`.
+- Authenticate via the existing JWT middleware (`req.user`).
+- Implement `services/sse.service.ts` to track open responses, emit per-user or broadcast events, send heartbeat comments, and clean up on disconnect.
+- Integrate with notifications by extending `socketService.emitToUser` to also call `sseService.emitToUser`.
+- Keep Socket.IO and `ws` code unchanged.
+
+Impact:
+
+- New `src/services/sse.service.ts`, `src/controllers/sse.controller.ts`, `src/routes/sse.routes.ts`.
+- `src/app.ts` mounts `/api/v1/events` SSE routes.
+- `src/services/socket.service.ts` `emitToUser` now also pushes to SSE clients.
+- Added `src/tests/sse.test.ts` covering connection event, user emit, broadcast, and removal.

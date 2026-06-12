@@ -328,6 +328,10 @@ src/
   - JWT auth via query param `?token=` or `sec-websocket-protocol` header.
   - Per-user delivery (`emitToUser`), channel subscriptions (`subscribe:<channel>` / `unsubscribe:<channel>`), broadcasting, and ping/pong heartbeat.
   - `socketService.emitToUser` also pushes to connected `ws` clients, so notifications reach both Socket.IO and `ws` users.
+- Server-Sent Events (SSE) (`services/sse.service.ts`, `controllers/sse.controller.ts`, `routes/sse.routes.ts`):
+  - `GET /api/v1/events/stream` returns `text/event-stream` for authenticated users.
+  - Supports user-specific emit, broadcasting, heartbeat comments, and auto-cleanup on client disconnect.
+  - `socketService.emitToUser` also pushes to SSE clients, so notifications reach Socket.IO, `ws`, and SSE users.
 
 ## Event Bus
 
@@ -349,6 +353,12 @@ src/
   - `taskService.create/update`
   - `projectService.create`
 
+├── routes/
+│   └── sse.routes.ts
+│
+├── controllers/
+│   └── sse.controller.ts
+│
 ├── utils/
 │   ├── ApiError.ts
 │   ├── ApiResponse.ts

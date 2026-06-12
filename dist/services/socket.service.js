@@ -4,6 +4,7 @@ exports.socketService = void 0;
 const logger_1 = require("../config/logger");
 const constants_1 = require("../utils/constants");
 const ws_service_1 = require("./ws.service");
+const sse_service_1 = require("./sse.service");
 let ioInstance = null;
 const ensureInitialized = () => {
     if (!ioInstance) {
@@ -33,8 +34,9 @@ exports.socketService = {
         io.of(namespace).to(room).emit(event, data);
     },
     /**
-     * Push an event to a specific user on the default namespace notification room,
-     * the `/notifications` namespace room, and any connected lightweight `ws` sockets.
+     * Push an event to a specific user across all realtime transports:
+     * default Socket.IO namespace, `/notifications` namespace, lightweight `ws` sockets,
+     * and Server-Sent Events (SSE) streams.
      */
     emitToUser(userId, event, data) {
         const io = ensureInitialized();
@@ -42,6 +44,7 @@ exports.socketService = {
         io.to(room).emit(event, data);
         io.of('/notifications').to(room).emit(event, data);
         ws_service_1.wsService.emitToUser(userId, event, data);
+        sse_service_1.sseService.emitToUser(userId, event, data);
     },
     emitToAll(event, data) {
         const io = ensureInitialized();

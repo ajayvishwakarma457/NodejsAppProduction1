@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { logger } from '../config/logger';
 import { SOCKET_ROOM_PREFIX } from '../utils/constants';
 import { wsService } from './ws.service';
+import { sseService } from './sse.service';
 
 let ioInstance: Server | null = null;
 
@@ -38,8 +39,9 @@ export const socketService = {
   },
 
   /**
-   * Push an event to a specific user on the default namespace notification room,
-   * the `/notifications` namespace room, and any connected lightweight `ws` sockets.
+   * Push an event to a specific user across all realtime transports:
+   * default Socket.IO namespace, `/notifications` namespace, lightweight `ws` sockets,
+   * and Server-Sent Events (SSE) streams.
    */
   emitToUser(userId: string, event: string, data: unknown): void {
     const io = ensureInitialized();
@@ -48,6 +50,7 @@ export const socketService = {
     io.to(room).emit(event, data);
     io.of('/notifications').to(room).emit(event, data);
     wsService.emitToUser(userId, event, data);
+    sseService.emitToUser(userId, event, data);
   },
 
   emitToAll(event: string, data: unknown): void {

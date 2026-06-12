@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 248 tests passing.
+Production-ready API backend. All core modules implemented, 252 tests passing.
 
 ## What Exists
 
@@ -40,6 +40,7 @@ Production-ready API backend. All core modules implemented, 248 tests passing.
 - Production-grade, typed event bus (`utils/event-bus.ts`) for application-level EventEmitter patterns; handlers wired at startup (`events/index.ts`) and services emit domain events (`user.created`, `user.updated`, `user.deleted`, `task.created`, `task.assigned`, `project.created`) without changing existing business logic
 - Socket.IO realtime layer with JWT auth, rooms (task/team/notification), broadcasting, and additive namespaces (`/tasks`, `/teams`, `/notifications`) alongside the default namespace
 - Lightweight raw WebSocket server (`ws`) running on its own port (`WS_PORT`) as an alternative to Socket.IO; supports JWT auth, user-specific emit, channel subscriptions, heartbeat, and broadcasts to both Socket.IO and `ws` clients from `socketService.emitToUser`
+- Server-Sent Events (SSE) endpoint (`GET /api/v1/events/stream`) for one-way streaming; integrated into `socketService.emitToUser` so notifications are pushed over SSE alongside Socket.IO and `ws`
 - BullMQ integration added alongside the legacy custom queue for new features, including a sample `report-generation` queue/worker with retries, backoff, delayed jobs, and deduplication
 
 ### Security

@@ -7,6 +7,7 @@ import { authRouter } from './modules/auth/auth.routes';
 import { commentRouter } from './modules/comments/comment.routes';
 import { fileRouter } from './modules/files/file.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
+import { sseRouter } from './routes/sse.routes';
 import { projectRouter } from './modules/projects/project.routes';
 import { taskRouter } from './modules/tasks/task.routes';
 import { teamRouter } from './modules/teams/team.routes';
@@ -198,6 +199,7 @@ app.use('/api/v1/tasks', taskRouter);
 app.use('/api/v1/comments', commentRouter);
 app.use('/api/v1/files', fileRouter);
 app.use('/api/v1/notifications', notificationRouter);
+app.use('/api/v1/events', sseRouter);
 
 /* ------------------------------------------------------------------ */
 // Error handling

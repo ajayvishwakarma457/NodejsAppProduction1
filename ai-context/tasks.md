@@ -32,6 +32,7 @@
 - [x] Add production-grade, typed event bus for application-level event-driven patterns (additive; services emit domain events without replacing existing logic)
 - [x] Extend Socket.IO layer with additive namespaces (`/tasks`, `/teams`, `/notifications`) alongside existing rooms/broadcasting
 - [x] Add lightweight raw WebSocket (`ws`) server as an alternative transport alongside Socket.IO
+- [x] Add Server-Sent Events (SSE) endpoint for one-way streaming, integrated with notification delivery
 
 ## Open Tasks
 
