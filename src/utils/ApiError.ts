@@ -42,6 +42,10 @@ export class ApiError extends Error {
     return new ApiError(429, message, details);
   }
 
+  static rangeNotSatisfiable(message = 'Range not satisfiable', details?: unknown): ApiError {
+    return new ApiError(416, message, details);
+  }
+
   static internal(message = 'Internal server error', details?: unknown): ApiError {
     return new ApiError(500, message, details, false);
   }

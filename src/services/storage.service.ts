@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { createReadStream } from 'fs';
+import { createReadStream, stat } from 'fs';
 import { PassThrough } from 'stream';
+import { promisify } from 'util';
 import type { Request } from 'express';
 import {
   S3Client,
@@ -9,12 +10,18 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
   GetObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
   S3ServiceException,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { ApiError } from '../utils/ApiError';
+
+const statAsync = promisify(stat);
 
 export interface StorageFile {
   fieldname: string;
@@ -36,13 +43,46 @@ export interface UploadResult {
   originalName: string;
 }
 
+export interface FileMetadata {
+  size: number;
+  mimetype: string;
+  lastModified?: Date;
+}
+
+export interface MultipartUploadPart {
+  ETag: string;
+  PartNumber: number;
+}
+
+export interface MultipartUploadInitResult {
+  uploadId: string;
+  key: string;
+}
+
 export interface StorageProvider {
   upload(file: StorageFile, folder?: string): Promise<UploadResult>;
   delete(key: string): Promise<boolean>;
   exists(key: string): Promise<boolean>;
-  getStream(key: string): NodeJS.ReadableStream;
+  getMetadata(key: string): Promise<FileMetadata | null>;
+  getStream(key: string, start?: number, end?: number): NodeJS.ReadableStream;
   getUrl(key: string): string;
   getSignedUrl(key: string, expiresInSeconds?: number): Promise<string>;
+  createMultipartUpload(
+    key: string,
+    metadata?: Record<string, string>
+  ): Promise<MultipartUploadInitResult>;
+  getMultipartUploadUrl(
+    uploadId: string,
+    key: string,
+    partNumber: number,
+    expiresInSeconds?: number
+  ): Promise<string>;
+  completeMultipartUpload(
+    uploadId: string,
+    key: string,
+    parts: MultipartUploadPart[]
+  ): Promise<{ key: string; url: string }>;
+  abortMultipartUpload(uploadId: string, key: string): Promise<void>;
 }
 
 /* ─────────────── Local Provider ─────────────── */
@@ -110,8 +150,24 @@ class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  getStream(key: string): NodeJS.ReadableStream {
-    return createReadStream(this.resolvePath(key));
+  async getMetadata(key: string): Promise<FileMetadata | null> {
+    try {
+      const stats = await statAsync(this.resolvePath(key));
+      return {
+        size: stats.size,
+        mimetype: 'application/octet-stream',
+        lastModified: stats.mtime,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  getStream(key: string, start?: number, end?: number): NodeJS.ReadableStream {
+    const options: { start?: number; end?: number } = {};
+    if (start !== undefined) options.start = start;
+    if (end !== undefined) options.end = end;
+    return createReadStream(this.resolvePath(key), options);
   }
 
   getUrl(key: string): string {
@@ -121,6 +177,22 @@ class LocalStorageProvider implements StorageProvider {
   async getSignedUrl(key: string, _expiresInSeconds = 3600): Promise<string> {
     // Local files are served publicly; signed URLs are not needed.
     return this.getUrl(key);
+  }
+
+  async createMultipartUpload(): Promise<MultipartUploadInitResult> {
+    throw ApiError.internal('Multipart uploads are not supported for local storage provider');
+  }
+
+  async getMultipartUploadUrl(): Promise<string> {
+    throw ApiError.internal('Multipart uploads are not supported for local storage provider');
+  }
+
+  async completeMultipartUpload(): Promise<{ key: string; url: string }> {
+    throw ApiError.internal('Multipart uploads are not supported for local storage provider');
+  }
+
+  async abortMultipartUpload(): Promise<void> {
+    throw ApiError.internal('Multipart uploads are not supported for local storage provider');
   }
 }
 
@@ -250,16 +322,38 @@ export class S3StorageProvider implements StorageProvider {
     }
   }
 
-  getStream(key: string): NodeJS.ReadableStream {
-    // getObject is async; return a promise-wrapped stream is awkward,
-    // so we expose a lazy getter that resolves on first read.
+  async getMetadata(key: string): Promise<FileMetadata | null> {
+    try {
+      const result = await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        })
+      );
+      return {
+        size: result.ContentLength ?? 0,
+        mimetype: result.ContentType ?? 'application/octet-stream',
+        lastModified: result.LastModified,
+      };
+    } catch (err) {
+      if (err instanceof S3ServiceException && err.name === 'NotFound') {
+        return null;
+      }
+      this.mapS3Error(err, 'getMetadata', key);
+    }
+  }
+
+  getStream(key: string, start?: number, end?: number): NodeJS.ReadableStream {
     const passThrough = new PassThrough();
+
+    const range = start !== undefined && end !== undefined ? `bytes=${start}-${end}` : undefined;
 
     this.client
       .send(
         new GetObjectCommand({
           Bucket: this.bucket,
           Key: key,
+          Range: range,
         })
       )
       .then((response) => {
@@ -308,6 +402,106 @@ export class S3StorageProvider implements StorageProvider {
       this.mapS3Error(err, 'getSignedUrl', key);
     }
   }
+
+  async createMultipartUpload(
+    key: string,
+    metadata?: Record<string, string>
+  ): Promise<MultipartUploadInitResult> {
+    try {
+      const result = await this.client.send(
+        new CreateMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Metadata: metadata,
+        })
+      );
+
+      if (!result.UploadId) {
+        throw ApiError.internal('S3 did not return an upload ID');
+      }
+
+      logger.info('Multipart upload initiated (S3)', { bucket: this.bucket, key });
+
+      return {
+        uploadId: result.UploadId,
+        key,
+      };
+    } catch (err) {
+      this.mapS3Error(err, 'createMultipartUpload', key);
+    }
+  }
+
+  async getMultipartUploadUrl(
+    uploadId: string,
+    key: string,
+    partNumber: number,
+    expiresInSeconds = 3600
+  ): Promise<string> {
+    try {
+      return await awsGetSignedUrl(
+        this.client,
+        new UploadPartCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+        }),
+        { expiresIn: expiresInSeconds }
+      );
+    } catch (err) {
+      this.mapS3Error(err, 'getMultipartUploadUrl', key);
+    }
+  }
+
+  async completeMultipartUpload(
+    uploadId: string,
+    key: string,
+    parts: MultipartUploadPart[]
+  ): Promise<{ key: string; url: string }> {
+    try {
+      await this.client.send(
+        new CompleteMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+          MultipartUpload: {
+            Parts: parts
+              .slice()
+              .sort((a, b) => a.PartNumber - b.PartNumber)
+              .map((part) => ({
+                ETag: part.ETag,
+                PartNumber: part.PartNumber,
+              })),
+          },
+        })
+      );
+
+      logger.info('Multipart upload completed (S3)', { bucket: this.bucket, key });
+
+      return {
+        key,
+        url: this.getUrl(key),
+      };
+    } catch (err) {
+      this.mapS3Error(err, 'completeMultipartUpload', key);
+    }
+  }
+
+  async abortMultipartUpload(uploadId: string, key: string): Promise<void> {
+    try {
+      await this.client.send(
+        new AbortMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+        })
+      );
+
+      logger.info('Multipart upload aborted (S3)', { bucket: this.bucket, key });
+    } catch (err) {
+      this.mapS3Error(err, 'abortMultipartUpload', key);
+    }
+  }
 }
 
 /* ─────────────── Factory ─────────────── */
@@ -349,9 +543,14 @@ export const storageService = {
     return getProvider().exists(key);
   },
 
-  /** Get a readable stream for a file. */
-  getStream(key: string): NodeJS.ReadableStream {
-    return getProvider().getStream(key);
+  /** Get file metadata (size, mimetype, lastModified). */
+  async getMetadata(key: string): Promise<FileMetadata | null> {
+    return getProvider().getMetadata(key);
+  },
+
+  /** Get a readable stream for a file, optionally constrained to a byte range. */
+  getStream(key: string, start?: number, end?: number): NodeJS.ReadableStream {
+    return getProvider().getStream(key, start, end);
   },
 
   /** Get the public URL for a file key. */
@@ -362,6 +561,38 @@ export const storageService = {
   /** Get a temporary signed URL for private access. */
   async getSignedUrl(key: string, expiresInSeconds?: number): Promise<string> {
     return getProvider().getSignedUrl(key, expiresInSeconds);
+  },
+
+  /** Initiate a multipart upload. */
+  async createMultipartUpload(
+    key: string,
+    metadata?: Record<string, string>
+  ): Promise<MultipartUploadInitResult> {
+    return getProvider().createMultipartUpload(key, metadata);
+  },
+
+  /** Get a presigned URL to upload a single multipart part. */
+  async getMultipartUploadUrl(
+    uploadId: string,
+    key: string,
+    partNumber: number,
+    expiresInSeconds?: number
+  ): Promise<string> {
+    return getProvider().getMultipartUploadUrl(uploadId, key, partNumber, expiresInSeconds);
+  },
+
+  /** Complete a multipart upload by combining all uploaded parts. */
+  async completeMultipartUpload(
+    uploadId: string,
+    key: string,
+    parts: MultipartUploadPart[]
+  ): Promise<{ key: string; url: string }> {
+    return getProvider().completeMultipartUpload(uploadId, key, parts);
+  },
+
+  /** Abort a multipart upload and clean up uploaded parts. */
+  async abortMultipartUpload(uploadId: string, key: string): Promise<void> {
+    return getProvider().abortMultipartUpload(uploadId, key);
   },
 
   /** Validate file size and MIME type (used by multer or controllers). */

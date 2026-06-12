@@ -9,6 +9,8 @@
 - [x] Add shared middleware (auth, role, validate, error, rate limit, upload)
 - [x] Add services (email, storage, redis, token, socket)
 - [x] Implement production-grade AWS S3 storage provider with SDK v3, presigned URLs, and tests
+- [x] Add large-file streaming endpoint with HTTP Range support
+- [x] Add direct-to-S3 multipart upload endpoints for resumable large uploads
 - [x] Add background jobs (email, notification, reminder) with retry + DLQ
 - [x] Add test suite (114 tests passing)
 - [x] Implement rate limiting with IETF Draft-7 + legacy headers

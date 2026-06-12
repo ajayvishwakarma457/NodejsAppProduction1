@@ -34,6 +34,9 @@ class ApiError extends Error {
     static tooManyRequests(message = 'Too many requests', details) {
         return new ApiError(429, message, details);
     }
+    static rangeNotSatisfiable(message = 'Range not satisfiable', details) {
+        return new ApiError(416, message, details);
+    }
     static internal(message = 'Internal server error', details) {
         return new ApiError(500, message, details, false);
     }

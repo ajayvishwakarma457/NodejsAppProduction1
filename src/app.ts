@@ -5,6 +5,7 @@ import path from 'path';
 import mongoose from 'mongoose';
 import { authRouter } from './modules/auth/auth.routes';
 import { commentRouter } from './modules/comments/comment.routes';
+import { fileRouter } from './modules/files/file.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
 import { projectRouter } from './modules/projects/project.routes';
 import { taskRouter } from './modules/tasks/task.routes';
@@ -195,6 +196,7 @@ app.use('/api/v1/teams', teamRouter);
 app.use('/api/v1/projects', projectRouter);
 app.use('/api/v1/tasks', taskRouter);
 app.use('/api/v1/comments', commentRouter);
+app.use('/api/v1/files', fileRouter);
 app.use('/api/v1/notifications', notificationRouter);
 
 /* ------------------------------------------------------------------ */

@@ -30,7 +30,9 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
 - Structured logging (Winston) with request correlation IDs
 - Email service with SMTP fallback to mock logging
-- Storage service with provider pattern: local filesystem and production-grade AWS S3 (SDK v3) with upload, delete, exists, stream, public URL, and presigned URL support
+- Storage service with provider pattern: local filesystem and production-grade AWS S3 (SDK v3) with upload, delete, exists, metadata, stream, public URL, presigned URL, and multipart upload support
+- File streaming endpoint (`GET /api/v1/files/:key/stream`) with HTTP Range request support for both local and S3 storage
+- Direct-to-S3 multipart upload endpoints (`/api/v1/files/multipart/*`) for large/resumable uploads
 - Background jobs: email, notification, reminder (cron-based with DLQ)
 
 ### Security

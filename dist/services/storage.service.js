@@ -8,11 +8,13 @@ const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = require("fs");
 const stream_1 = require("stream");
+const util_1 = require("util");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const ApiError_1 = require("../utils/ApiError");
+const statAsync = (0, util_1.promisify)(fs_1.stat);
 /* ─────────────── Local Provider ─────────────── */
 class LocalStorageProvider {
     basePath;
@@ -71,8 +73,26 @@ class LocalStorageProvider {
             return false;
         }
     }
-    getStream(key) {
-        return (0, fs_1.createReadStream)(this.resolvePath(key));
+    async getMetadata(key) {
+        try {
+            const stats = await statAsync(this.resolvePath(key));
+            return {
+                size: stats.size,
+                mimetype: 'application/octet-stream',
+                lastModified: stats.mtime,
+            };
+        }
+        catch {
+            return null;
+        }
+    }
+    getStream(key, start, end) {
+        const options = {};
+        if (start !== undefined)
+            options.start = start;
+        if (end !== undefined)
+            options.end = end;
+        return (0, fs_1.createReadStream)(this.resolvePath(key), options);
     }
     getUrl(key) {
         return `${this.publicUrl}/${key.replace(/\\/g, '/')}`;
@@ -80,6 +100,18 @@ class LocalStorageProvider {
     async getSignedUrl(key, _expiresInSeconds = 3600) {
         // Local files are served publicly; signed URLs are not needed.
         return this.getUrl(key);
+    }
+    async createMultipartUpload() {
+        throw ApiError_1.ApiError.internal('Multipart uploads are not supported for local storage provider');
+    }
+    async getMultipartUploadUrl() {
+        throw ApiError_1.ApiError.internal('Multipart uploads are not supported for local storage provider');
+    }
+    async completeMultipartUpload() {
+        throw ApiError_1.ApiError.internal('Multipart uploads are not supported for local storage provider');
+    }
+    async abortMultipartUpload() {
+        throw ApiError_1.ApiError.internal('Multipart uploads are not supported for local storage provider');
     }
 }
 /* ─────────────── S3 Provider ─────────────── */
@@ -123,7 +155,10 @@ class S3StorageProvider {
             });
             throw ApiError_1.ApiError.internal(`S3 ${operation} failed: ${err.name}`);
         }
-        logger_1.logger.error(`S3 ${operation} failed`, { key, error: err instanceof Error ? err.message : err });
+        logger_1.logger.error(`S3 ${operation} failed`, {
+            key,
+            error: err instanceof Error ? err.message : err,
+        });
         throw ApiError_1.ApiError.internal(`S3 ${operation} failed`);
     }
     async upload(file, folder = 'general') {
@@ -184,14 +219,33 @@ class S3StorageProvider {
             this.mapS3Error(err, 'exists', key);
         }
     }
-    getStream(key) {
-        // getObject is async; return a promise-wrapped stream is awkward,
-        // so we expose a lazy getter that resolves on first read.
+    async getMetadata(key) {
+        try {
+            const result = await this.client.send(new client_s3_1.HeadObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+            }));
+            return {
+                size: result.ContentLength ?? 0,
+                mimetype: result.ContentType ?? 'application/octet-stream',
+                lastModified: result.LastModified,
+            };
+        }
+        catch (err) {
+            if (err instanceof client_s3_1.S3ServiceException && err.name === 'NotFound') {
+                return null;
+            }
+            this.mapS3Error(err, 'getMetadata', key);
+        }
+    }
+    getStream(key, start, end) {
         const passThrough = new stream_1.PassThrough();
+        const range = start !== undefined && end !== undefined ? `bytes=${start}-${end}` : undefined;
         this.client
             .send(new client_s3_1.GetObjectCommand({
             Bucket: this.bucket,
             Key: key,
+            Range: range,
         }))
             .then((response) => {
             if (!response.Body) {
@@ -231,6 +285,78 @@ class S3StorageProvider {
             this.mapS3Error(err, 'getSignedUrl', key);
         }
     }
+    async createMultipartUpload(key, metadata) {
+        try {
+            const result = await this.client.send(new client_s3_1.CreateMultipartUploadCommand({
+                Bucket: this.bucket,
+                Key: key,
+                Metadata: metadata,
+            }));
+            if (!result.UploadId) {
+                throw ApiError_1.ApiError.internal('S3 did not return an upload ID');
+            }
+            logger_1.logger.info('Multipart upload initiated (S3)', { bucket: this.bucket, key });
+            return {
+                uploadId: result.UploadId,
+                key,
+            };
+        }
+        catch (err) {
+            this.mapS3Error(err, 'createMultipartUpload', key);
+        }
+    }
+    async getMultipartUploadUrl(uploadId, key, partNumber, expiresInSeconds = 3600) {
+        try {
+            return await (0, s3_request_presigner_1.getSignedUrl)(this.client, new client_s3_1.UploadPartCommand({
+                Bucket: this.bucket,
+                Key: key,
+                UploadId: uploadId,
+                PartNumber: partNumber,
+            }), { expiresIn: expiresInSeconds });
+        }
+        catch (err) {
+            this.mapS3Error(err, 'getMultipartUploadUrl', key);
+        }
+    }
+    async completeMultipartUpload(uploadId, key, parts) {
+        try {
+            await this.client.send(new client_s3_1.CompleteMultipartUploadCommand({
+                Bucket: this.bucket,
+                Key: key,
+                UploadId: uploadId,
+                MultipartUpload: {
+                    Parts: parts
+                        .slice()
+                        .sort((a, b) => a.PartNumber - b.PartNumber)
+                        .map((part) => ({
+                        ETag: part.ETag,
+                        PartNumber: part.PartNumber,
+                    })),
+                },
+            }));
+            logger_1.logger.info('Multipart upload completed (S3)', { bucket: this.bucket, key });
+            return {
+                key,
+                url: this.getUrl(key),
+            };
+        }
+        catch (err) {
+            this.mapS3Error(err, 'completeMultipartUpload', key);
+        }
+    }
+    async abortMultipartUpload(uploadId, key) {
+        try {
+            await this.client.send(new client_s3_1.AbortMultipartUploadCommand({
+                Bucket: this.bucket,
+                Key: key,
+                UploadId: uploadId,
+            }));
+            logger_1.logger.info('Multipart upload aborted (S3)', { bucket: this.bucket, key });
+        }
+        catch (err) {
+            this.mapS3Error(err, 'abortMultipartUpload', key);
+        }
+    }
 }
 exports.S3StorageProvider = S3StorageProvider;
 /* ─────────────── Factory ─────────────── */
@@ -264,9 +390,13 @@ exports.storageService = {
     async exists(key) {
         return getProvider().exists(key);
     },
-    /** Get a readable stream for a file. */
-    getStream(key) {
-        return getProvider().getStream(key);
+    /** Get file metadata (size, mimetype, lastModified). */
+    async getMetadata(key) {
+        return getProvider().getMetadata(key);
+    },
+    /** Get a readable stream for a file, optionally constrained to a byte range. */
+    getStream(key, start, end) {
+        return getProvider().getStream(key, start, end);
     },
     /** Get the public URL for a file key. */
     getUrl(key) {
@@ -275,6 +405,22 @@ exports.storageService = {
     /** Get a temporary signed URL for private access. */
     async getSignedUrl(key, expiresInSeconds) {
         return getProvider().getSignedUrl(key, expiresInSeconds);
+    },
+    /** Initiate a multipart upload. */
+    async createMultipartUpload(key, metadata) {
+        return getProvider().createMultipartUpload(key, metadata);
+    },
+    /** Get a presigned URL to upload a single multipart part. */
+    async getMultipartUploadUrl(uploadId, key, partNumber, expiresInSeconds) {
+        return getProvider().getMultipartUploadUrl(uploadId, key, partNumber, expiresInSeconds);
+    },
+    /** Complete a multipart upload by combining all uploaded parts. */
+    async completeMultipartUpload(uploadId, key, parts) {
+        return getProvider().completeMultipartUpload(uploadId, key, parts);
+    },
+    /** Abort a multipart upload and clean up uploaded parts. */
+    async abortMultipartUpload(uploadId, key) {
+        return getProvider().abortMultipartUpload(uploadId, key);
     },
     /** Validate file size and MIME type (used by multer or controllers). */
     validate(file) {

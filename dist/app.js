@@ -11,6 +11,7 @@ const path_1 = __importDefault(require("path"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_routes_1 = require("./modules/auth/auth.routes");
 const comment_routes_1 = require("./modules/comments/comment.routes");
+const file_routes_1 = require("./modules/files/file.routes");
 const notification_routes_1 = require("./modules/notifications/notification.routes");
 const project_routes_1 = require("./modules/projects/project.routes");
 const task_routes_1 = require("./modules/tasks/task.routes");
@@ -163,6 +164,7 @@ exports.app.use('/api/v1/teams', team_routes_1.teamRouter);
 exports.app.use('/api/v1/projects', project_routes_1.projectRouter);
 exports.app.use('/api/v1/tasks', task_routes_1.taskRouter);
 exports.app.use('/api/v1/comments', comment_routes_1.commentRouter);
+exports.app.use('/api/v1/files', file_routes_1.fileRouter);
 exports.app.use('/api/v1/notifications', notification_routes_1.notificationRouter);
 /* ------------------------------------------------------------------ */
 // Error handling

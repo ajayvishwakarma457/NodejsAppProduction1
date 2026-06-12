@@ -127,6 +127,32 @@ vitest_1.vi.mock('@aws-sdk/s3-request-presigner', () => ({
         };
         await (0, vitest_1.expect)(provider.upload(file)).rejects.toThrow('S3 upload failed');
     });
+    (0, vitest_1.it)('should get file metadata from S3', async () => {
+        s3Mock.on(client_s3_1.HeadObjectCommand).resolves({
+            ContentLength: 2048,
+            ContentType: 'image/png',
+            LastModified: new Date('2026-01-01'),
+        });
+        const provider = createProvider();
+        const metadata = await provider.getMetadata('avatars/photo.png');
+        (0, vitest_1.expect)(metadata).toEqual({
+            size: 2048,
+            mimetype: 'image/png',
+            lastModified: new Date('2026-01-01'),
+        });
+    });
+    (0, vitest_1.it)('should return null metadata when file does not exist in S3', async () => {
+        const notFoundError = new client_s3_1.S3ServiceException({
+            name: 'NotFound',
+            message: 'Not Found',
+            $fault: 'client',
+            $metadata: {},
+        });
+        s3Mock.on(client_s3_1.HeadObjectCommand).rejects(notFoundError);
+        const provider = createProvider();
+        const metadata = await provider.getMetadata('avatars/missing.png');
+        (0, vitest_1.expect)(metadata).toBeNull();
+    });
     (0, vitest_1.it)('should generate public S3 URL', () => {
         const provider = createProvider();
         const url = provider.getUrl('avatars/photo.jpg');
@@ -145,7 +171,9 @@ vitest_1.vi.mock('@aws-sdk/s3-request-presigner', () => ({
         const provider = createProvider();
         const url = await provider.getSignedUrl('avatars/photo.jpg', 3600);
         (0, vitest_1.expect)(url).toBe('https://signed-url.example.com');
-        (0, vitest_1.expect)(s3_request_presigner_1.getSignedUrl).toHaveBeenCalledWith(vitest_1.expect.any(Object), vitest_1.expect.any(client_s3_1.GetObjectCommand), { expiresIn: 3600 });
+        (0, vitest_1.expect)(s3_request_presigner_1.getSignedUrl).toHaveBeenCalledWith(vitest_1.expect.any(Object), vitest_1.expect.any(client_s3_1.GetObjectCommand), {
+            expiresIn: 3600,
+        });
     });
     (0, vitest_1.it)('should stream a file from S3', async () => {
         const stream = stream_1.Readable.from(['hello world']);
@@ -157,6 +185,60 @@ vitest_1.vi.mock('@aws-sdk/s3-request-presigner', () => ({
             chunks.push(Buffer.from(chunk));
         }
         (0, vitest_1.expect)(Buffer.concat(chunks).toString()).toBe('hello world');
+    });
+    (0, vitest_1.it)('should stream a byte range from S3', async () => {
+        const stream = stream_1.Readable.from(['world']);
+        s3Mock.on(client_s3_1.GetObjectCommand).resolves({ Body: stream });
+        const provider = createProvider();
+        const resultStream = provider.getStream('avatars/photo.jpg', 6, 10);
+        const chunks = [];
+        for await (const chunk of resultStream) {
+            chunks.push(Buffer.from(chunk));
+        }
+        (0, vitest_1.expect)(Buffer.concat(chunks).toString()).toBe('world');
+        const calls = s3Mock.commandCalls(client_s3_1.GetObjectCommand);
+        (0, vitest_1.expect)(calls[0].args[0].input.Range).toBe('bytes=6-10');
+    });
+    (0, vitest_1.it)('should initiate a multipart upload', async () => {
+        s3Mock.on(client_s3_1.CreateMultipartUploadCommand).resolves({ UploadId: 'upload-123' });
+        const provider = createProvider();
+        const result = await provider.createMultipartUpload('videos/movie.mp4', {
+            contentType: 'video/mp4',
+        });
+        (0, vitest_1.expect)(result.uploadId).toBe('upload-123');
+        (0, vitest_1.expect)(result.key).toBe('videos/movie.mp4');
+        const calls = s3Mock.commandCalls(client_s3_1.CreateMultipartUploadCommand);
+        (0, vitest_1.expect)(calls[0].args[0].input.Bucket).toBe('test-bucket');
+        (0, vitest_1.expect)(calls[0].args[0].input.Key).toBe('videos/movie.mp4');
+    });
+    (0, vitest_1.it)('should generate a multipart upload presigned URL', async () => {
+        vitest_1.vi.mocked(s3_request_presigner_1.getSignedUrl).mockResolvedValue('https://part-upload.example.com');
+        const provider = createProvider();
+        const url = await provider.getMultipartUploadUrl('upload-123', 'videos/movie.mp4', 1);
+        (0, vitest_1.expect)(url).toBe('https://part-upload.example.com');
+        (0, vitest_1.expect)(s3_request_presigner_1.getSignedUrl).toHaveBeenCalledWith(vitest_1.expect.any(Object), vitest_1.expect.any(client_s3_1.UploadPartCommand), {
+            expiresIn: 3600,
+        });
+    });
+    (0, vitest_1.it)('should complete a multipart upload', async () => {
+        s3Mock.on(client_s3_1.CompleteMultipartUploadCommand).resolves({});
+        const provider = createProvider();
+        const result = await provider.completeMultipartUpload('upload-123', 'videos/movie.mp4', [
+            { ETag: '"etag-1"', PartNumber: 1 },
+            { ETag: '"etag-2"', PartNumber: 2 },
+        ]);
+        (0, vitest_1.expect)(result.key).toBe('videos/movie.mp4');
+        (0, vitest_1.expect)(result.url).toBe('https://test-bucket.s3.us-east-1.amazonaws.com/videos/movie.mp4');
+        const calls = s3Mock.commandCalls(client_s3_1.CompleteMultipartUploadCommand);
+        (0, vitest_1.expect)(calls[0].args[0].input.UploadId).toBe('upload-123');
+        (0, vitest_1.expect)(calls[0].args[0].input.MultipartUpload?.Parts).toHaveLength(2);
+    });
+    (0, vitest_1.it)('should abort a multipart upload', async () => {
+        s3Mock.on(client_s3_1.AbortMultipartUploadCommand).resolves({});
+        const provider = createProvider();
+        await (0, vitest_1.expect)(provider.abortMultipartUpload('upload-123', 'videos/movie.mp4')).resolves.toBeUndefined();
+        const calls = s3Mock.commandCalls(client_s3_1.AbortMultipartUploadCommand);
+        (0, vitest_1.expect)(calls[0].args[0].input.UploadId).toBe('upload-123');
     });
 });
 //# sourceMappingURL=storage-s3.test.js.map

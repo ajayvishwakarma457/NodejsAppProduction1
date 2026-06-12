@@ -50,7 +50,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `projects` — `getById` cached; invalidated on `create`, `update`, and `remove`.
   - `tasks` — `getById` cached; invalidated on `create`, `update`, and `remove`.
 
-## File Uploads & Storage
+## File Uploads, Streaming & Storage
 
 - `middleware/upload.middleware.ts` uses Multer with `memoryStorage()` for server-side upload handling.
 - Production-grade limits are enforced:
@@ -63,10 +63,21 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `S3StorageProvider` — production-grade AWS S3 implementation using AWS SDK v3:
     - `PutObjectCommand` for uploads with correct `ContentType`
     - `DeleteObjectCommand`, `HeadObjectCommand`, `GetObjectCommand`
+    - multipart upload support (`CreateMultipartUploadCommand`, `UploadPartCommand`, `CompleteMultipartUploadCommand`, `AbortMultipartUploadCommand`)
     - public URL generation (supports virtual-hosted style, custom endpoint, and `S3_PUBLIC_URL`)
-    - temporary presigned URLs for private access via `getSignedUrl`
+    - temporary presigned URLs for private access and multipart part uploads
     - runtime validation of required S3 env vars
     - structured S3 error handling and logging
+- `modules/files/file.service.ts` handles streaming logic:
+  - HTTP `Range` header parsing (`bytes=start-end`, `bytes=start-`, `bytes=-suffix`)
+  - `206 Partial Content` responses with `Content-Range`
+  - `416 Range Not Satisfiable` for invalid ranges
+- `modules/files/file.routes.ts` exposes file endpoints:
+  - `GET /api/v1/files/:key/stream` — stream a file with range support
+  - `POST /api/v1/files/multipart/init` — initiate a direct-to-S3 multipart upload
+  - `POST /api/v1/files/multipart/url` — get a presigned URL for a part
+  - `POST /api/v1/files/multipart/complete` — complete a multipart upload
+  - `POST /api/v1/files/multipart/abort` — abort a multipart upload
 - Static files are served from `/uploads` when `STORAGE_PROVIDER=local`, with immutable caching headers and `nosniff`.
 
 ## Query Optimization & Indexing
@@ -215,6 +226,12 @@ src/
 │       ├── notification.routes.ts
 │       ├── notification.validation.ts
 │       └── notification.model.ts
+│   │
+│   └── files/
+│       ├── file.controller.ts
+│       ├── file.service.ts
+│       ├── file.routes.ts
+│       └── file.validation.ts
 │
 ├── middleware/
 │   ├── auth.middleware.ts
