@@ -1,7 +1,11 @@
 import { teamRepository, TeamListFilter } from './team.repository';
+import { ProjectModel } from '../projects/project.model';
+import { TaskModel } from '../tasks/task.model';
+import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin } from '../../utils/rbac';
+import { withTransaction } from '../../utils/transaction';
 
 export const teamService = {
   async list(query: Record<string, unknown>) {
@@ -37,7 +41,20 @@ export const teamService = {
   },
 
   async create(data: Record<string, unknown>) {
-    return teamRepository.create(data);
+    const ownerId = String(data.ownerId);
+
+    return withTransaction(async ({ session }) => {
+      const team = await teamRepository.create(data, session ?? undefined);
+
+      await teamRepository.addMember(
+        String(team._id),
+        ownerId,
+        'owner',
+        session ?? undefined
+      );
+
+      return teamRepository.findById(String(team._id));
+    });
   },
 
   async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
@@ -59,7 +76,17 @@ export const teamService = {
       throw ApiError.forbidden('You can only delete teams you own');
     }
 
-    return teamRepository.deleteById(id);
+    return withTransaction(async ({ session }) => {
+      const projectIds = await ProjectModel.distinct('_id', { teamId: id }, { session });
+      const taskIds = await TaskModel.distinct('_id', { projectId: { $in: projectIds } }, { session });
+
+      await CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
+      await TaskModel.deleteMany({ projectId: { $in: projectIds } }, { session: session ?? undefined });
+      await ProjectModel.deleteMany({ teamId: id }, { session: session ?? undefined });
+      const result = await teamRepository.deleteById(id, session ?? undefined);
+
+      return result;
+    });
   },
 
   async addMember(

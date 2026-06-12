@@ -75,21 +75,29 @@ exports.userRepository = {
     /**
      * Create a new user document.
      */
-    async create(data) {
-        return user_model_1.UserModel.create(data);
+    async create(data, session) {
+        const doc = new user_model_1.UserModel(data);
+        return doc.save({ session });
     },
     /**
      * Update a user by id. Returns the updated document or null if not found.
      */
-    async updateById(id, data) {
-        return user_model_1.UserModel.findByIdAndUpdate(id, data, { new: true }).lean();
+    async updateById(id, data, session) {
+        return user_model_1.UserModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
     },
     /**
      * Delete a user by id. Returns true if a document was deleted.
      */
-    async deleteById(id) {
-        const result = await user_model_1.UserModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await user_model_1.UserModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple users matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await user_model_1.UserModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
     /**
      * Check whether a user with the given id exists.

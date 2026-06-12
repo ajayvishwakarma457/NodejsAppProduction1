@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 /* ------------------------------------------------------------------ */
 // Schema
@@ -87,6 +87,6 @@ projectSchema.virtual('isOverdue').get(function () {
 // Export
 /* ------------------------------------------------------------------ */
 
-export type ProjectDocument = InferSchemaType<typeof projectSchema>;
+export type ProjectDocument = InferSchemaType<typeof projectSchema> & { _id: Types.ObjectId };
 
 export const ProjectModel = model<ProjectDocument>('Project', projectSchema);

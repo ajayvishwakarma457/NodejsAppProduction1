@@ -1,7 +1,9 @@
 import { taskRepository, TaskListFilter } from './task.repository';
+import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin } from '../../utils/rbac';
+import { withTransaction } from '../../utils/transaction';
 
 export const taskService = {
   async list(query: Record<string, unknown>) {
@@ -71,7 +73,10 @@ export const taskService = {
       throw ApiError.forbidden('You can only delete tasks you created');
     }
 
-    return taskRepository.deleteById(id);
+    return withTransaction(async ({ session }) => {
+      await CommentModel.deleteMany({ taskId: id }, { session: session ?? undefined });
+      return taskRepository.deleteById(id, session ?? undefined);
+    });
   },
 
   async findDueInRange(start: Date, end: Date) {

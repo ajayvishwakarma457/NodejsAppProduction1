@@ -2,9 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectService = void 0;
 const project_repository_1 = require("./project.repository");
+const task_model_1 = require("../tasks/task.model");
+const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const transaction_1 = require("../../utils/transaction");
 exports.projectService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -50,7 +53,12 @@ exports.projectService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only delete projects you own');
         }
-        return project_repository_1.projectRepository.deleteById(id);
+        return (0, transaction_1.withTransaction)(async ({ session }) => {
+            const taskIds = await task_model_1.TaskModel.distinct('_id', { projectId: id }, { session });
+            await comment_model_1.CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
+            await task_model_1.TaskModel.deleteMany({ projectId: id }, { session: session ?? undefined });
+            return project_repository_1.projectRepository.deleteById(id, session ?? undefined);
+        });
     },
 };
 //# sourceMappingURL=project.service.js.map

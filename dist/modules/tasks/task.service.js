@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskService = void 0;
 const task_repository_1 = require("./task.repository");
+const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const transaction_1 = require("../../utils/transaction");
 exports.taskService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -56,7 +58,10 @@ exports.taskService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.createdBy, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only delete tasks you created');
         }
-        return task_repository_1.taskRepository.deleteById(id);
+        return (0, transaction_1.withTransaction)(async ({ session }) => {
+            await comment_model_1.CommentModel.deleteMany({ taskId: id }, { session: session ?? undefined });
+            return task_repository_1.taskRepository.deleteById(id, session ?? undefined);
+        });
     },
     async findDueInRange(start, end) {
         return task_repository_1.taskRepository.findDueInRange(start, end);

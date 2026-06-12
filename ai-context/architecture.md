@@ -15,6 +15,18 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 - `comments`
 - `notifications`
 
+## Transactions & Rollbacks
+
+- `utils/transaction.ts` — Reusable MongoDB transaction helper with topology detection and fallback for standalone servers
+- `utils/compensating-transaction.ts` — Saga-style compensating rollback for cross-system operations
+- Services wrap multi-document mutations in transactions:
+  - `teamService.create` — create team + add owner atomically
+  - `teamService.remove` — cascade delete projects, tasks, comments
+  - `projectService.remove` — cascade delete tasks, comments
+  - `taskService.remove` — delete task + comments
+  - `userService.remove` — cascade delete teams, projects, tasks, comments, notifications, API keys
+- Repositories accept an optional `ClientSession` and expose `deleteMany` helpers
+
 ## Migrations & Seeders
 
 - `migrations` — Migration framework (`migration-runner`, `migration-lock`, tracking model, and timestamped migration files)
@@ -173,6 +185,8 @@ src/
 │   ├── constants.ts
 │   ├── helpers.ts
 │   ├── pagination.ts
+│   ├── transaction.ts
+│   ├── compensating-transaction.ts
 │   └── accessControl.ts
 │
 ├── tests/

@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery } from 'mongoose';
 import { NotificationDocument, NotificationModel } from './notification.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
@@ -108,11 +108,15 @@ export const notificationRepository = {
    * Mark a single notification as read for a user.
    * Returns the updated document or null if not found / already read.
    */
-  async markAsRead(id: string, userId: string): Promise<NotificationDocument | null> {
+  async markAsRead(
+    id: string,
+    userId: string,
+    session?: ClientSession
+  ): Promise<NotificationDocument | null> {
     return NotificationModel.findOneAndUpdate(
       { _id: id, userId, isRead: false },
       { isRead: true, readAt: new Date() },
-      { new: true }
+      { new: true, session }
     ).lean();
   },
 
@@ -120,10 +124,11 @@ export const notificationRepository = {
    * Mark all unread notifications as read for a user.
    * Returns the number of documents modified.
    */
-  async markAllAsRead(userId: string): Promise<number> {
+  async markAllAsRead(userId: string, session?: ClientSession): Promise<number> {
     const result = await NotificationModel.updateMany(
       { userId, isRead: false },
-      { isRead: true, readAt: new Date() }
+      { isRead: true, readAt: new Date() },
+      { session }
     );
     return result.modifiedCount ?? 0;
   },
@@ -132,10 +137,11 @@ export const notificationRepository = {
    * Mark a notification as delivered.
    * Returns true if a document was matched.
    */
-  async markDelivered(id: string): Promise<boolean> {
+  async markDelivered(id: string, session?: ClientSession): Promise<boolean> {
     const result = await NotificationModel.updateOne(
       { _id: id },
-      { status: 'delivered', deliveredAt: new Date(), errorMessage: null }
+      { status: 'delivered', deliveredAt: new Date(), errorMessage: null },
+      { session }
     );
     return result.matchedCount > 0;
   },
@@ -143,26 +149,39 @@ export const notificationRepository = {
   /**
    * Mark a notification as failed with an error message.
    */
-  async markFailed(id: string, errorMessage: string): Promise<void> {
+  async markFailed(id: string, errorMessage: string, session?: ClientSession): Promise<void> {
     await NotificationModel.updateOne(
       { _id: id },
-      { status: 'failed', failedAt: new Date(), errorMessage }
+      { status: 'failed', failedAt: new Date(), errorMessage },
+      { session }
     );
   },
 
   /**
    * Create a new notification document.
    */
-  async create(data: Partial<NotificationDocument>): Promise<NotificationDocument> {
-    return NotificationModel.create(data);
+  async create(
+    data: Partial<NotificationDocument>,
+    session?: ClientSession
+  ): Promise<NotificationDocument> {
+    const doc = new NotificationModel(data);
+    return doc.save({ session });
   },
 
   /**
    * Delete a notification by id. Returns true if a document was deleted.
    */
-  async deleteById(id: string): Promise<boolean> {
-    const result = await NotificationModel.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    const result = await NotificationModel.findByIdAndDelete(id, { session });
     return result !== null;
+  },
+
+  /**
+   * Delete multiple notifications matching a filter.
+   */
+  async deleteMany(filter: FilterQuery<NotificationDocument>, session?: ClientSession): Promise<number> {
+    const result = await NotificationModel.deleteMany(filter, { session });
+    return result.deletedCount ?? 0;
   },
 
   /**

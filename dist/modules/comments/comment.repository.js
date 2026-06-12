@@ -64,21 +64,29 @@ exports.commentRepository = {
     /**
      * Create a new comment document.
      */
-    async create(data) {
-        return comment_model_1.CommentModel.create(data);
+    async create(data, session) {
+        const doc = new comment_model_1.CommentModel(data);
+        return doc.save({ session });
     },
     /**
      * Update a comment by id. Returns the updated document or null.
      */
-    async updateById(id, data) {
-        return comment_model_1.CommentModel.findByIdAndUpdate(id, data, { new: true }).lean();
+    async updateById(id, data, session) {
+        return comment_model_1.CommentModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
     },
     /**
      * Delete a comment by id. Returns true if a document was deleted.
      */
-    async deleteById(id) {
-        const result = await comment_model_1.CommentModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await comment_model_1.CommentModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple comments matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await comment_model_1.CommentModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
     /**
      * Check whether a comment with the given id exists.

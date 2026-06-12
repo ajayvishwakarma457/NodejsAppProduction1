@@ -61,21 +61,29 @@ exports.teamRepository = {
     /**
      * Create a new team document.
      */
-    async create(data) {
-        return team_model_1.TeamModel.create(data);
+    async create(data, session) {
+        const doc = new team_model_1.TeamModel(data);
+        return doc.save({ session });
     },
     /**
      * Update a team by id. Returns the updated document or null if not found.
      */
-    async updateById(id, data) {
-        return team_model_1.TeamModel.findByIdAndUpdate(id, data, { new: true }).lean();
+    async updateById(id, data, session) {
+        return team_model_1.TeamModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
     },
     /**
      * Delete a team by id. Returns true if a document was deleted.
      */
-    async deleteById(id) {
-        const result = await team_model_1.TeamModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await team_model_1.TeamModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple teams matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await team_model_1.TeamModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
     /**
      * Check whether a team with the given id exists.
@@ -94,7 +102,7 @@ exports.teamRepository = {
      * Add a member to a team. Returns the existing team if the user is
      * already an owner or member to prevent duplicates.
      */
-    async addMember(teamId, userId, role = 'member') {
+    async addMember(teamId, userId, role = 'member', session) {
         const team = await team_model_1.TeamModel.findById(teamId).lean();
         if (!team)
             return null;
@@ -103,19 +111,19 @@ exports.teamRepository = {
         if (isOwner || isMember) {
             return team;
         }
-        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $push: { members: { userId, role, joinedAt: new Date() } } }, { new: true }).lean();
+        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $push: { members: { userId, role, joinedAt: new Date() } } }, { new: true, session }).lean();
     },
     /**
      * Remove a member from a team by userId.
      */
-    async removeMember(teamId, userId) {
-        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $pull: { members: { userId } } }, { new: true }).lean();
+    async removeMember(teamId, userId, session) {
+        return team_model_1.TeamModel.findByIdAndUpdate(teamId, { $pull: { members: { userId } } }, { new: true, session }).lean();
     },
     /**
      * Update a member's role within a team.
      */
-    async updateMemberRole(teamId, userId, role) {
-        return team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, 'members.userId': userId }, { $set: { 'members.$.role': role } }, { new: true }).lean();
+    async updateMemberRole(teamId, userId, role, session) {
+        return team_model_1.TeamModel.findOneAndUpdate({ _id: teamId, 'members.userId': userId }, { $set: { 'members.$.role': role } }, { new: true, session }).lean();
     },
 };
 //# sourceMappingURL=team.repository.js.map

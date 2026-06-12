@@ -1,7 +1,10 @@
 import { projectRepository, ProjectListFilter } from './project.repository';
+import { TaskModel } from '../tasks/task.model';
+import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin } from '../../utils/rbac';
+import { withTransaction } from '../../utils/transaction';
 
 export const projectService = {
   async list(query: Record<string, unknown>) {
@@ -63,6 +66,12 @@ export const projectService = {
       throw ApiError.forbidden('You can only delete projects you own');
     }
 
-    return projectRepository.deleteById(id);
+    return withTransaction(async ({ session }) => {
+      const taskIds = await TaskModel.distinct('_id', { projectId: id }, { session });
+
+      await CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
+      await TaskModel.deleteMany({ projectId: id }, { session: session ?? undefined });
+      return projectRepository.deleteById(id, session ?? undefined);
+    });
   },
 };

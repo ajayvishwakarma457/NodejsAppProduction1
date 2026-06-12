@@ -72,21 +72,29 @@ exports.taskRepository = {
     /**
      * Create a new task document.
      */
-    async create(data) {
-        return task_model_1.TaskModel.create(data);
+    async create(data, session) {
+        const doc = new task_model_1.TaskModel(data);
+        return doc.save({ session });
     },
     /**
      * Update a task by id. Returns the updated document or null if not found.
      */
-    async updateById(id, data) {
-        return task_model_1.TaskModel.findByIdAndUpdate(id, data, { new: true }).lean();
+    async updateById(id, data, session) {
+        return task_model_1.TaskModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
     },
     /**
      * Delete a task by id. Returns true if a document was deleted.
      */
-    async deleteById(id) {
-        const result = await task_model_1.TaskModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await task_model_1.TaskModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple tasks matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await task_model_1.TaskModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
     /**
      * Check whether a task with the given id exists.

@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 /* ------------------------------------------------------------------ */
 // Schema
@@ -101,6 +101,6 @@ taskSchema.index({ dueDate: 1 }, { name: 'duedate_idx' });
 // Export
 /* ------------------------------------------------------------------ */
 
-export type TaskDocument = InferSchemaType<typeof taskSchema>;
+export type TaskDocument = InferSchemaType<typeof taskSchema> & { _id: Types.ObjectId };
 
 export const TaskModel = model('Task', taskSchema);

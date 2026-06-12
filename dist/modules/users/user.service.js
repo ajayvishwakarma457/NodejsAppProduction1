@@ -1,8 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userService = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const user_repository_1 = require("./user.repository");
+const team_model_1 = require("../teams/team.model");
+const project_model_1 = require("../projects/project.model");
+const task_model_1 = require("../tasks/task.model");
+const comment_model_1 = require("../comments/comment.model");
+const notification_model_1 = require("../notifications/notification.model");
+const api_key_repository_1 = require("../api-keys/api-key.repository");
 const pagination_1 = require("../../utils/pagination");
+const transaction_1 = require("../../utils/transaction");
 exports.userService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -33,7 +44,41 @@ exports.userService = {
         return user_repository_1.userRepository.updateById(id, data);
     },
     async remove(id) {
-        return user_repository_1.userRepository.deleteById(id);
+        return (0, transaction_1.withTransaction)(async ({ session }) => {
+            const userObjectId = new mongoose_1.default.Types.ObjectId(id);
+            const ownedTeamIds = await team_model_1.TeamModel.distinct('_id', { ownerId: userObjectId }, { session: session ?? undefined });
+            const memberTeamIds = await team_model_1.TeamModel.distinct('_id', { 'members.userId': userObjectId }, { session: session ?? undefined });
+            const allTeamIds = Array.from(new Set([...ownedTeamIds, ...memberTeamIds]));
+            const projectIds = await project_model_1.ProjectModel.distinct('_id', { $or: [
+                    { ownerId: userObjectId },
+                    { teamId: { $in: allTeamIds } },
+                ] }, { session: session ?? undefined });
+            const taskIds = await task_model_1.TaskModel.distinct('_id', {
+                $or: [
+                    { createdBy: userObjectId },
+                    { assignedTo: userObjectId },
+                    { projectId: { $in: projectIds } },
+                ],
+            }, { session: session ?? undefined });
+            await comment_model_1.CommentModel.deleteMany({
+                $or: [{ userId: userObjectId }, { taskId: { $in: taskIds } }],
+            }, { session: session ?? undefined });
+            await task_model_1.TaskModel.deleteMany({
+                $or: [
+                    { createdBy: userObjectId },
+                    { assignedTo: userObjectId },
+                    { projectId: { $in: projectIds } },
+                ],
+            }, { session: session ?? undefined });
+            await project_model_1.ProjectModel.deleteMany({
+                $or: [{ ownerId: userObjectId }, { teamId: { $in: ownedTeamIds } }],
+            }, { session: session ?? undefined });
+            await team_model_1.TeamModel.deleteMany({ ownerId: userObjectId }, { session: session ?? undefined });
+            await team_model_1.TeamModel.updateMany({ 'members.userId': userObjectId }, { $pull: { members: { userId: userObjectId } } }, { session: session ?? undefined });
+            await notification_model_1.NotificationModel.deleteMany({ userId: userObjectId }, { session: session ?? undefined });
+            await api_key_repository_1.apiKeyRepository.deleteMany({ userId: userObjectId }, session ?? undefined);
+            return user_repository_1.userRepository.deleteById(id, session ?? undefined);
+        });
     },
 };
 //# sourceMappingURL=user.service.js.map

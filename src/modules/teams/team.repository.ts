@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery } from 'mongoose';
 import { TeamDocument, TeamModel } from './team.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
@@ -94,23 +94,39 @@ export const teamRepository = {
   /**
    * Create a new team document.
    */
-  async create(data: Partial<TeamDocument>): Promise<TeamDocument> {
-    return TeamModel.create(data);
+  async create(
+    data: Partial<TeamDocument>,
+    session?: ClientSession
+  ): Promise<TeamDocument> {
+    const doc = new TeamModel(data);
+    return doc.save({ session });
   },
 
   /**
    * Update a team by id. Returns the updated document or null if not found.
    */
-  async updateById(id: string, data: Partial<TeamDocument>): Promise<TeamDocument | null> {
-    return TeamModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  async updateById(
+    id: string,
+    data: Partial<TeamDocument>,
+    session?: ClientSession
+  ): Promise<TeamDocument | null> {
+    return TeamModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
   },
 
   /**
    * Delete a team by id. Returns true if a document was deleted.
    */
-  async deleteById(id: string): Promise<boolean> {
-    const result = await TeamModel.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    const result = await TeamModel.findByIdAndDelete(id, { session });
     return result !== null;
+  },
+
+  /**
+   * Delete multiple teams matching a filter.
+   */
+  async deleteMany(filter: FilterQuery<TeamDocument>, session?: ClientSession): Promise<number> {
+    const result = await TeamModel.deleteMany(filter, { session });
+    return result.deletedCount ?? 0;
   },
 
   /**
@@ -132,7 +148,12 @@ export const teamRepository = {
    * Add a member to a team. Returns the existing team if the user is
    * already an owner or member to prevent duplicates.
    */
-  async addMember(teamId: string, userId: string, role = 'member'): Promise<TeamDocument | null> {
+  async addMember(
+    teamId: string,
+    userId: string,
+    role = 'member',
+    session?: ClientSession
+  ): Promise<TeamDocument | null> {
     const team = await TeamModel.findById(teamId).lean();
     if (!team) return null;
 
@@ -146,18 +167,22 @@ export const teamRepository = {
     return TeamModel.findByIdAndUpdate(
       teamId,
       { $push: { members: { userId, role, joinedAt: new Date() } } },
-      { new: true }
+      { new: true, session }
     ).lean();
   },
 
   /**
    * Remove a member from a team by userId.
    */
-  async removeMember(teamId: string, userId: string): Promise<TeamDocument | null> {
+  async removeMember(
+    teamId: string,
+    userId: string,
+    session?: ClientSession
+  ): Promise<TeamDocument | null> {
     return TeamModel.findByIdAndUpdate(
       teamId,
       { $pull: { members: { userId } } },
-      { new: true }
+      { new: true, session }
     ).lean();
   },
 
@@ -167,12 +192,13 @@ export const teamRepository = {
   async updateMemberRole(
     teamId: string,
     userId: string,
-    role: string
+    role: string,
+    session?: ClientSession
   ): Promise<TeamDocument | null> {
     return TeamModel.findOneAndUpdate(
       { _id: teamId, 'members.userId': userId },
       { $set: { 'members.$.role': role } },
-      { new: true }
+      { new: true, session }
     ).lean();
   },
 };

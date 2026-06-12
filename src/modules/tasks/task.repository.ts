@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery } from 'mongoose';
 import { TaskDocument, TaskModel } from './task.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
@@ -111,23 +111,39 @@ export const taskRepository = {
   /**
    * Create a new task document.
    */
-  async create(data: Partial<TaskDocument>): Promise<TaskDocument> {
-    return TaskModel.create(data);
+  async create(
+    data: Partial<TaskDocument>,
+    session?: ClientSession
+  ): Promise<TaskDocument> {
+    const doc = new TaskModel(data);
+    return doc.save({ session });
   },
 
   /**
    * Update a task by id. Returns the updated document or null if not found.
    */
-  async updateById(id: string, data: Partial<TaskDocument>): Promise<TaskDocument | null> {
-    return TaskModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  async updateById(
+    id: string,
+    data: Partial<TaskDocument>,
+    session?: ClientSession
+  ): Promise<TaskDocument | null> {
+    return TaskModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
   },
 
   /**
    * Delete a task by id. Returns true if a document was deleted.
    */
-  async deleteById(id: string): Promise<boolean> {
-    const result = await TaskModel.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    const result = await TaskModel.findByIdAndDelete(id, { session });
     return result !== null;
+  },
+
+  /**
+   * Delete multiple tasks matching a filter.
+   */
+  async deleteMany(filter: FilterQuery<TaskDocument>, session?: ClientSession): Promise<number> {
+    const result = await TaskModel.deleteMany(filter, { session });
+    return result.deletedCount ?? 0;
   },
 
   /**

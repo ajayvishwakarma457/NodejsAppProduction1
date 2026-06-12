@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 const commentSchema = new Schema(
   {
@@ -15,6 +15,6 @@ const commentSchema = new Schema(
 commentSchema.index({ createdAt: -1 });
 commentSchema.index({ taskId: 1, createdAt: -1 });
 
-export type CommentDocument = InferSchemaType<typeof commentSchema>;
+export type CommentDocument = InferSchemaType<typeof commentSchema> & { _id: Types.ObjectId };
 
 export const CommentModel = model<CommentDocument>('Comment', commentSchema);

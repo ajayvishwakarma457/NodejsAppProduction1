@@ -9,8 +9,9 @@ exports.apiKeyRepository = {
     /**
      * Create a new API key document. The plaintext key is never stored.
      */
-    async create(data) {
-        return api_key_model_1.ApiKeyModel.create(data);
+    async create(data, session) {
+        const doc = new api_key_model_1.ApiKeyModel(data);
+        return doc.save({ session });
     },
     /**
      * Find a single API key by its public identifier.
@@ -64,9 +65,16 @@ exports.apiKeyRepository = {
     /**
      * Delete an API key permanently. Used by tests and admin cleanup flows.
      */
-    async deleteById(id) {
-        const result = await api_key_model_1.ApiKeyModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await api_key_model_1.ApiKeyModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple API keys matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await api_key_model_1.ApiKeyModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
 };
 //# sourceMappingURL=api-key.repository.js.map

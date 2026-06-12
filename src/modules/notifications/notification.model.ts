@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 export const NOTIFICATION_TYPES = [
   'task-assigned',
@@ -60,6 +60,6 @@ notificationSchema.index({ createdAt: 1 });
 notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ status: 1, scheduledAt: 1 });
 
-export type NotificationDocument = InferSchemaType<typeof notificationSchema>;
+export type NotificationDocument = InferSchemaType<typeof notificationSchema> & { _id: Types.ObjectId };
 
 export const NotificationModel = model<NotificationDocument>('Notification', notificationSchema);

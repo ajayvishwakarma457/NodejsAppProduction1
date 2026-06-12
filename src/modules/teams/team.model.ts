@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 /* ------------------------------------------------------------------ */
 // Subdocument Schema
@@ -98,6 +98,6 @@ teamSchema.virtual('memberCount').get(function () {
 // Export
 /* ------------------------------------------------------------------ */
 
-export type TeamDocument = InferSchemaType<typeof teamSchema>;
+export type TeamDocument = InferSchemaType<typeof teamSchema> & { _id: Types.ObjectId };
 
 export const TeamModel = model('Team', teamSchema);

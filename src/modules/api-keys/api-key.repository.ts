@@ -1,3 +1,4 @@
+import { ClientSession, FilterQuery } from 'mongoose';
 import { ApiKeyDocument, ApiKeyModel } from './api-key.model';
 
 /* ------------------------------------------------------------------ */
@@ -23,8 +24,9 @@ export const apiKeyRepository = {
   /**
    * Create a new API key document. The plaintext key is never stored.
    */
-  async create(data: CreateApiKeyInput): Promise<ApiKeyDocument> {
-    return ApiKeyModel.create(data);
+  async create(data: CreateApiKeyInput, session?: ClientSession): Promise<ApiKeyDocument> {
+    const doc = new ApiKeyModel(data);
+    return doc.save({ session });
   },
 
   /**
@@ -90,8 +92,16 @@ export const apiKeyRepository = {
   /**
    * Delete an API key permanently. Used by tests and admin cleanup flows.
    */
-  async deleteById(id: string): Promise<boolean> {
-    const result = await ApiKeyModel.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    const result = await ApiKeyModel.findByIdAndDelete(id, { session });
     return result !== null;
+  },
+
+  /**
+   * Delete multiple API keys matching a filter.
+   */
+  async deleteMany(filter: FilterQuery<ApiKeyDocument>, session?: ClientSession): Promise<number> {
+    const result = await ApiKeyModel.deleteMany(filter, { session });
+    return result.deletedCount ?? 0;
   },
 };

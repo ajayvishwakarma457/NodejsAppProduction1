@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 
 /* ------------------------------------------------------------------ */
 // Constants
@@ -107,6 +107,6 @@ apiKeySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0, name: 'apikey_expi
 // Export
 /* ------------------------------------------------------------------ */
 
-export type ApiKeyDocument = InferSchemaType<typeof apiKeySchema>;
+export type ApiKeyDocument = InferSchemaType<typeof apiKeySchema> & { _id: Types.ObjectId };
 
-export const ApiKeyModel = model('ApiKey', apiKeySchema);
+export const ApiKeyModel = model<ApiKeyDocument>('ApiKey', apiKeySchema);

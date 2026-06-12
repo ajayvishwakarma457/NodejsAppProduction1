@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, model } from 'mongoose';
+import { InferSchemaType, Schema, Types, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 /* ------------------------------------------------------------------ */
@@ -170,6 +170,6 @@ userSchema.statics.findByEmail = function (email: string) {
 // Export
 /* ------------------------------------------------------------------ */
 
-export type UserDocument = InferSchemaType<typeof userSchema>;
+export type UserDocument = InferSchemaType<typeof userSchema> & { _id: Types.ObjectId };
 
 export const UserModel = model('User', userSchema);

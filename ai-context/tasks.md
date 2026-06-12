@@ -17,6 +17,7 @@
 - [x] **RBAC security fixes** — ownership checks, forged-ID prevention, role escalation prevention across all modules
 - [x] Implement API key authentication (generate, validate, revoke, middleware integration)
 - [x] Implement production-grade database migrations and seeding
+- [x] Implement production-grade transactions and rollbacks
 
 ## Open Tasks
 

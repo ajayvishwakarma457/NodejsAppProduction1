@@ -2,9 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamService = void 0;
 const team_repository_1 = require("./team.repository");
+const project_model_1 = require("../projects/project.model");
+const task_model_1 = require("../tasks/task.model");
+const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const transaction_1 = require("../../utils/transaction");
 exports.teamService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -29,7 +33,12 @@ exports.teamService = {
         return team_repository_1.teamRepository.findById(id);
     },
     async create(data) {
-        return team_repository_1.teamRepository.create(data);
+        const ownerId = String(data.ownerId);
+        return (0, transaction_1.withTransaction)(async ({ session }) => {
+            const team = await team_repository_1.teamRepository.create(data, session ?? undefined);
+            await team_repository_1.teamRepository.addMember(String(team._id), ownerId, 'owner', session ?? undefined);
+            return team_repository_1.teamRepository.findById(String(team._id));
+        });
     },
     async update(id, data, userId, role) {
         const existing = await team_repository_1.teamRepository.findById(id);
@@ -47,7 +56,15 @@ exports.teamService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.ownerId, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only delete teams you own');
         }
-        return team_repository_1.teamRepository.deleteById(id);
+        return (0, transaction_1.withTransaction)(async ({ session }) => {
+            const projectIds = await project_model_1.ProjectModel.distinct('_id', { teamId: id }, { session });
+            const taskIds = await task_model_1.TaskModel.distinct('_id', { projectId: { $in: projectIds } }, { session });
+            await comment_model_1.CommentModel.deleteMany({ taskId: { $in: taskIds } }, { session: session ?? undefined });
+            await task_model_1.TaskModel.deleteMany({ projectId: { $in: projectIds } }, { session: session ?? undefined });
+            await project_model_1.ProjectModel.deleteMany({ teamId: id }, { session: session ?? undefined });
+            const result = await team_repository_1.teamRepository.deleteById(id, session ?? undefined);
+            return result;
+        });
     },
     async addMember(teamId, userId, role, requesterId, requesterRole) {
         const existing = await team_repository_1.teamRepository.findById(teamId);

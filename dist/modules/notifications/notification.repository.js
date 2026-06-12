@@ -71,43 +71,51 @@ exports.notificationRepository = {
      * Mark a single notification as read for a user.
      * Returns the updated document or null if not found / already read.
      */
-    async markAsRead(id, userId) {
-        return notification_model_1.NotificationModel.findOneAndUpdate({ _id: id, userId, isRead: false }, { isRead: true, readAt: new Date() }, { new: true }).lean();
+    async markAsRead(id, userId, session) {
+        return notification_model_1.NotificationModel.findOneAndUpdate({ _id: id, userId, isRead: false }, { isRead: true, readAt: new Date() }, { new: true, session }).lean();
     },
     /**
      * Mark all unread notifications as read for a user.
      * Returns the number of documents modified.
      */
-    async markAllAsRead(userId) {
-        const result = await notification_model_1.NotificationModel.updateMany({ userId, isRead: false }, { isRead: true, readAt: new Date() });
+    async markAllAsRead(userId, session) {
+        const result = await notification_model_1.NotificationModel.updateMany({ userId, isRead: false }, { isRead: true, readAt: new Date() }, { session });
         return result.modifiedCount ?? 0;
     },
     /**
      * Mark a notification as delivered.
      * Returns true if a document was matched.
      */
-    async markDelivered(id) {
-        const result = await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'delivered', deliveredAt: new Date(), errorMessage: null });
+    async markDelivered(id, session) {
+        const result = await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'delivered', deliveredAt: new Date(), errorMessage: null }, { session });
         return result.matchedCount > 0;
     },
     /**
      * Mark a notification as failed with an error message.
      */
-    async markFailed(id, errorMessage) {
-        await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'failed', failedAt: new Date(), errorMessage });
+    async markFailed(id, errorMessage, session) {
+        await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'failed', failedAt: new Date(), errorMessage }, { session });
     },
     /**
      * Create a new notification document.
      */
-    async create(data) {
-        return notification_model_1.NotificationModel.create(data);
+    async create(data, session) {
+        const doc = new notification_model_1.NotificationModel(data);
+        return doc.save({ session });
     },
     /**
      * Delete a notification by id. Returns true if a document was deleted.
      */
-    async deleteById(id) {
-        const result = await notification_model_1.NotificationModel.findByIdAndDelete(id);
+    async deleteById(id, session) {
+        const result = await notification_model_1.NotificationModel.findByIdAndDelete(id, { session });
         return result !== null;
+    },
+    /**
+     * Delete multiple notifications matching a filter.
+     */
+    async deleteMany(filter, session) {
+        const result = await notification_model_1.NotificationModel.deleteMany(filter, { session });
+        return result.deletedCount ?? 0;
     },
     /**
      * Count unread notifications for a user.

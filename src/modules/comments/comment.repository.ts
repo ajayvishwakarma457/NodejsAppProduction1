@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery } from 'mongoose';
 import { CommentDocument, CommentModel } from './comment.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 
@@ -99,23 +99,39 @@ export const commentRepository = {
   /**
    * Create a new comment document.
    */
-  async create(data: Record<string, unknown>): Promise<CommentDocument> {
-    return CommentModel.create(data);
+  async create(
+    data: Record<string, unknown>,
+    session?: ClientSession
+  ): Promise<CommentDocument> {
+    const doc = new CommentModel(data);
+    return doc.save({ session });
   },
 
   /**
    * Update a comment by id. Returns the updated document or null.
    */
-  async updateById(id: string, data: Partial<CommentDocument>): Promise<CommentDocument | null> {
-    return CommentModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  async updateById(
+    id: string,
+    data: Partial<CommentDocument>,
+    session?: ClientSession
+  ): Promise<CommentDocument | null> {
+    return CommentModel.findByIdAndUpdate(id, data, { new: true, session }).lean();
   },
 
   /**
    * Delete a comment by id. Returns true if a document was deleted.
    */
-  async deleteById(id: string): Promise<boolean> {
-    const result = await CommentModel.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    const result = await CommentModel.findByIdAndDelete(id, { session });
     return result !== null;
+  },
+
+  /**
+   * Delete multiple comments matching a filter.
+   */
+  async deleteMany(filter: FilterQuery<CommentDocument>, session?: ClientSession): Promise<number> {
+    const result = await CommentModel.deleteMany(filter, { session });
+    return result.deletedCount ?? 0;
   },
 
   /**
