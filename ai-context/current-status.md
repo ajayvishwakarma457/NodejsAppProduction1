@@ -25,6 +25,7 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 - Multi-document service operations wrapped in transactions with cascade deletes
 - Production-grade indexing strategy with named MongoDB indexes and query optimization utilities (`query-optimizer`, `index-manager`)
 - Optimized list/find endpoints across all repositories using projections, pagination, and slow-query logging
+- Production-grade MongoDB aggregation pipelines with safety guards (maxTimeMS, allowDiskUse, read-only sanitization), `$facet` pagination, date grouping helpers, and dashboard endpoints for projects, tasks, and notifications
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
 - Structured logging (Winston) with request correlation IDs
 - Email service with SMTP fallback to mock logging

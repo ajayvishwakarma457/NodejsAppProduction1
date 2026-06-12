@@ -1,7 +1,8 @@
-import { ClientSession, FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery, Types, PipelineStage } from 'mongoose';
 import { TaskDocument, TaskModel } from './task.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
+import { timedAggregate } from '../../utils/aggregation';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -196,5 +197,118 @@ export const taskRepository = {
       .populate('assignedTo', 'email firstName lastName')
       .lean();
     return timedQuery(query, { collection: 'tasks', operation: 'findOverdue' });
+  },
+
+  /* ------------------------------------------------------------------ */
+  // Aggregations
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Distribution of tasks by status.
+   */
+  async getStatusDistribution(userId?: string): Promise<{ _id: string; count: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      const id = new Types.ObjectId(userId);
+      match.$or = [{ createdBy: id }, { assignedTo: id }];
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(TaskModel, pipeline, {
+      operation: 'getStatusDistribution',
+    });
+  },
+
+  /**
+   * Distribution of tasks by priority.
+   */
+  async getPriorityDistribution(userId?: string): Promise<{ _id: string; count: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      const id = new Types.ObjectId(userId);
+      match.$or = [{ createdBy: id }, { assignedTo: id }];
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $group: { _id: '$priority', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(TaskModel, pipeline, {
+      operation: 'getPriorityDistribution',
+    });
+  },
+
+  /**
+   * Overdue summary: total open tasks and how many are overdue.
+   */
+  async getOverdueSummary(
+    userId?: string,
+    before: Date = new Date()
+  ): Promise<{ total: number; overdue: number }> {
+    const match: Record<string, unknown> = { status: { $nin: ['done'] } };
+    if (userId) {
+      const id = new Types.ObjectId(userId);
+      match.$or = [{ createdBy: id }, { assignedTo: id }];
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          overdue: {
+            $sum: {
+              $cond: [{ $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] }, 1, 0],
+            },
+          },
+        },
+      },
+    ];
+
+    const result = await timedAggregate<{ _id: null; total: number; overdue: number }>(
+      TaskModel,
+      pipeline,
+      { operation: 'getOverdueSummary' }
+    );
+
+    return result[0] ?? { total: 0, overdue: 0 };
+  },
+
+  /**
+   * Workload rollup per assignee: assigned count and completed count.
+   */
+  async getWorkloadByUser(
+    userId?: string,
+    limit = 10
+  ): Promise<{ _id: string; assigned: number; done: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      match.assignedTo = new Types.ObjectId(userId);
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      {
+        $group: {
+          _id: '$assignedTo',
+          assigned: { $sum: 1 },
+          done: { $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] } },
+        },
+      },
+      { $sort: { assigned: -1 } },
+      { $limit: limit },
+    ];
+
+    return timedAggregate<{ _id: string; assigned: number; done: number }>(TaskModel, pipeline, {
+      operation: 'getWorkloadByUser',
+    });
   },
 };

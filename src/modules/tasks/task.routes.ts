@@ -8,11 +8,18 @@ import {
   listTasksQuerySchema,
   taskIdParamSchema,
   updateTaskSchema,
+  dashboardTasksQuerySchema,
 } from './task.validation';
 
 export const taskRouter = Router();
 
 taskRouter.use(authMiddleware);
+
+taskRouter.get(
+  '/dashboard',
+  validateMiddleware(dashboardTasksQuerySchema),
+  asyncHandler(taskController.dashboard)
+);
 
 taskRouter.get('/', validateMiddleware(listTasksQuerySchema), asyncHandler(taskController.list));
 

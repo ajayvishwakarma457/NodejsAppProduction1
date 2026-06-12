@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.commentRepository = void 0;
+const mongoose_1 = require("mongoose");
 const comment_model_1 = require("./comment.model");
 const pagination_1 = require("../../utils/pagination");
 const query_optimizer_1 = require("../../utils/query-optimizer");
+const aggregation_1 = require("../../utils/aggregation");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -106,6 +108,26 @@ exports.commentRepository = {
     async exists(id) {
         const doc = await comment_model_1.CommentModel.exists({ _id: id });
         return doc !== null;
+    },
+    /* ------------------------------------------------------------------ */
+    // Aggregations
+    /* ------------------------------------------------------------------ */
+    /**
+     * Comment counts per task.
+     */
+    async getCountsByTask(taskIds) {
+        const match = {};
+        if (taskIds && taskIds.length > 0) {
+            match.taskId = { $in: taskIds.map((id) => new mongoose_1.Types.ObjectId(id)) };
+        }
+        const pipeline = [
+            { $match: match },
+            { $group: { _id: '$taskId', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(comment_model_1.CommentModel, pipeline, {
+            operation: 'getCountsByTask',
+        });
     },
 };
 //# sourceMappingURL=comment.repository.js.map

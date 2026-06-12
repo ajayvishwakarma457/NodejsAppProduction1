@@ -66,5 +66,15 @@ exports.notificationService = {
     async cleanupOldReadNotifications(days) {
         return notification_repository_1.notificationRepository.deleteOldReadNotifications(days);
     },
+    async getDashboard(userId) {
+        const [unreadByType, deliveryStats] = await Promise.all([
+            notification_repository_1.notificationRepository.getUnreadCountsByType(userId),
+            notification_repository_1.notificationRepository.getDeliveryStats(userId),
+        ]);
+        return {
+            unreadByType,
+            deliveryStats,
+        };
+    },
 };
 //# sourceMappingURL=notification.service.js.map

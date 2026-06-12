@@ -60,5 +60,16 @@ exports.projectService = {
             return project_repository_1.projectRepository.deleteById(id, session ?? undefined);
         });
     },
+    async getDashboard(userId, role) {
+        const scopedUserId = (0, rbac_1.isAdmin)(role) ? undefined : userId;
+        const [statusDistribution, taskSummary] = await Promise.all([
+            project_repository_1.projectRepository.getStatusDistribution(scopedUserId),
+            project_repository_1.projectRepository.getProjectTaskSummary(scopedUserId),
+        ]);
+        return {
+            statusDistribution,
+            taskSummary,
+        };
+    },
 };
 //# sourceMappingURL=project.service.js.map

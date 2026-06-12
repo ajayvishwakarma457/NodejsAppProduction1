@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskRepository = void 0;
+const mongoose_1 = require("mongoose");
 const task_model_1 = require("./task.model");
 const pagination_1 = require("../../utils/pagination");
 const query_optimizer_1 = require("../../utils/query-optimizer");
+const aggregation_1 = require("../../utils/aggregation");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -142,6 +144,95 @@ exports.taskRepository = {
             .populate('assignedTo', 'email firstName lastName')
             .lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'tasks', operation: 'findOverdue' });
+    },
+    /* ------------------------------------------------------------------ */
+    // Aggregations
+    /* ------------------------------------------------------------------ */
+    /**
+     * Distribution of tasks by status.
+     */
+    async getStatusDistribution(userId) {
+        const match = {};
+        if (userId) {
+            const id = new mongoose_1.Types.ObjectId(userId);
+            match.$or = [{ createdBy: id }, { assignedTo: id }];
+        }
+        const pipeline = [
+            { $match: match },
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(task_model_1.TaskModel, pipeline, {
+            operation: 'getStatusDistribution',
+        });
+    },
+    /**
+     * Distribution of tasks by priority.
+     */
+    async getPriorityDistribution(userId) {
+        const match = {};
+        if (userId) {
+            const id = new mongoose_1.Types.ObjectId(userId);
+            match.$or = [{ createdBy: id }, { assignedTo: id }];
+        }
+        const pipeline = [
+            { $match: match },
+            { $group: { _id: '$priority', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(task_model_1.TaskModel, pipeline, {
+            operation: 'getPriorityDistribution',
+        });
+    },
+    /**
+     * Overdue summary: total open tasks and how many are overdue.
+     */
+    async getOverdueSummary(userId, before = new Date()) {
+        const match = { status: { $nin: ['done'] } };
+        if (userId) {
+            const id = new mongoose_1.Types.ObjectId(userId);
+            match.$or = [{ createdBy: id }, { assignedTo: id }];
+        }
+        const pipeline = [
+            { $match: match },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    overdue: {
+                        $sum: {
+                            $cond: [{ $and: [{ $ifNull: ['$dueDate', false] }, { $lt: ['$dueDate', before] }] }, 1, 0],
+                        },
+                    },
+                },
+            },
+        ];
+        const result = await (0, aggregation_1.timedAggregate)(task_model_1.TaskModel, pipeline, { operation: 'getOverdueSummary' });
+        return result[0] ?? { total: 0, overdue: 0 };
+    },
+    /**
+     * Workload rollup per assignee: assigned count and completed count.
+     */
+    async getWorkloadByUser(userId, limit = 10) {
+        const match = {};
+        if (userId) {
+            match.assignedTo = new mongoose_1.Types.ObjectId(userId);
+        }
+        const pipeline = [
+            { $match: match },
+            {
+                $group: {
+                    _id: '$assignedTo',
+                    assigned: { $sum: 1 },
+                    done: { $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] } },
+                },
+            },
+            { $sort: { assigned: -1 } },
+            { $limit: limit },
+        ];
+        return (0, aggregation_1.timedAggregate)(task_model_1.TaskModel, pipeline, {
+            operation: 'getWorkloadByUser',
+        });
     },
 };
 //# sourceMappingURL=task.repository.js.map

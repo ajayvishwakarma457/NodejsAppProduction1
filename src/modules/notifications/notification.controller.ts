@@ -4,6 +4,12 @@ import { notificationService } from './notification.service';
 import { ApiResponse } from '../../utils/ApiResponse';
 
 export const notificationController = {
+  async dashboard(req: Request, res: Response) {
+    const userId = req.user!.id;
+    const data = await notificationService.getDashboard(userId);
+    ApiResponse.ok(data).send(res);
+  },
+
   async list(req: Request, res: Response) {
     const userId = req.user!.id;
     const { data, meta } = await notificationService.list(

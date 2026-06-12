@@ -5,6 +5,11 @@ const http_status_codes_1 = require("http-status-codes");
 const notification_service_1 = require("./notification.service");
 const ApiResponse_1 = require("../../utils/ApiResponse");
 exports.notificationController = {
+    async dashboard(req, res) {
+        const userId = req.user.id;
+        const data = await notification_service_1.notificationService.getDashboard(userId);
+        ApiResponse_1.ApiResponse.ok(data).send(res);
+    },
     async list(req, res) {
         const userId = req.user.id;
         const { data, meta } = await notification_service_1.notificationService.list(req.query, userId);

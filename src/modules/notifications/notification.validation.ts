@@ -54,6 +54,10 @@ export const countUnreadQuerySchema = z.object({
   query: z.object({}).optional(),
 });
 
+export const dashboardNotificationsQuerySchema = z.object({
+  query: z.object({}).optional(),
+});
+
 export const markAllAsReadSchema = z.object({
   body: z.object({}).optional(),
 });

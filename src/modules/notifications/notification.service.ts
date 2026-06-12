@@ -89,4 +89,16 @@ export const notificationService = {
   async cleanupOldReadNotifications(days: number): Promise<number> {
     return notificationRepository.deleteOldReadNotifications(days);
   },
+
+  async getDashboard(userId: string) {
+    const [unreadByType, deliveryStats] = await Promise.all([
+      notificationRepository.getUnreadCountsByType(userId),
+      notificationRepository.getDeliveryStats(userId),
+    ]);
+
+    return {
+      unreadByType,
+      deliveryStats,
+    };
+  },
 };

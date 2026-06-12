@@ -15,6 +15,24 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 - `comments`
 - `notifications`
 
+## Aggregation Pipelines
+
+- `utils/aggregation.ts` provides production-grade aggregation helpers:
+  - `timedAggregate()` — executes read-only pipelines with `maxTimeMS`, `allowDiskUse`, optional sessions, timing, and slow-query logging.
+  - `paginatedAggregate()` — wraps `$facet` pagination around any pipeline.
+  - `buildFacetPagination()` / `buildDateGroupStage()` — reusable building blocks.
+  - `explainAggregate()` — returns `executionStats` for index tuning.
+  - `sanitizePipeline()` — blocks destructive stages (`$out`, `$merge`) to keep analytics read-only.
+- Repositories expose scoped aggregation methods:
+  - `tasks` — status/priority distribution, overdue summary, workload by assignee.
+  - `projects` — status distribution, per-project task summary (via `$lookup`).
+  - `notifications` — unread counts by type, delivery stats.
+  - `comments` — comment counts per task.
+- Dashboard endpoints expose these rollups:
+  - `GET /api/v1/projects/dashboard`
+  - `GET /api/v1/tasks/dashboard`
+  - `GET /api/v1/notifications/dashboard`
+
 ## Query Optimization & Indexing
 
 - All schema definitions declare named MongoDB indexes aligned with the dominant read patterns (ownership, membership, status, due dates, feeds, TTL cleanup).
@@ -198,6 +216,7 @@ src/
 │   ├── pagination.ts
 │   ├── query-optimizer.ts
 │   ├── index-manager.ts
+│   ├── aggregation.ts
 │   ├── transaction.ts
 │   ├── compensating-transaction.ts
 │   └── accessControl.ts

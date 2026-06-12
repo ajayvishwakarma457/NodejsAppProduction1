@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.taskIdParamSchema = exports.listTasksQuerySchema = exports.updateTaskSchema = exports.createTaskSchema = void 0;
+exports.taskIdParamSchema = exports.dashboardTasksQuerySchema = exports.listTasksQuerySchema = exports.updateTaskSchema = exports.createTaskSchema = void 0;
 const zod_1 = require("zod");
 /* ------------------------------------------------------------------ */
 // Body schemas
@@ -50,6 +50,9 @@ exports.listTasksQuerySchema = zod_1.z.object({
         priority: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional(),
         search: zod_1.z.string().optional(),
     }),
+});
+exports.dashboardTasksQuerySchema = zod_1.z.object({
+    query: zod_1.z.object({}),
 });
 exports.taskIdParamSchema = zod_1.z.object({
     params: zod_1.z.object({

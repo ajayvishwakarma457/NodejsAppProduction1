@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markAllAsReadSchema = exports.countUnreadQuerySchema = exports.markAsReadSchema = exports.notificationIdParamSchema = exports.listNotificationsQuerySchema = exports.createNotificationSchema = void 0;
+exports.markAllAsReadSchema = exports.dashboardNotificationsQuerySchema = exports.countUnreadQuerySchema = exports.markAsReadSchema = exports.notificationIdParamSchema = exports.listNotificationsQuerySchema = exports.createNotificationSchema = void 0;
 const zod_1 = require("zod");
 const notification_model_1 = require("./notification.model");
 /* ------------------------------------------------------------------ */
@@ -47,6 +47,9 @@ exports.markAsReadSchema = zod_1.z.object({
     }),
 });
 exports.countUnreadQuerySchema = zod_1.z.object({
+    query: zod_1.z.object({}).optional(),
+});
+exports.dashboardNotificationsQuerySchema = zod_1.z.object({
     query: zod_1.z.object({}).optional(),
 });
 exports.markAllAsReadSchema = zod_1.z.object({

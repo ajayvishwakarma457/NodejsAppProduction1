@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.notificationRepository = void 0;
+const mongoose_1 = require("mongoose");
 const notification_model_1 = require("./notification.model");
 const pagination_1 = require("../../utils/pagination");
 const query_optimizer_1 = require("../../utils/query-optimizer");
+const aggregation_1 = require("../../utils/aggregation");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -146,6 +148,39 @@ exports.notificationRepository = {
             createdAt: { $lt: cutoff },
         });
         return result.deletedCount ?? 0;
+    },
+    /* ------------------------------------------------------------------ */
+    // Aggregations
+    /* ------------------------------------------------------------------ */
+    /**
+     * Count unread notifications grouped by type for a user.
+     */
+    async getUnreadCountsByType(userId) {
+        const pipeline = [
+            { $match: { userId: new mongoose_1.Types.ObjectId(userId), isRead: false } },
+            { $group: { _id: '$type', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(notification_model_1.NotificationModel, pipeline, {
+            operation: 'getUnreadCountsByType',
+        });
+    },
+    /**
+     * Delivery status counts (pending/delivered/failed) for a user or globally.
+     */
+    async getDeliveryStats(userId) {
+        const match = {};
+        if (userId) {
+            match.userId = new mongoose_1.Types.ObjectId(userId);
+        }
+        const pipeline = [
+            { $match: match },
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(notification_model_1.NotificationModel, pipeline, {
+            operation: 'getDeliveryStats',
+        });
     },
 };
 //# sourceMappingURL=notification.repository.js.map

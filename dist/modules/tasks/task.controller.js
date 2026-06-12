@@ -6,6 +6,10 @@ const task_service_1 = require("./task.service");
 const ApiResponse_1 = require("../../utils/ApiResponse");
 const rbac_1 = require("../../utils/rbac");
 exports.taskController = {
+    async dashboard(req, res) {
+        const data = await task_service_1.taskService.getDashboard(req.user.id, req.user.role);
+        ApiResponse_1.ApiResponse.ok(data).send(res);
+    },
     async list(req, res) {
         const query = req.query;
         // Non-admins only see tasks they created or are assigned to

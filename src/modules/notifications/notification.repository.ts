@@ -1,7 +1,8 @@
-import { ClientSession, FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery, Types, PipelineStage } from 'mongoose';
 import { NotificationDocument, NotificationModel } from './notification.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
+import { timedAggregate } from '../../utils/aggregation';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -220,5 +221,48 @@ export const notificationRepository = {
     });
 
     return result.deletedCount ?? 0;
+  },
+
+  /* ------------------------------------------------------------------ */
+  // Aggregations
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Count unread notifications grouped by type for a user.
+   */
+  async getUnreadCountsByType(
+    userId: string
+  ): Promise<{ _id: string; count: number }[]> {
+    const pipeline: PipelineStage[] = [
+      { $match: { userId: new Types.ObjectId(userId), isRead: false } },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(NotificationModel, pipeline, {
+      operation: 'getUnreadCountsByType',
+    });
+  },
+
+  /**
+   * Delivery status counts (pending/delivered/failed) for a user or globally.
+   */
+  async getDeliveryStats(
+    userId?: string
+  ): Promise<{ _id: string; count: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      match.userId = new Types.ObjectId(userId);
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(NotificationModel, pipeline, {
+      operation: 'getDeliveryStats',
+    });
   },
 };

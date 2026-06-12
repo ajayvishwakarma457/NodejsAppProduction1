@@ -3,7 +3,7 @@ import { TaskModel } from '../tasks/task.model';
 import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
-import { isOwnerOrAdmin } from '../../utils/rbac';
+import { isOwnerOrAdmin, isAdmin } from '../../utils/rbac';
 import { withTransaction } from '../../utils/transaction';
 
 export const projectService = {
@@ -73,5 +73,19 @@ export const projectService = {
       await TaskModel.deleteMany({ projectId: id }, { session: session ?? undefined });
       return projectRepository.deleteById(id, session ?? undefined);
     });
+  },
+
+  async getDashboard(userId: string, role?: string) {
+    const scopedUserId = isAdmin(role) ? undefined : userId;
+
+    const [statusDistribution, taskSummary] = await Promise.all([
+      projectRepository.getStatusDistribution(scopedUserId),
+      projectRepository.getProjectTaskSummary(scopedUserId),
+    ]);
+
+    return {
+      statusDistribution,
+      taskSummary,
+    };
   },
 };

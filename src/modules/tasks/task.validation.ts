@@ -54,6 +54,10 @@ export const listTasksQuerySchema = z.object({
   }),
 });
 
+export const dashboardTasksQuerySchema = z.object({
+  query: z.object({}),
+});
+
 export const taskIdParamSchema = z.object({
   params: z.object({
     id: z.string().min(1, 'Task id is required'),

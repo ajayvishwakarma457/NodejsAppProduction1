@@ -5,6 +5,11 @@ import { ApiResponse } from '../../utils/ApiResponse';
 import { isAdmin } from '../../utils/rbac';
 
 export const projectController = {
+  async dashboard(req: Request, res: Response) {
+    const data = await projectService.getDashboard(req.user!.id, req.user!.role);
+    ApiResponse.ok(data).send(res);
+  },
+
   async list(req: Request, res: Response) {
     const query = req.query as Record<string, unknown>;
     // Non-admins only see their own projects by default

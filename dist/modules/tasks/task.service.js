@@ -69,5 +69,20 @@ exports.taskService = {
     async findOverdue(before) {
         return task_repository_1.taskRepository.findOverdue(before);
     },
+    async getDashboard(userId, role) {
+        const scopedUserId = (0, rbac_1.isAdmin)(role) ? undefined : userId;
+        const [statusDistribution, priorityDistribution, overdueSummary, workload] = await Promise.all([
+            task_repository_1.taskRepository.getStatusDistribution(scopedUserId),
+            task_repository_1.taskRepository.getPriorityDistribution(scopedUserId),
+            task_repository_1.taskRepository.getOverdueSummary(scopedUserId),
+            task_repository_1.taskRepository.getWorkloadByUser(scopedUserId, 10),
+        ]);
+        return {
+            statusDistribution,
+            priorityDistribution,
+            overdueSummary,
+            workload,
+        };
+    },
 };
 //# sourceMappingURL=task.service.js.map

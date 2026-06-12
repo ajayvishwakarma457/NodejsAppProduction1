@@ -8,11 +8,18 @@ import {
   listProjectsQuerySchema,
   projectIdParamSchema,
   updateProjectSchema,
+  dashboardProjectsQuerySchema,
 } from './project.validation';
 
 export const projectRouter = Router();
 
 projectRouter.use(authMiddleware);
+
+projectRouter.get(
+  '/dashboard',
+  validateMiddleware(dashboardProjectsQuerySchema),
+  asyncHandler(projectController.dashboard)
+);
 
 projectRouter.get(
   '/',

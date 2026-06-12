@@ -6,6 +6,10 @@ const project_service_1 = require("./project.service");
 const ApiResponse_1 = require("../../utils/ApiResponse");
 const rbac_1 = require("../../utils/rbac");
 exports.projectController = {
+    async dashboard(req, res) {
+        const data = await project_service_1.projectService.getDashboard(req.user.id, req.user.role);
+        ApiResponse_1.ApiResponse.ok(data).send(res);
+    },
     async list(req, res) {
         const query = req.query;
         // Non-admins only see their own projects by default

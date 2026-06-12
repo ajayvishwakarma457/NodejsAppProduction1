@@ -1,7 +1,8 @@
-import { ClientSession, FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery, Types, PipelineStage } from 'mongoose';
 import { ProjectDocument, ProjectModel } from './project.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
+import { timedAggregate } from '../../utils/aggregation';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -142,5 +143,88 @@ export const projectRepository = {
   async exists(id: string): Promise<boolean> {
     const doc = await ProjectModel.exists({ _id: id });
     return doc !== null;
+  },
+
+  /* ------------------------------------------------------------------ */
+  // Aggregations
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Distribution of projects by status.
+   */
+  async getStatusDistribution(userId?: string): Promise<{ _id: string; count: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      match.ownerId = new Types.ObjectId(userId);
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(ProjectModel, pipeline, {
+      operation: 'getStatusDistribution',
+    });
+  },
+
+  /**
+   * Task summary per project: total, completed, and overdue tasks.
+   */
+  async getProjectTaskSummary(
+    userId?: string
+  ): Promise<{ _id: string; name: string; totalTasks: number; completedTasks: number; overdueTasks: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (userId) {
+      match.ownerId = new Types.ObjectId(userId);
+    }
+
+    const now = new Date();
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      {
+        $lookup: {
+          from: 'tasks',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'tasks',
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          totalTasks: { $size: '$tasks' },
+          completedTasks: {
+            $size: {
+              $filter: {
+                input: '$tasks',
+                cond: { $eq: ['$$this.status', 'done'] },
+              },
+            },
+          },
+          overdueTasks: {
+            $size: {
+              $filter: {
+                input: '$tasks',
+                cond: {
+                  $and: [
+                    { $ne: ['$$this.status', 'done'] },
+                    { $ifNull: ['$$this.dueDate', false] },
+                    { $lt: ['$$this.dueDate', now] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      { $sort: { totalTasks: -1 } },
+    ];
+
+    return timedAggregate<
+      { _id: string; name: string; totalTasks: number; completedTasks: number; overdueTasks: number }
+    >(ProjectModel, pipeline, { operation: 'getProjectTaskSummary' });
   },
 };

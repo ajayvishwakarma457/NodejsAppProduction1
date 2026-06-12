@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectRepository = void 0;
+const mongoose_1 = require("mongoose");
 const project_model_1 = require("./project.model");
 const pagination_1 = require("../../utils/pagination");
 const query_optimizer_1 = require("../../utils/query-optimizer");
+const aggregation_1 = require("../../utils/aggregation");
 /* ------------------------------------------------------------------ */
 // Helpers
 /* ------------------------------------------------------------------ */
@@ -93,6 +95,77 @@ exports.projectRepository = {
     async exists(id) {
         const doc = await project_model_1.ProjectModel.exists({ _id: id });
         return doc !== null;
+    },
+    /* ------------------------------------------------------------------ */
+    // Aggregations
+    /* ------------------------------------------------------------------ */
+    /**
+     * Distribution of projects by status.
+     */
+    async getStatusDistribution(userId) {
+        const match = {};
+        if (userId) {
+            match.ownerId = new mongoose_1.Types.ObjectId(userId);
+        }
+        const pipeline = [
+            { $match: match },
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(project_model_1.ProjectModel, pipeline, {
+            operation: 'getStatusDistribution',
+        });
+    },
+    /**
+     * Task summary per project: total, completed, and overdue tasks.
+     */
+    async getProjectTaskSummary(userId) {
+        const match = {};
+        if (userId) {
+            match.ownerId = new mongoose_1.Types.ObjectId(userId);
+        }
+        const now = new Date();
+        const pipeline = [
+            { $match: match },
+            {
+                $lookup: {
+                    from: 'tasks',
+                    localField: '_id',
+                    foreignField: 'projectId',
+                    as: 'tasks',
+                },
+            },
+            {
+                $project: {
+                    name: 1,
+                    totalTasks: { $size: '$tasks' },
+                    completedTasks: {
+                        $size: {
+                            $filter: {
+                                input: '$tasks',
+                                cond: { $eq: ['$$this.status', 'done'] },
+                            },
+                        },
+                    },
+                    overdueTasks: {
+                        $size: {
+                            $filter: {
+                                input: '$tasks',
+                                cond: {
+                                    $and: [
+                                        { $ne: ['$$this.status', 'done'] },
+                                        { $ifNull: ['$$this.dueDate', false] },
+                                        { $lt: ['$$this.dueDate', now] },
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            { $sort: { totalTasks: -1 } },
+        ];
+        return (0, aggregation_1.timedAggregate)(project_model_1.ProjectModel, pipeline, { operation: 'getProjectTaskSummary' });
     },
 };
 //# sourceMappingURL=project.repository.js.map

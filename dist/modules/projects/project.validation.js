@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.projectIdParamSchema = exports.listProjectsQuerySchema = exports.updateProjectSchema = exports.createProjectSchema = void 0;
+exports.projectIdParamSchema = exports.dashboardProjectsQuerySchema = exports.listProjectsQuerySchema = exports.updateProjectSchema = exports.createProjectSchema = void 0;
 const zod_1 = require("zod");
 /* ------------------------------------------------------------------ */
 // Body schemas
@@ -42,6 +42,9 @@ exports.listProjectsQuerySchema = zod_1.z.object({
         teamId: zod_1.z.string().optional(),
         search: zod_1.z.string().optional(),
     }),
+});
+exports.dashboardProjectsQuerySchema = zod_1.z.object({
+    query: zod_1.z.object({}),
 });
 exports.projectIdParamSchema = zod_1.z.object({
     params: zod_1.z.object({

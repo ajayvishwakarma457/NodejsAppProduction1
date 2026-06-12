@@ -46,6 +46,10 @@ export const listProjectsQuerySchema = z.object({
   }),
 });
 
+export const dashboardProjectsQuerySchema = z.object({
+  query: z.object({}),
+});
+
 export const projectIdParamSchema = z.object({
   params: z.object({
     id: z.string().min(1, 'Project id is required'),

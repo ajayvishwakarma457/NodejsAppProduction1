@@ -2,7 +2,7 @@ import { taskRepository, TaskListFilter } from './task.repository';
 import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
-import { isOwnerOrAdmin } from '../../utils/rbac';
+import { isOwnerOrAdmin, isAdmin } from '../../utils/rbac';
 import { withTransaction } from '../../utils/transaction';
 
 export const taskService = {
@@ -85,5 +85,23 @@ export const taskService = {
 
   async findOverdue(before: Date) {
     return taskRepository.findOverdue(before);
+  },
+
+  async getDashboard(userId: string, role?: string) {
+    const scopedUserId = isAdmin(role) ? undefined : userId;
+
+    const [statusDistribution, priorityDistribution, overdueSummary, workload] = await Promise.all([
+      taskRepository.getStatusDistribution(scopedUserId),
+      taskRepository.getPriorityDistribution(scopedUserId),
+      taskRepository.getOverdueSummary(scopedUserId),
+      taskRepository.getWorkloadByUser(scopedUserId, 10),
+    ]);
+
+    return {
+      statusDistribution,
+      priorityDistribution,
+      overdueSummary,
+      workload,
+    };
   },
 };

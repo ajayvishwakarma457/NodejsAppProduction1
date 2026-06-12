@@ -9,6 +9,7 @@ const project_controller_1 = require("./project.controller");
 const project_validation_1 = require("./project.validation");
 exports.projectRouter = (0, express_1.Router)();
 exports.projectRouter.use(auth_middleware_1.authMiddleware);
+exports.projectRouter.get('/dashboard', (0, validate_middleware_1.validateMiddleware)(project_validation_1.dashboardProjectsQuerySchema), (0, asyncHandler_1.asyncHandler)(project_controller_1.projectController.dashboard));
 exports.projectRouter.get('/', (0, validate_middleware_1.validateMiddleware)(project_validation_1.listProjectsQuerySchema), (0, asyncHandler_1.asyncHandler)(project_controller_1.projectController.list));
 exports.projectRouter.get('/:id', (0, validate_middleware_1.validateMiddleware)(project_validation_1.projectIdParamSchema), (0, asyncHandler_1.asyncHandler)(project_controller_1.projectController.getById));
 exports.projectRouter.post('/', (0, validate_middleware_1.validateMiddleware)(project_validation_1.createProjectSchema), (0, asyncHandler_1.asyncHandler)(project_controller_1.projectController.create));

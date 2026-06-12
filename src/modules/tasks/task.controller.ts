@@ -5,6 +5,11 @@ import { ApiResponse } from '../../utils/ApiResponse';
 import { isAdmin } from '../../utils/rbac';
 
 export const taskController = {
+  async dashboard(req: Request, res: Response) {
+    const data = await taskService.getDashboard(req.user!.id, req.user!.role);
+    ApiResponse.ok(data).send(res);
+  },
+
   async list(req: Request, res: Response) {
     const query = req.query as Record<string, unknown>;
     // Non-admins only see tasks they created or are assigned to

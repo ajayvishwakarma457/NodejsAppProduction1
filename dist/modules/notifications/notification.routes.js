@@ -9,6 +9,7 @@ const notification_controller_1 = require("./notification.controller");
 const notification_validation_1 = require("./notification.validation");
 exports.notificationRouter = (0, express_1.Router)();
 exports.notificationRouter.use(auth_middleware_1.authMiddleware);
+exports.notificationRouter.get('/dashboard', (0, validate_middleware_1.validateMiddleware)(notification_validation_1.dashboardNotificationsQuerySchema), (0, asyncHandler_1.asyncHandler)(notification_controller_1.notificationController.dashboard));
 exports.notificationRouter.get('/', (0, validate_middleware_1.validateMiddleware)(notification_validation_1.listNotificationsQuerySchema), (0, asyncHandler_1.asyncHandler)(notification_controller_1.notificationController.list));
 exports.notificationRouter.get('/unread-count', (0, validate_middleware_1.validateMiddleware)(notification_validation_1.countUnreadQuerySchema), (0, asyncHandler_1.asyncHandler)(notification_controller_1.notificationController.countUnread));
 exports.notificationRouter.get('/:id', (0, validate_middleware_1.validateMiddleware)(notification_validation_1.notificationIdParamSchema), (0, asyncHandler_1.asyncHandler)(notification_controller_1.notificationController.getById));

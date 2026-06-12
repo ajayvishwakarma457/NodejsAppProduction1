@@ -6,6 +6,7 @@ import { notificationController } from './notification.controller';
 import {
   createNotificationSchema,
   countUnreadQuerySchema,
+  dashboardNotificationsQuerySchema,
   listNotificationsQuerySchema,
   markAllAsReadSchema,
   markAsReadSchema,
@@ -15,6 +16,12 @@ import {
 export const notificationRouter = Router();
 
 notificationRouter.use(authMiddleware);
+
+notificationRouter.get(
+  '/dashboard',
+  validateMiddleware(dashboardNotificationsQuerySchema),
+  asyncHandler(notificationController.dashboard)
+);
 
 notificationRouter.get(
   '/',

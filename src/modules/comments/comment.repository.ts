@@ -1,7 +1,8 @@
-import { ClientSession, FilterQuery } from 'mongoose';
+import { ClientSession, FilterQuery, Types, PipelineStage } from 'mongoose';
 import { CommentDocument, CommentModel } from './comment.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
 import { timedQuery, buildListProjection } from '../../utils/query-optimizer';
+import { timedAggregate } from '../../utils/aggregation';
 
 /* ------------------------------------------------------------------ */
 // Types
@@ -153,5 +154,29 @@ export const commentRepository = {
   async exists(id: string): Promise<boolean> {
     const doc = await CommentModel.exists({ _id: id });
     return doc !== null;
+  },
+
+  /* ------------------------------------------------------------------ */
+  // Aggregations
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Comment counts per task.
+   */
+  async getCountsByTask(taskIds?: string[]): Promise<{ _id: string; count: number }[]> {
+    const match: Record<string, unknown> = {};
+    if (taskIds && taskIds.length > 0) {
+      match.taskId = { $in: taskIds.map((id) => new Types.ObjectId(id)) };
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $group: { _id: '$taskId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
+
+    return timedAggregate<{ _id: string; count: number }>(CommentModel, pipeline, {
+      operation: 'getCountsByTask',
+    });
   },
 };
