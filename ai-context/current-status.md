@@ -30,7 +30,7 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
 - Structured logging (Winston) with request correlation IDs
 - Email service with SMTP fallback to mock logging
-- Storage service with local filesystem (S3 placeholder)
+- Storage service with provider pattern: local filesystem and production-grade AWS S3 (SDK v3) with upload, delete, exists, stream, public URL, and presigned URL support
 - Background jobs: email, notification, reminder (cron-based with DLQ)
 
 ### Security

@@ -1,7 +1,17 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { createReadStream } from 'fs';
+import { PassThrough } from 'stream';
 import type { Request } from 'express';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  GetObjectCommand,
+  S3ServiceException,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { ApiError } from '../utils/ApiError';
@@ -32,6 +42,7 @@ export interface StorageProvider {
   exists(key: string): Promise<boolean>;
   getStream(key: string): NodeJS.ReadableStream;
   getUrl(key: string): string;
+  getSignedUrl(key: string, expiresInSeconds?: number): Promise<string>;
 }
 
 /* ─────────────── Local Provider ─────────────── */
@@ -106,33 +117,196 @@ class LocalStorageProvider implements StorageProvider {
   getUrl(key: string): string {
     return `${this.publicUrl}/${key.replace(/\\/g, '/')}`;
   }
+
+  async getSignedUrl(key: string, _expiresInSeconds = 3600): Promise<string> {
+    // Local files are served publicly; signed URLs are not needed.
+    return this.getUrl(key);
+  }
 }
 
-/* ─────────────── S3 Provider (placeholder) ─────────────── */
+/* ─────────────── S3 Provider ─────────────── */
 
-class S3StorageProvider implements StorageProvider {
-  // Placeholder for future S3/MinIO implementation.
-  // Swap in @aws-sdk/client-s3 when ready.
+export class S3StorageProvider implements StorageProvider {
+  private client: S3Client;
+  private bucket: string;
+
+  constructor(client?: S3Client) {
+    this.validateConfig();
+
+    this.bucket = env.S3_BUCKET_NAME;
+    this.client =
+      client ??
+      new S3Client({
+        region: env.AWS_REGION,
+        credentials: {
+          accessKeyId: env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+        },
+        endpoint: env.S3_ENDPOINT,
+        forcePathStyle: env.S3_FORCE_PATH_STYLE,
+      });
+  }
+
+  private validateConfig(): void {
+    const required = {
+      AWS_ACCESS_KEY_ID: env.AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY: env.AWS_SECRET_ACCESS_KEY,
+      S3_BUCKET_NAME: env.S3_BUCKET_NAME,
+    };
+
+    const missing = Object.entries(required)
+      .filter(([, value]) => !value)
+      .map(([key]) => key);
+
+    if (missing.length > 0) {
+      throw new Error(
+        `S3 storage provider is missing required environment variables: ${missing.join(', ')}`
+      );
+    }
+  }
+
+  private mapS3Error(err: unknown, operation: string, key?: string): never {
+    if (err instanceof S3ServiceException) {
+      logger.error(`S3 ${operation} failed`, {
+        key,
+        code: err.name,
+        message: err.message,
+      });
+      throw ApiError.internal(`S3 ${operation} failed: ${err.name}`);
+    }
+
+    logger.error(`S3 ${operation} failed`, {
+      key,
+      error: err instanceof Error ? err.message : err,
+    });
+    throw ApiError.internal(`S3 ${operation} failed`);
+  }
 
   async upload(file: StorageFile, folder = 'general'): Promise<UploadResult> {
-    logger.warn('S3 provider is not yet implemented. Falling back to local.');
-    return new LocalStorageProvider().upload(file, folder);
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname) || '.bin';
+    const safeName = `${timestamp}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+    const key = path.join(folder, safeName).replace(/\\/g, '/');
+
+    const body = file.buffer ?? (file.path ? await fs.readFile(file.path) : undefined);
+    if (!body) {
+      throw ApiError.internal('No file buffer or path available');
+    }
+
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: file.mimetype,
+          ContentLength: file.size,
+        })
+      );
+
+      logger.info('File uploaded (S3)', { bucket: this.bucket, key, size: file.size });
+
+      return {
+        key,
+        url: this.getUrl(key),
+        size: file.size,
+        mimetype: file.mimetype,
+        originalName: file.originalname,
+      };
+    } catch (err) {
+      this.mapS3Error(err, 'upload', key);
+    }
   }
 
-  async delete(_key: string): Promise<boolean> {
-    throw ApiError.internal('S3 provider is not yet implemented');
+  async delete(key: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        })
+      );
+      logger.info('File deleted (S3)', { bucket: this.bucket, key });
+      return true;
+    } catch (err) {
+      this.mapS3Error(err, 'delete', key);
+    }
   }
 
-  async exists(_key: string): Promise<boolean> {
-    throw ApiError.internal('S3 provider is not yet implemented');
+  async exists(key: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        })
+      );
+      return true;
+    } catch (err) {
+      if (err instanceof S3ServiceException && err.name === 'NotFound') {
+        return false;
+      }
+      this.mapS3Error(err, 'exists', key);
+    }
   }
 
-  getStream(_key: string): NodeJS.ReadableStream {
-    throw ApiError.internal('S3 provider is not yet implemented');
+  getStream(key: string): NodeJS.ReadableStream {
+    // getObject is async; return a promise-wrapped stream is awkward,
+    // so we expose a lazy getter that resolves on first read.
+    const passThrough = new PassThrough();
+
+    this.client
+      .send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        })
+      )
+      .then((response) => {
+        if (!response.Body) {
+          passThrough.destroy(ApiError.notFound('File not found'));
+          return;
+        }
+        (response.Body as NodeJS.ReadableStream).pipe(passThrough);
+      })
+      .catch((err) => {
+        passThrough.destroy(err);
+      });
+
+    return passThrough;
   }
 
   getUrl(key: string): string {
-    return `https://s3.example.com/${key}`;
+    if (env.S3_PUBLIC_URL) {
+      const base = env.S3_PUBLIC_URL.replace(/\/$/, '');
+      return `${base}/${key.replace(/^\/+/g, '')}`;
+    }
+
+    if (env.S3_ENDPOINT) {
+      const base = env.S3_ENDPOINT.replace(/\/$/, '');
+      if (env.S3_FORCE_PATH_STYLE) {
+        return `${base}/${this.bucket}/${key.replace(/^\/+/g, '')}`;
+      }
+      return `${base}/${key.replace(/^\/+/g, '')}`;
+    }
+
+    // Standard AWS virtual-hosted style URL
+    return `https://${this.bucket}.s3.${env.AWS_REGION}.amazonaws.com/${key.replace(/^\/+/g, '')}`;
+  }
+
+  async getSignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
+    try {
+      return await awsGetSignedUrl(
+        this.client,
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+        { expiresIn: expiresInSeconds }
+      );
+    } catch (err) {
+      this.mapS3Error(err, 'getSignedUrl', key);
+    }
   }
 }
 
@@ -183,6 +357,11 @@ export const storageService = {
   /** Get the public URL for a file key. */
   getUrl(key: string): string {
     return getProvider().getUrl(key);
+  },
+
+  /** Get a temporary signed URL for private access. */
+  async getSignedUrl(key: string, expiresInSeconds?: number): Promise<string> {
+    return getProvider().getSignedUrl(key, expiresInSeconds);
   },
 
   /** Validate file size and MIME type (used by multer or controllers). */

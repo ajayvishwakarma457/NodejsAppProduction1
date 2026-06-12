@@ -8,6 +8,7 @@
 - [x] Add validation layer (Zod) for env, request bodies, query params
 - [x] Add shared middleware (auth, role, validate, error, rate limit, upload)
 - [x] Add services (email, storage, redis, token, socket)
+- [x] Implement production-grade AWS S3 storage provider with SDK v3, presigned URLs, and tests
 - [x] Add background jobs (email, notification, reminder) with retry + DLQ
 - [x] Add test suite (114 tests passing)
 - [x] Implement rate limiting with IETF Draft-7 + legacy headers

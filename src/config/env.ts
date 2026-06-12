@@ -40,6 +40,18 @@ const envSchema = z.object({
     .optional()
     .default('image/jpeg,image/png,image/webp,application/pdf'),
 
+  // AWS S3 (required when STORAGE_PROVIDER=s3)
+  AWS_REGION: z.string().optional().default('us-east-1'),
+  AWS_ACCESS_KEY_ID: z.string().optional().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),
+  S3_BUCKET_NAME: z.string().optional().default(''),
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_FORCE_PATH_STYLE: z.preprocess(
+    (val) => val === 'true' || val === true,
+    z.boolean().default(false)
+  ),
+  S3_PUBLIC_URL: z.string().url().optional(),
+
   EMAIL_JOB_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

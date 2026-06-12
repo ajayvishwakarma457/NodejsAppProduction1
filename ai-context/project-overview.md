@@ -16,7 +16,7 @@ Production-grade Node.js API backend for team/project/task management. Supports 
 - **Cache/Queues**: Redis (ioredis)
 - **Auth**: JWT Bearer tokens (access 15m + refresh 7d with rotation), OAuth2 (Google, GitHub)
 - **Validation**: Zod (env, request bodies, query params)
-- **File Uploads**: Multer (memoryStorage) → storageService (local filesystem / S3 placeholder)
+- **File Uploads**: Multer (memoryStorage) → storageService (local filesystem / AWS S3)
 - **Realtime**: Socket.IO
 - **Background Jobs**: Node-cron + Redis-backed queues (email, notification, reminder)
 - **Security**: Helmet, CORS, bcryptjs (12 rounds), custom Redis-backed rate limiting

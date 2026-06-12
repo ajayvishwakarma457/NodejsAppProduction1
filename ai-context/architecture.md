@@ -50,6 +50,25 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `projects` — `getById` cached; invalidated on `create`, `update`, and `remove`.
   - `tasks` — `getById` cached; invalidated on `create`, `update`, and `remove`.
 
+## File Uploads & Storage
+
+- `middleware/upload.middleware.ts` uses Multer with `memoryStorage()` for server-side upload handling.
+- Production-grade limits are enforced:
+  - `STORAGE_MAX_FILE_SIZE_MB` per-file limit
+  - max file count, field count, and multipart part limits
+  - MIME type allow-list via `STORAGE_ALLOWED_MIME_TYPES`
+  - structured `MulterError` → `ApiError` conversion with request context logging
+- `services/storage.service.ts` provides a provider-pattern storage abstraction:
+  - `LocalStorageProvider` — stores files on disk with directory traversal protection, unique safe filenames, upload/delete/exists/stream/URL.
+  - `S3StorageProvider` — production-grade AWS S3 implementation using AWS SDK v3:
+    - `PutObjectCommand` for uploads with correct `ContentType`
+    - `DeleteObjectCommand`, `HeadObjectCommand`, `GetObjectCommand`
+    - public URL generation (supports virtual-hosted style, custom endpoint, and `S3_PUBLIC_URL`)
+    - temporary presigned URLs for private access via `getSignedUrl`
+    - runtime validation of required S3 env vars
+    - structured S3 error handling and logging
+- Static files are served from `/uploads` when `STORAGE_PROVIDER=local`, with immutable caching headers and `nosniff`.
+
 ## Query Optimization & Indexing
 
 - All schema definitions declare named MongoDB indexes aligned with the dominant read patterns (ownership, membership, status, due dates, feeds, TTL cleanup).

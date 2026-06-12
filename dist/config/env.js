@@ -41,6 +41,14 @@ const envSchema = zod_1.z.object({
         .string()
         .optional()
         .default('image/jpeg,image/png,image/webp,application/pdf'),
+    // AWS S3 (required when STORAGE_PROVIDER=s3)
+    AWS_REGION: zod_1.z.string().optional().default('us-east-1'),
+    AWS_ACCESS_KEY_ID: zod_1.z.string().optional().default(''),
+    AWS_SECRET_ACCESS_KEY: zod_1.z.string().optional().default(''),
+    S3_BUCKET_NAME: zod_1.z.string().optional().default(''),
+    S3_ENDPOINT: zod_1.z.string().url().optional(),
+    S3_FORCE_PATH_STYLE: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
+    S3_PUBLIC_URL: zod_1.z.string().url().optional(),
     EMAIL_JOB_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     EMAIL_JOB_CRON: zod_1.z.string().min(1).default('*/30 * * * * *'),
     EMAIL_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(10),

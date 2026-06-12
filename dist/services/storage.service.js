@@ -3,10 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.storageService = void 0;
+exports.storageService = exports.S3StorageProvider = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = require("fs");
+const stream_1 = require("stream");
+const client_s3_1 = require("@aws-sdk/client-s3");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const ApiError_1 = require("../utils/ApiError");
@@ -74,28 +77,162 @@ class LocalStorageProvider {
     getUrl(key) {
         return `${this.publicUrl}/${key.replace(/\\/g, '/')}`;
     }
+    async getSignedUrl(key, _expiresInSeconds = 3600) {
+        // Local files are served publicly; signed URLs are not needed.
+        return this.getUrl(key);
+    }
 }
-/* ─────────────── S3 Provider (placeholder) ─────────────── */
+/* ─────────────── S3 Provider ─────────────── */
 class S3StorageProvider {
-    // Placeholder for future S3/MinIO implementation.
-    // Swap in @aws-sdk/client-s3 when ready.
+    client;
+    bucket;
+    constructor(client) {
+        this.validateConfig();
+        this.bucket = env_1.env.S3_BUCKET_NAME;
+        this.client =
+            client ??
+                new client_s3_1.S3Client({
+                    region: env_1.env.AWS_REGION,
+                    credentials: {
+                        accessKeyId: env_1.env.AWS_ACCESS_KEY_ID,
+                        secretAccessKey: env_1.env.AWS_SECRET_ACCESS_KEY,
+                    },
+                    endpoint: env_1.env.S3_ENDPOINT,
+                    forcePathStyle: env_1.env.S3_FORCE_PATH_STYLE,
+                });
+    }
+    validateConfig() {
+        const required = {
+            AWS_ACCESS_KEY_ID: env_1.env.AWS_ACCESS_KEY_ID,
+            AWS_SECRET_ACCESS_KEY: env_1.env.AWS_SECRET_ACCESS_KEY,
+            S3_BUCKET_NAME: env_1.env.S3_BUCKET_NAME,
+        };
+        const missing = Object.entries(required)
+            .filter(([, value]) => !value)
+            .map(([key]) => key);
+        if (missing.length > 0) {
+            throw new Error(`S3 storage provider is missing required environment variables: ${missing.join(', ')}`);
+        }
+    }
+    mapS3Error(err, operation, key) {
+        if (err instanceof client_s3_1.S3ServiceException) {
+            logger_1.logger.error(`S3 ${operation} failed`, {
+                key,
+                code: err.name,
+                message: err.message,
+            });
+            throw ApiError_1.ApiError.internal(`S3 ${operation} failed: ${err.name}`);
+        }
+        logger_1.logger.error(`S3 ${operation} failed`, { key, error: err instanceof Error ? err.message : err });
+        throw ApiError_1.ApiError.internal(`S3 ${operation} failed`);
+    }
     async upload(file, folder = 'general') {
-        logger_1.logger.warn('S3 provider is not yet implemented. Falling back to local.');
-        return new LocalStorageProvider().upload(file, folder);
+        const timestamp = Date.now();
+        const ext = path_1.default.extname(file.originalname) || '.bin';
+        const safeName = `${timestamp}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+        const key = path_1.default.join(folder, safeName).replace(/\\/g, '/');
+        const body = file.buffer ?? (file.path ? await promises_1.default.readFile(file.path) : undefined);
+        if (!body) {
+            throw ApiError_1.ApiError.internal('No file buffer or path available');
+        }
+        try {
+            await this.client.send(new client_s3_1.PutObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+                Body: body,
+                ContentType: file.mimetype,
+                ContentLength: file.size,
+            }));
+            logger_1.logger.info('File uploaded (S3)', { bucket: this.bucket, key, size: file.size });
+            return {
+                key,
+                url: this.getUrl(key),
+                size: file.size,
+                mimetype: file.mimetype,
+                originalName: file.originalname,
+            };
+        }
+        catch (err) {
+            this.mapS3Error(err, 'upload', key);
+        }
     }
-    async delete(_key) {
-        throw ApiError_1.ApiError.internal('S3 provider is not yet implemented');
+    async delete(key) {
+        try {
+            await this.client.send(new client_s3_1.DeleteObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+            }));
+            logger_1.logger.info('File deleted (S3)', { bucket: this.bucket, key });
+            return true;
+        }
+        catch (err) {
+            this.mapS3Error(err, 'delete', key);
+        }
     }
-    async exists(_key) {
-        throw ApiError_1.ApiError.internal('S3 provider is not yet implemented');
+    async exists(key) {
+        try {
+            await this.client.send(new client_s3_1.HeadObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+            }));
+            return true;
+        }
+        catch (err) {
+            if (err instanceof client_s3_1.S3ServiceException && err.name === 'NotFound') {
+                return false;
+            }
+            this.mapS3Error(err, 'exists', key);
+        }
     }
-    getStream(_key) {
-        throw ApiError_1.ApiError.internal('S3 provider is not yet implemented');
+    getStream(key) {
+        // getObject is async; return a promise-wrapped stream is awkward,
+        // so we expose a lazy getter that resolves on first read.
+        const passThrough = new stream_1.PassThrough();
+        this.client
+            .send(new client_s3_1.GetObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+        }))
+            .then((response) => {
+            if (!response.Body) {
+                passThrough.destroy(ApiError_1.ApiError.notFound('File not found'));
+                return;
+            }
+            response.Body.pipe(passThrough);
+        })
+            .catch((err) => {
+            passThrough.destroy(err);
+        });
+        return passThrough;
     }
     getUrl(key) {
-        return `https://s3.example.com/${key}`;
+        if (env_1.env.S3_PUBLIC_URL) {
+            const base = env_1.env.S3_PUBLIC_URL.replace(/\/$/, '');
+            return `${base}/${key.replace(/^\/+/g, '')}`;
+        }
+        if (env_1.env.S3_ENDPOINT) {
+            const base = env_1.env.S3_ENDPOINT.replace(/\/$/, '');
+            if (env_1.env.S3_FORCE_PATH_STYLE) {
+                return `${base}/${this.bucket}/${key.replace(/^\/+/g, '')}`;
+            }
+            return `${base}/${key.replace(/^\/+/g, '')}`;
+        }
+        // Standard AWS virtual-hosted style URL
+        return `https://${this.bucket}.s3.${env_1.env.AWS_REGION}.amazonaws.com/${key.replace(/^\/+/g, '')}`;
+    }
+    async getSignedUrl(key, expiresInSeconds = 3600) {
+        try {
+            return await (0, s3_request_presigner_1.getSignedUrl)(this.client, new client_s3_1.GetObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+            }), { expiresIn: expiresInSeconds });
+        }
+        catch (err) {
+            this.mapS3Error(err, 'getSignedUrl', key);
+        }
     }
 }
+exports.S3StorageProvider = S3StorageProvider;
 /* ─────────────── Factory ─────────────── */
 const createProvider = () => {
     switch (env_1.env.STORAGE_PROVIDER) {
@@ -134,6 +271,10 @@ exports.storageService = {
     /** Get the public URL for a file key. */
     getUrl(key) {
         return getProvider().getUrl(key);
+    },
+    /** Get a temporary signed URL for private access. */
+    async getSignedUrl(key, expiresInSeconds) {
+        return getProvider().getSignedUrl(key, expiresInSeconds);
     },
     /** Validate file size and MIME type (used by multer or controllers). */
     validate(file) {
