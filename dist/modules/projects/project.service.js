@@ -9,6 +9,7 @@ const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
 const transaction_1 = require("../../utils/transaction");
+const event_bus_1 = require("../../utils/event-bus");
 exports.projectService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -38,6 +39,11 @@ exports.projectService = {
     async create(data) {
         const created = await project_repository_1.projectRepository.create(data);
         await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.projects, 'list:*');
+        event_bus_1.eventBus.emit('project.created', {
+            projectId: created._id.toString(),
+            ownerId: String(created.ownerId ?? data.ownerId ?? ''),
+            name: String(created.name),
+        });
         return created;
     },
     async update(id, data, userId, role) {

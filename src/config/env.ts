@@ -98,6 +98,12 @@ const envSchema = z.object({
   // Distributed cron job locking (prevents multiple server instances from running the same cron job)
   CRON_JOB_LOCK_TTL_SECONDS: z.coerce.number().min(1).max(3600).default(60),
 
+  // Event bus (application-level EventEmitter for decoupled, event-driven side effects)
+  EVENT_BUS_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean().default(true)
+  ),
+
   RATE_LIMIT_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

@@ -9,6 +9,7 @@ import { NotificationModel } from '../notifications/notification.model';
 import { apiKeyRepository } from '../api-keys/api-key.repository';
 import { getPagination } from '../../utils/pagination';
 import { withTransaction } from '../../utils/transaction';
+import { eventBus } from '../../utils/event-bus';
 
 export const userService = {
   async list(query: Record<string, unknown>) {
@@ -44,19 +45,33 @@ export const userService = {
   },
 
   async create(data: Record<string, unknown>) {
-    return userRepository.create(data);
+    const created = await userRepository.create(data);
+
+    eventBus.emit('user.created', {
+      userId: (created as unknown as { _id: { toString(): string } })._id.toString(),
+      email: String(created.email),
+      firstName: String(created.firstName),
+      lastName: String(created.lastName),
+      role: String(created.role),
+    });
+
+    return created;
   },
 
   async update(id: string, data: Record<string, unknown>) {
     const updated = await userRepository.updateById(id, data);
     if (updated) {
       await cacheAside.invalidateEntity(CACHE_NAMESPACE.users, id);
+      eventBus.emit('user.updated', {
+        userId: id,
+        changes: Object.keys(data),
+      });
     }
     return updated;
   },
 
   async remove(id: string) {
-    return withTransaction(async ({ session }) => {
+    const result = await withTransaction(async ({ session }) => {
       const userObjectId = new mongoose.Types.ObjectId(id);
 
       const ownedTeamIds = await TeamModel.distinct(
@@ -133,5 +148,11 @@ export const userService = {
       }
       return deleted;
     });
+
+    if (result) {
+      eventBus.emit('user.deleted', { userId: id });
+    }
+
+    return result;
   },
 };

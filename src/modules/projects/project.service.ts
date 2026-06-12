@@ -6,6 +6,7 @@ import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin, isAdmin } from '../../utils/rbac';
 import { withTransaction } from '../../utils/transaction';
+import { eventBus } from '../../utils/event-bus';
 
 export const projectService = {
   async list(query: Record<string, unknown>) {
@@ -47,6 +48,13 @@ export const projectService = {
   async create(data: Record<string, unknown>) {
     const created = await projectRepository.create(data);
     await cacheAside.invalidatePattern(CACHE_NAMESPACE.projects, 'list:*');
+
+    eventBus.emit('project.created', {
+      projectId: (created as unknown as { _id: { toString(): string } })._id.toString(),
+      ownerId: String(created.ownerId ?? data.ownerId ?? ''),
+      name: String(created.name),
+    });
+
     return created;
   },
 

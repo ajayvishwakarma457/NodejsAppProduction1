@@ -7,6 +7,7 @@ import { redisService } from './services/redis.service';
 import { jobOrchestrator } from './jobs';
 import { registerSockets } from './sockets';
 import { socketService } from './services/socket.service';
+import { initializeEventBus } from './events';
 import { Server } from 'socket.io';
 
 let server: http.Server | null = null;
@@ -26,6 +27,10 @@ const bootstrap = async () => {
 
     socketService.setIO(io);
     registerSockets(io);
+
+    if (env.EVENT_BUS_ENABLED) {
+      initializeEventBus();
+    }
 
     server.listen(env.PORT, () => {
       logger.info(`${env.APP_NAME} listening on port ${env.PORT}`, {

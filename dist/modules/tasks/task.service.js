@@ -8,6 +8,7 @@ const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
 const transaction_1 = require("../../utils/transaction");
+const event_bus_1 = require("../../utils/event-bus");
 exports.taskService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -43,6 +44,17 @@ exports.taskService = {
     async create(data) {
         const created = await task_repository_1.taskRepository.create(data);
         await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.tasks, 'list:*');
+        const taskId = created._id.toString();
+        const createdBy = String(created.createdBy ?? data.createdBy ?? '');
+        event_bus_1.eventBus.emit('task.created', { taskId, createdBy });
+        if (created.assignedTo) {
+            event_bus_1.eventBus.emit('task.assigned', {
+                taskId,
+                userId: String(created.assignedTo),
+                title: String(created.title),
+                assignedBy: createdBy,
+            });
+        }
         return created;
     },
     async update(id, data, userId, role) {
@@ -52,9 +64,19 @@ exports.taskService = {
         if (!(0, rbac_1.isOwnerOrAdmin)(existing.createdBy, userId, role)) {
             throw ApiError_1.ApiError.forbidden('You can only update tasks you created');
         }
+        const previousAssignee = existing.assignedTo ? String(existing.assignedTo) : undefined;
         const updated = await task_repository_1.taskRepository.updateById(id, data);
         if (updated) {
             await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.tasks, id);
+            const newAssignee = data.assignedTo ? String(data.assignedTo) : undefined;
+            if (newAssignee && newAssignee !== previousAssignee) {
+                event_bus_1.eventBus.emit('task.assigned', {
+                    taskId: id,
+                    userId: newAssignee,
+                    title: String(updated.title),
+                    assignedBy: userId,
+                });
+            }
         }
         return updated;
     },

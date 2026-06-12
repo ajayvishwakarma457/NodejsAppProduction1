@@ -265,6 +265,13 @@ src/
 │   ├── report.job.ts
 │   └── index.ts
 │
+├── events/
+│   ├── index.ts
+│   └── handlers/
+│       ├── user.handler.ts
+│       ├── task.handler.ts
+│       └── project.handler.ts
+│
 ├── sockets/
 │   ├── index.ts
 │   ├── task.socket.ts
@@ -287,6 +294,26 @@ src/
   - Delayed jobs, job deduplication via `jobId`, and queue stats
   - `jobs/report.job.ts` is a sample BullMQ feature for asynchronous report generation
   - BullMQ workers are initialized in `jobOrchestrator.startAll()` and closed gracefully in `stopAll()`
+
+## Event Bus
+
+- `utils/event-bus.ts` is a production-grade, strongly typed `EventEmitter` wrapper for application-level, event-driven side effects.
+- Features:
+  - Type-safe `emit` / `on` / `once` / `off` using the shared `EventMap` interface.
+  - Fire-and-forget `emit` schedules handlers asynchronously and isolates errors.
+  - `emitAndWait` awaits all handlers and still isolates errors.
+  - Built-in metrics (`emitted`, `handled`, `failed`) per event type.
+- `events/index.ts` registers all handlers at app startup (controlled by `EVENT_BUS_ENABLED`).
+- Existing handlers:
+  - `user.created` — enqueues a welcome email.
+  - `user.updated` / `user.deleted` — audit logging.
+  - `task.created` — audit logging.
+  - `task.assigned` — creates an in-app notification and enqueues it for delivery.
+  - `project.created` — audit logging.
+- Domain services emit events **in addition to** their existing logic, so no existing code paths are replaced:
+  - `userService.create/update/remove`
+  - `taskService.create/update`
+  - `projectService.create`
 
 ├── utils/
 │   ├── ApiError.ts

@@ -5,6 +5,7 @@ import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin, isAdmin } from '../../utils/rbac';
 import { withTransaction } from '../../utils/transaction';
+import { eventBus } from '../../utils/event-bus';
 
 export const taskService = {
   async list(query: Record<string, unknown>) {
@@ -54,6 +55,21 @@ export const taskService = {
   async create(data: Record<string, unknown>) {
     const created = await taskRepository.create(data);
     await cacheAside.invalidatePattern(CACHE_NAMESPACE.tasks, 'list:*');
+
+    const taskId = (created as unknown as { _id: { toString(): string } })._id.toString();
+    const createdBy = String(created.createdBy ?? data.createdBy ?? '');
+
+    eventBus.emit('task.created', { taskId, createdBy });
+
+    if (created.assignedTo) {
+      eventBus.emit('task.assigned', {
+        taskId,
+        userId: String(created.assignedTo),
+        title: String(created.title),
+        assignedBy: createdBy,
+      });
+    }
+
     return created;
   },
 
@@ -65,9 +81,21 @@ export const taskService = {
       throw ApiError.forbidden('You can only update tasks you created');
     }
 
+    const previousAssignee = existing.assignedTo ? String(existing.assignedTo) : undefined;
+
     const updated = await taskRepository.updateById(id, data);
     if (updated) {
       await cacheAside.invalidateEntity(CACHE_NAMESPACE.tasks, id);
+
+      const newAssignee = data.assignedTo ? String(data.assignedTo) : undefined;
+      if (newAssignee && newAssignee !== previousAssignee) {
+        eventBus.emit('task.assigned', {
+          taskId: id,
+          userId: newAssignee,
+          title: String(updated.title),
+          assignedBy: userId,
+        });
+      }
     }
     return updated;
   },

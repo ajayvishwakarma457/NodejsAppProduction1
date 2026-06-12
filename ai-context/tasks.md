@@ -29,6 +29,7 @@
 - [x] Implement cache-aside pattern for entity reads across users, teams, projects, and tasks with invalidation on writes
 - [x] Add Redis distributed locks for all node-cron jobs (email, notification, reminder) so only one instance executes each scheduled job
 - [x] Add job priority support to the legacy custom queue and BullMQ report queue (additive; lower number = higher priority)
+- [x] Add production-grade, typed event bus for application-level event-driven patterns (additive; services emit domain events without replacing existing logic)
 
 ## Open Tasks
 

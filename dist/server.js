@@ -12,6 +12,7 @@ const redis_service_1 = require("./services/redis.service");
 const jobs_1 = require("./jobs");
 const sockets_1 = require("./sockets");
 const socket_service_1 = require("./services/socket.service");
+const events_1 = require("./events");
 const socket_io_1 = require("socket.io");
 let server = null;
 const bootstrap = async () => {
@@ -26,6 +27,9 @@ const bootstrap = async () => {
         });
         socket_service_1.socketService.setIO(io);
         (0, sockets_1.registerSockets)(io);
+        if (env_1.env.EVENT_BUS_ENABLED) {
+            (0, events_1.initializeEventBus)();
+        }
         server.listen(env_1.env.PORT, () => {
             logger_1.logger.info(`${env_1.env.APP_NAME} listening on port ${env_1.env.PORT}`, {
                 env: env_1.env.NODE_ENV,

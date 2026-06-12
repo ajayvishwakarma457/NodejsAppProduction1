@@ -191,3 +191,31 @@ Impact:
 - `src/utils/queue.ts` extended with priority support and `src/tests/utils/queue.test.ts` added.
 - `src/jobs/report.job.ts` enqueue signature now accepts `priority`.
 - `src/tests/bullmq.test.ts` includes a prioritized job test.
+
+## 2026-06-12 - Add a Production-Grade Typed Event Bus
+
+Decision:
+
+Introduce a centralized, typed `EventEmitter` event bus for application-level event-driven side effects without changing existing service logic.
+
+Reason:
+
+Decoupling side effects (emails, notifications, audit logs) from core CRUD operations makes the codebase easier to extend and reduces the risk of blocking request handlers with non-critical work.
+
+Rules:
+
+- Implement the bus in `utils/event-bus.ts` with a strongly typed `EventMap`.
+- Provide `emit` (fire-and-forget, schedules handlers asynchronously) and `emitAndWait` (awaits handlers).
+- Isolate handler errors so one failing handler does not break others or the caller.
+- Track per-event metrics (`emitted`, `handled`, `failed`).
+- Register handlers via `events/index.ts` and wire it into `server.ts` startup when `EVENT_BUS_ENABLED` is true.
+- Keep changes additive:
+  - Services call `eventBus.emit(...)` after existing logic succeeds.
+  - No existing functions are replaced or refactored.
+
+Impact:
+
+- New `src/utils/event-bus.ts`, `src/events/index.ts`, and `src/events/handlers/*`.
+- `userService`, `taskService`, and `projectService` now emit domain events.
+- `src/config/env.ts` and `.env.example` extended with `EVENT_BUS_ENABLED`.
+- Added `src/tests/utils/event-bus.test.ts` covering listeners, async handlers, error isolation, once, unsubscribe, and metrics.

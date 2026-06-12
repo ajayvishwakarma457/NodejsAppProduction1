@@ -15,6 +15,7 @@ const notification_model_1 = require("../notifications/notification.model");
 const api_key_repository_1 = require("../api-keys/api-key.repository");
 const pagination_1 = require("../../utils/pagination");
 const transaction_1 = require("../../utils/transaction");
+const event_bus_1 = require("../../utils/event-bus");
 exports.userService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -39,17 +40,29 @@ exports.userService = {
         return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.users, id, () => user_repository_1.userRepository.findById(id));
     },
     async create(data) {
-        return user_repository_1.userRepository.create(data);
+        const created = await user_repository_1.userRepository.create(data);
+        event_bus_1.eventBus.emit('user.created', {
+            userId: created._id.toString(),
+            email: String(created.email),
+            firstName: String(created.firstName),
+            lastName: String(created.lastName),
+            role: String(created.role),
+        });
+        return created;
     },
     async update(id, data) {
         const updated = await user_repository_1.userRepository.updateById(id, data);
         if (updated) {
             await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.users, id);
+            event_bus_1.eventBus.emit('user.updated', {
+                userId: id,
+                changes: Object.keys(data),
+            });
         }
         return updated;
     },
     async remove(id) {
-        return (0, transaction_1.withTransaction)(async ({ session }) => {
+        const result = await (0, transaction_1.withTransaction)(async ({ session }) => {
             const userObjectId = new mongoose_1.default.Types.ObjectId(id);
             const ownedTeamIds = await team_model_1.TeamModel.distinct('_id', { ownerId: userObjectId }, { session: session ?? undefined });
             const memberTeamIds = await team_model_1.TeamModel.distinct('_id', { 'members.userId': userObjectId }, { session: session ?? undefined });
@@ -85,6 +98,10 @@ exports.userService = {
             }
             return deleted;
         });
+        if (result) {
+            event_bus_1.eventBus.emit('user.deleted', { userId: id });
+        }
+        return result;
     },
 };
 //# sourceMappingURL=user.service.js.map
