@@ -54,6 +54,7 @@ exports.reportQueue = {
         return queue.add('generate', payload, {
             jobId: options?.jobId,
             delay: options?.delay,
+            priority: options?.priority,
         });
     },
     /** Get the BullMQ queue instance. */

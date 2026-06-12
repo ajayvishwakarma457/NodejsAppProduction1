@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 226 tests passing.
+Production-ready API backend. All core modules implemented, 232 tests passing.
 
 ## What Exists
 
@@ -36,6 +36,7 @@ Production-ready API backend. All core modules implemented, 226 tests passing.
 - Image processing with Sharp: uploaded images are resized, converted, and auto-generate configured variants (master + thumbnail/medium/large) when `IMAGE_PROCESSING_ENABLED=true`
 - Background jobs: email, notification, reminder (cron-based with DLQ)
 - Distributed scheduler locks for all cron jobs (`utils/distributed-lock.ts`) so only one app instance executes each job per tick; locks use Redis SET NX EX with configurable `CRON_JOB_LOCK_TTL_SECONDS`
+- Job priorities: legacy custom queue (`utils/queue.ts`) supports an optional `priority` number (lower = higher priority) via a Redis sorted set while keeping the existing FIFO list behavior for unprioritized jobs; BullMQ report queue also exposes `priority`
 - BullMQ integration added alongside the legacy custom queue for new features, including a sample `report-generation` queue/worker with retries, backoff, delayed jobs, and deduplication
 
 ### Security

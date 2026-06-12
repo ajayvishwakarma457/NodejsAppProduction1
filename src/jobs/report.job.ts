@@ -62,11 +62,15 @@ export const reportQueue = {
   },
 
   /** Enqueue a report generation job. */
-  async enqueue(payload: GenerateReportPayload, options?: { delay?: number; jobId?: string }) {
+  async enqueue(
+    payload: GenerateReportPayload,
+    options?: { delay?: number; jobId?: string; priority?: number }
+  ) {
     const queue = getBullQueue<GenerateReportPayload>(REPORT_QUEUE_NAME);
     return queue.add('generate', payload, {
       jobId: options?.jobId,
       delay: options?.delay,
+      priority: options?.priority,
     });
   },
 

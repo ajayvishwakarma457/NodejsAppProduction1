@@ -279,7 +279,8 @@ src/
   - `notification.job.ts` — delivers in-app and email notifications
   - `reminder.job.ts` — scans tasks and enqueues email reminders
 - `utils/distributed-lock.ts` wraps each cron handler with a Redis distributed lock (SET NX EX) using the `cron` namespace. Only one app instance acquires the lock and runs a given job per tick; others skip. TTL is configurable via `CRON_JOB_LOCK_TTL_SECONDS`.
-- `utils/queue.ts` provides a lightweight Redis list-based queue with enqueue/dequeue/batch/requeue/DLQ support.
+- `utils/queue.ts` provides a lightweight Redis list-based queue with enqueue/dequeue/batch/requeue/DLQ support. Optional per-job `priority` is stored in a Redis sorted set (`queue:{name}:priority`) and dequeued before unprioritized FIFO jobs; lower numbers mean higher priority, matching BullMQ semantics.
+- BullMQ jobs (e.g., `report.job.ts`) support the standard `priority` option on `enqueue()`.
 - New features use **BullMQ** (`services/bullmq.service.ts`):
   - Production-grade Redis-backed queues and workers
   - Retries with exponential backoff

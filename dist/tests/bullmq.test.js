@@ -57,5 +57,19 @@ const bullmq_service_1 = require("../services/bullmq.service");
         (0, vitest_1.expect)(reportStats.waiting).toBe(1);
         await worker?.resume();
     });
+    (0, vitest_1.it)('should enqueue a prioritized report job', async () => {
+        const queue = report_job_1.reportQueue.getQueue();
+        const worker = (0, bullmq_service_1.getBullWorker)('report-generation');
+        await worker?.pause();
+        await queue.obliterate({ force: true });
+        const lowPriority = await report_job_1.reportQueue.enqueue({ reportType: 'users', userId: 'user-low' }, { priority: 10 });
+        const highPriority = await report_job_1.reportQueue.enqueue({ reportType: 'users', userId: 'user-high' }, { priority: 1 });
+        (0, vitest_1.expect)(lowPriority.opts.priority).toBe(10);
+        (0, vitest_1.expect)(highPriority.opts.priority).toBe(1);
+        const prioritized = await queue.getPrioritized();
+        (0, vitest_1.expect)(prioritized).toHaveLength(2);
+        (0, vitest_1.expect)(prioritized[0].id).toBe(highPriority.id);
+        await worker?.resume();
+    });
 });
 //# sourceMappingURL=bullmq.test.js.map

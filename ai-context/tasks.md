@@ -28,6 +28,7 @@
 - [x] Implement production-grade Redis fundamentals (strings, hashes, sorted sets, TTL) with helper methods and tests
 - [x] Implement cache-aside pattern for entity reads across users, teams, projects, and tasks with invalidation on writes
 - [x] Add Redis distributed locks for all node-cron jobs (email, notification, reminder) so only one instance executes each scheduled job
+- [x] Add job priority support to the legacy custom queue and BullMQ report queue (additive; lower number = higher priority)
 
 ## Open Tasks
 

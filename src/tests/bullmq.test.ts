@@ -84,4 +84,29 @@ describe('BullMQ report queue', () => {
 
     await worker?.resume();
   });
+
+  it('should enqueue a prioritized report job', async () => {
+    const queue = reportQueue.getQueue();
+    const worker = getBullWorker('report-generation');
+    await worker?.pause();
+    await queue.obliterate({ force: true });
+
+    const lowPriority = await reportQueue.enqueue(
+      { reportType: 'users', userId: 'user-low' },
+      { priority: 10 }
+    );
+    const highPriority = await reportQueue.enqueue(
+      { reportType: 'users', userId: 'user-high' },
+      { priority: 1 }
+    );
+
+    expect(lowPriority.opts.priority).toBe(10);
+    expect(highPriority.opts.priority).toBe(1);
+
+    const prioritized = await queue.getPrioritized();
+    expect(prioritized).toHaveLength(2);
+    expect(prioritized[0].id).toBe(highPriority.id);
+
+    await worker?.resume();
+  });
 });

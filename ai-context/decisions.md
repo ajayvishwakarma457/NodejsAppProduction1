@@ -162,3 +162,32 @@ Impact:
 
 - `email.job.ts`, `notification.job.ts`, and `reminder.job.ts` now schedule locked handlers.
 - Added `src/tests/utils/distributed-lock.test.ts` covering successful lock acquisition, skip-when-held behavior, and single execution under concurrency.
+
+## 2026-06-12 - Add Optional Job Priorities Without Replacing the Legacy Queue
+
+Decision:
+
+Add optional job priority support to the existing custom Redis queue and to BullMQ, while keeping the legacy list-based FIFO behavior intact for jobs that do not specify a priority.
+
+Reason:
+
+Some background work is more urgent than others (e.g., password-reset emails vs. bulk newsletters). Priorities let operators control processing order without discarding the existing simple queue implementation or migrating everything to BullMQ.
+
+Rules:
+
+- Lower priority numbers = higher priority (matching BullMQ semantics).
+- Legacy queue (`utils/queue.ts`):
+  - Add an optional `priority?: number` to `QueueItem` and `enqueue(payload, id?, priority?)`.
+  - Store prioritized jobs in a new Redis sorted set (`queue:{name}:priority`).
+  - Keep non-priority jobs in the existing Redis list (`queue:{name}`) for unchanged FIFO behavior.
+  - `dequeue()` checks the priority sorted set first, then falls back to the FIFO list.
+  - `size()`, `peek()`, `requeue()`, and `clear()` include the priority set.
+- BullMQ (`services/bullmq.service.ts` / `jobs/report.job.ts`):
+  - Expose BullMQ’s native `priority` option in `reportQueue.enqueue()`.
+- Do not change existing enqueue calls or retry/DLQ behavior.
+
+Impact:
+
+- `src/utils/queue.ts` extended with priority support and `src/tests/utils/queue.test.ts` added.
+- `src/jobs/report.job.ts` enqueue signature now accepts `priority`.
+- `src/tests/bullmq.test.ts` includes a prioritized job test.
