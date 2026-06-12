@@ -1,11 +1,14 @@
 import { logger } from '../config/logger';
+import { closeAllBullQueues, getBullQueueStats } from '../services/bullmq.service';
 import { emailJob } from './email.job';
 import { notificationJob } from './notification.job';
 import { reminderJob } from './reminder.job';
+import { reportQueue } from './report.job';
 
 export * from './email.job';
 export * from './notification.job';
 export * from './reminder.job';
+export * from './report.job';
 
 interface JobRegistryEntry {
   name: string;
@@ -27,6 +30,10 @@ export const jobOrchestrator = {
   /** Start all registered background jobs. */
   startAll(): void {
     logger.info('Starting background jobs...', { count: jobs.length });
+
+    // Initialize BullMQ queues/workers for new features
+    reportQueue.initialize();
+
     for (const job of jobs) {
       try {
         job.start();
@@ -39,7 +46,7 @@ export const jobOrchestrator = {
   },
 
   /** Stop all registered background jobs. */
-  stopAll(): void {
+  async stopAll(): Promise<void> {
     logger.info('Stopping background jobs...', { count: jobs.length });
     for (const job of jobs) {
       try {
@@ -50,11 +57,25 @@ export const jobOrchestrator = {
         });
       }
     }
+
+    await closeAllBullQueues();
   },
 
   /** Get health/status of each job. */
-  async health(): Promise<{ name: string; queueSize: number; dlqSize: number }[]> {
-    return Promise.all(
+  async health(): Promise<
+    (
+      | { name: string; queueSize: number; dlqSize: number }
+      | {
+          name: string;
+          waiting: number;
+          active: number;
+          completed: number;
+          failed: number;
+          delayed: number;
+        }
+    )[]
+  > {
+    const legacyHealth = await Promise.all(
       [
         { name: 'email', stats: () => emailJob.stats() },
         { name: 'notification', stats: () => notificationJob.stats() },
@@ -64,5 +85,10 @@ export const jobOrchestrator = {
         return { name: entry.name, ...stats };
       })
     );
+
+    const bullStats = await getBullQueueStats();
+    const bullHealth = bullStats.map((stats) => ({ ...stats }));
+
+    return [...legacyHealth, ...bullHealth];
   },
 };

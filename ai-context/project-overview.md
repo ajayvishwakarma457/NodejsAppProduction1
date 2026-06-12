@@ -18,7 +18,7 @@ Production-grade Node.js API backend for team/project/task management. Supports 
 - **Validation**: Zod (env, request bodies, query params)
 - **File Uploads**: Multer (memoryStorage) → storageService (local filesystem / AWS S3) with optional Sharp image processing and variant generation
 - **Realtime**: Socket.IO
-- **Background Jobs**: Node-cron + Redis-backed queues (email, notification, reminder)
+- **Background Jobs**: Node-cron + Redis-backed queues (email, notification, reminder); BullMQ available for new features
 - **Security**: Helmet, CORS, bcryptjs (12 rounds), custom Redis-backed rate limiting
 
 ## Main Goals

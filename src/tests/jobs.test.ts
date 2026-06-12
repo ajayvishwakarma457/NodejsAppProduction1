@@ -19,7 +19,7 @@ describe('jobOrchestrator', () => {
   });
 
   afterAll(async () => {
-    jobOrchestrator.stopAll();
+    await jobOrchestrator.stopAll();
     await redisService.disconnect();
     await db.disconnect();
   });
@@ -27,12 +27,13 @@ describe('jobOrchestrator', () => {
   it('should return health stats for all jobs', async () => {
     const health = await jobOrchestrator.health();
 
-    expect(health).toHaveLength(3);
-    expect(health.map((h) => h.name)).toEqual(
+    const legacyJobs = health.filter((h) => 'queueSize' in h && 'dlqSize' in h);
+    expect(legacyJobs).toHaveLength(3);
+    expect(legacyJobs.map((h) => h.name)).toEqual(
       expect.arrayContaining(['email', 'notification', 'reminder'])
     );
 
-    for (const entry of health) {
+    for (const entry of legacyJobs) {
       expect(entry).toHaveProperty('queueSize');
       expect(entry).toHaveProperty('dlqSize');
       expect(typeof entry.queueSize).toBe('number');
@@ -40,10 +41,10 @@ describe('jobOrchestrator', () => {
     }
   });
 
-  it('should start and stop all jobs without crashing', () => {
+  it('should start and stop all jobs without crashing', async () => {
     // Jobs are disabled by default in test env, so startAll should log but not crash
     expect(() => jobOrchestrator.startAll()).not.toThrow();
-    expect(() => jobOrchestrator.stopAll()).not.toThrow();
+    await expect(jobOrchestrator.stopAll()).resolves.toBeUndefined();
   });
 
   it('should reflect queue changes in health stats', async () => {
@@ -56,6 +57,10 @@ describe('jobOrchestrator', () => {
     const health = await jobOrchestrator.health();
     const emailHealth = health.find((h) => h.name === 'email');
 
-    expect(emailHealth?.queueSize).toBe(1);
+    expect(emailHealth).toBeDefined();
+    expect(emailHealth && 'queueSize' in emailHealth).toBe(true);
+    if (emailHealth && 'queueSize' in emailHealth) {
+      expect(emailHealth.queueSize).toBe(1);
+    }
   });
 });

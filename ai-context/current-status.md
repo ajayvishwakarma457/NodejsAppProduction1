@@ -35,6 +35,7 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 - Direct-to-S3 multipart upload endpoints (`/api/v1/files/multipart/*`) for large/resumable uploads
 - Image processing with Sharp: uploaded images are resized, converted, and auto-generate configured variants (master + thumbnail/medium/large) when `IMAGE_PROCESSING_ENABLED=true`
 - Background jobs: email, notification, reminder (cron-based with DLQ)
+- BullMQ integration added alongside the legacy custom queue for new features, including a sample `report-generation` queue/worker with retries, backoff, delayed jobs, and deduplication
 
 ### Security
 - Helmet with API-appropriate CSP

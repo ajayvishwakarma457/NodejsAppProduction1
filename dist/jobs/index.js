@@ -16,12 +16,15 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.jobOrchestrator = void 0;
 const logger_1 = require("../config/logger");
+const bullmq_service_1 = require("../services/bullmq.service");
 const email_job_1 = require("./email.job");
 const notification_job_1 = require("./notification.job");
 const reminder_job_1 = require("./reminder.job");
+const report_job_1 = require("./report.job");
 __exportStar(require("./email.job"), exports);
 __exportStar(require("./notification.job"), exports);
 __exportStar(require("./reminder.job"), exports);
+__exportStar(require("./report.job"), exports);
 const jobs = [
     { name: 'email', start: () => email_job_1.emailJob.start(), stop: () => email_job_1.emailJob.stop() },
     {
@@ -35,6 +38,8 @@ exports.jobOrchestrator = {
     /** Start all registered background jobs. */
     startAll() {
         logger_1.logger.info('Starting background jobs...', { count: jobs.length });
+        // Initialize BullMQ queues/workers for new features
+        report_job_1.reportQueue.initialize();
         for (const job of jobs) {
             try {
                 job.start();
@@ -47,7 +52,7 @@ exports.jobOrchestrator = {
         }
     },
     /** Stop all registered background jobs. */
-    stopAll() {
+    async stopAll() {
         logger_1.logger.info('Stopping background jobs...', { count: jobs.length });
         for (const job of jobs) {
             try {
@@ -59,10 +64,11 @@ exports.jobOrchestrator = {
                 });
             }
         }
+        await (0, bullmq_service_1.closeAllBullQueues)();
     },
     /** Get health/status of each job. */
     async health() {
-        return Promise.all([
+        const legacyHealth = await Promise.all([
             { name: 'email', stats: () => email_job_1.emailJob.stats() },
             { name: 'notification', stats: () => notification_job_1.notificationJob.stats() },
             { name: 'reminder', stats: () => reminder_job_1.reminderJob.stats() },
@@ -70,6 +76,9 @@ exports.jobOrchestrator = {
             const stats = await entry.stats();
             return { name: entry.name, ...stats };
         }));
+        const bullStats = await (0, bullmq_service_1.getBullQueueStats)();
+        const bullHealth = bullStats.map((stats) => ({ ...stats }));
+        return [...legacyHealth, ...bullHealth];
     },
 };
 //# sourceMappingURL=index.js.map

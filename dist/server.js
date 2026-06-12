@@ -52,7 +52,7 @@ const gracefulShutdown = async (signal) => {
                 logger_1.logger.info('Socket.IO server closed');
             });
         }
-        jobs_1.jobOrchestrator.stopAll();
+        await jobs_1.jobOrchestrator.stopAll();
         await db_1.db.disconnect();
         await redis_service_1.redisService.disconnect();
         logger_1.logger.info('Graceful shutdown completed');

@@ -254,6 +254,7 @@ src/
 │   ├── email.service.ts
 │   ├── storage.service.ts
 │   ├── redis.service.ts
+│   ├── bullmq.service.ts
 │   ├── token.service.ts
 │   └── socket.service.ts
 │
@@ -261,6 +262,7 @@ src/
 │   ├── email.job.ts
 │   ├── reminder.job.ts
 │   ├── notification.job.ts
+│   ├── report.job.ts
 │   └── index.ts
 │
 ├── sockets/
@@ -269,6 +271,21 @@ src/
 │   ├── notification.socket.ts
 │   └── team.socket.ts
 │
+## Background Jobs
+
+- `jobs/index.ts` orchestrates background jobs.
+- Legacy cron-based jobs remain untouched and use the custom Redis list queue (`utils/queue.ts`):
+  - `email.job.ts` — processes queued emails with retries and DLQ
+  - `notification.job.ts` — delivers in-app and email notifications
+  - `reminder.job.ts` — scans tasks and enqueues email reminders
+- `utils/queue.ts` provides a lightweight Redis list-based queue with enqueue/dequeue/batch/requeue/DLQ support.
+- New features use **BullMQ** (`services/bullmq.service.ts`):
+  - Production-grade Redis-backed queues and workers
+  - Retries with exponential backoff
+  - Delayed jobs, job deduplication via `jobId`, and queue stats
+  - `jobs/report.job.ts` is a sample BullMQ feature for asynchronous report generation
+  - BullMQ workers are initialized in `jobOrchestrator.startAll()` and closed gracefully in `stopAll()`
+
 ├── utils/
 │   ├── ApiError.ts
 │   ├── ApiResponse.ts

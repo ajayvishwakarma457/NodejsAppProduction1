@@ -12,6 +12,7 @@
 - [x] Add large-file streaming endpoint with HTTP Range support
 - [x] Add direct-to-S3 multipart upload endpoints for resumable large uploads
 - [x] Add Sharp-based image processing with on-upload resize, format conversion, and variant generation
+- [x] Add BullMQ integration alongside the legacy queue for new background job features
 - [x] Add background jobs (email, notification, reminder) with retry + DLQ
 - [x] Add test suite (114 tests passing)
 - [x] Implement rate limiting with IETF Draft-7 + legacy headers

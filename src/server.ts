@@ -57,7 +57,7 @@ const gracefulShutdown = async (signal: string) => {
       });
     }
 
-    jobOrchestrator.stopAll();
+    await jobOrchestrator.stopAll();
 
     await db.disconnect();
     await redisService.disconnect();
