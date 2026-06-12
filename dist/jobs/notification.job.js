@@ -31,14 +31,12 @@ const notification_service_1 = require("../modules/notifications/notification.se
 const socket_service_1 = require("../services/socket.service");
 const email_service_1 = require("../services/email.service");
 const queue_1 = require("../utils/queue");
-const constants_1 = require("../utils/constants");
 const distributed_lock_1 = require("../utils/distributed-lock");
 const notificationQueue = (0, queue_1.createQueue)('notification');
 let task = null;
 const deliverViaSocket = (payload) => {
     try {
-        const room = `${constants_1.SOCKET_ROOM_PREFIX.notification}${payload.userId}`;
-        socket_service_1.socketService.emitToRoom(room, 'notification:new', {
+        socket_service_1.socketService.emitToUser(payload.userId, 'notification:new', {
             id: payload.notificationId,
             title: payload.title,
             message: payload.message,

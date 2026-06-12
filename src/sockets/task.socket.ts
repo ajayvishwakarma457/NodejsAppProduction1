@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Server, Namespace, Socket } from 'socket.io';
 import { logger } from '../config/logger';
 import { taskService } from '../modules/tasks/task.service';
 import { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } from '../utils/constants';
@@ -14,7 +14,7 @@ const canAccessTask = (
   return createdBy === userId || assignedTo === userId;
 };
 
-export const registerTaskSocket = (io: Server, socket: Socket) => {
+export const registerTaskSocket = (io: Server | Namespace, socket: Socket) => {
   socketHandler(socket, SOCKET_EVENTS.task.join, async (taskId: unknown) => {
     if (!isValidId(taskId)) {
       logger.warn('Invalid task:join payload', { socketId: socket.id, taskId });

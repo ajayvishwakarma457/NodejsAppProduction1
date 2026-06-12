@@ -5,7 +5,6 @@ import { notificationService } from '../modules/notifications/notification.servi
 import { socketService } from '../services/socket.service';
 import { emailService } from '../services/email.service';
 import { createQueue } from '../utils/queue';
-import { SOCKET_ROOM_PREFIX } from '../utils/constants';
 import { createLockedCronHandler } from '../utils/distributed-lock';
 
 export interface NotificationQueuePayload {
@@ -23,8 +22,7 @@ let task: cron.ScheduledTask | null = null;
 
 const deliverViaSocket = (payload: NotificationQueuePayload): boolean => {
   try {
-    const room = `${SOCKET_ROOM_PREFIX.notification}${payload.userId}`;
-    socketService.emitToRoom(room, 'notification:new', {
+    socketService.emitToUser(payload.userId, 'notification:new', {
       id: payload.notificationId,
       title: payload.title,
       message: payload.message,

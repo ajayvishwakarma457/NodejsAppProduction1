@@ -219,3 +219,30 @@ Impact:
 - `userService`, `taskService`, and `projectService` now emit domain events.
 - `src/config/env.ts` and `.env.example` extended with `EVENT_BUS_ENABLED`.
 - Added `src/tests/utils/event-bus.test.ts` covering listeners, async handlers, error isolation, once, unsubscribe, and metrics.
+
+## 2026-06-12 - Add Socket.IO Namespaces Additively
+
+Decision:
+
+Add Socket.IO namespaces (`/tasks`, `/teams`, `/notifications`) alongside the existing default namespace, without removing or changing the existing room/broadcast behavior.
+
+Reason:
+
+Namespaces let clients subscribe only to the realtime channels they care about and give the server a cleaner separation of concerns. Keeping the default namespace intact preserves backward compatibility for existing clients.
+
+Rules:
+
+- Keep `sockets/index.ts` default namespace unchanged except for extracting reusable auth logic and joining the per-user notification room (a fix that enables push notifications on the default namespace).
+- Add `sockets/namespaces/index.ts` that registers `/tasks`, `/teams`, and `/notifications` namespaces.
+- Reuse existing `registerTaskSocket`, `registerTeamSocket`, and `registerNotificationSocket` handlers by widening their `io` parameter type to `Server | Namespace`.
+- Add `socketService.emitToNamespace(namespace, room, event, data)` and `socketService.emitToUser(userId, event, data)` for cross-namespace broadcasting.
+- Update `notificationJob` socket delivery to use `emitToUser` so both default-namespace and `/notifications` namespace clients receive push notifications.
+- Install `socket.io-client` as a dev dependency for namespace integration tests.
+
+Impact:
+
+- New `src/sockets/auth.ts`, `src/sockets/namespaces/*`.
+- `src/sockets/task.socket.ts` and `src/sockets/team.socket.ts` now accept `Server | Namespace`.
+- `src/services/socket.service.ts` extended with namespace-aware helpers.
+- `src/server.ts` calls `initializeNamespaces(io)` after `registerSockets(io)`.
+- Added `src/tests/sockets/namespaces.test.ts` covering auth rejection, namespace connection, and user-specific broadcasts on both default and `/notifications` namespaces.

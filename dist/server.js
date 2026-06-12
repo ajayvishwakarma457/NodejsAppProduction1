@@ -11,6 +11,7 @@ const logger_1 = require("./config/logger");
 const redis_service_1 = require("./services/redis.service");
 const jobs_1 = require("./jobs");
 const sockets_1 = require("./sockets");
+const namespaces_1 = require("./sockets/namespaces");
 const socket_service_1 = require("./services/socket.service");
 const events_1 = require("./events");
 const socket_io_1 = require("socket.io");
@@ -27,6 +28,7 @@ const bootstrap = async () => {
         });
         socket_service_1.socketService.setIO(io);
         (0, sockets_1.registerSockets)(io);
+        (0, namespaces_1.initializeNamespaces)(io);
         if (env_1.env.EVENT_BUS_ENABLED) {
             (0, events_1.initializeEventBus)();
         }

@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 238 tests passing.
+Production-ready API backend. All core modules implemented, 243 tests passing.
 
 ## What Exists
 
@@ -38,6 +38,7 @@ Production-ready API backend. All core modules implemented, 238 tests passing.
 - Distributed scheduler locks for all cron jobs (`utils/distributed-lock.ts`) so only one app instance executes each job per tick; locks use Redis SET NX EX with configurable `CRON_JOB_LOCK_TTL_SECONDS`
 - Job priorities: legacy custom queue (`utils/queue.ts`) supports an optional `priority` number (lower = higher priority) via a Redis sorted set while keeping the existing FIFO list behavior for unprioritized jobs; BullMQ report queue also exposes `priority`
 - Production-grade, typed event bus (`utils/event-bus.ts`) for application-level EventEmitter patterns; handlers wired at startup (`events/index.ts`) and services emit domain events (`user.created`, `user.updated`, `user.deleted`, `task.created`, `task.assigned`, `project.created`) without changing existing business logic
+- Socket.IO realtime layer with JWT auth, rooms (task/team/notification), broadcasting, and additive namespaces (`/tasks`, `/teams`, `/notifications`) alongside the default namespace
 - BullMQ integration added alongside the legacy custom queue for new features, including a sample `report-generation` queue/worker with retries, backoff, delayed jobs, and deduplication
 
 ### Security

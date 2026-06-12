@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { logger } from '../config/logger';
+import { SOCKET_ROOM_PREFIX } from '../utils/constants';
 
 let ioInstance: Server | null = null;
 
@@ -25,6 +26,26 @@ export const socketService = {
   emitToRoom(room: string, event: string, data: unknown): void {
     const io = ensureInitialized();
     io.to(room).emit(event, data);
+  },
+
+  /**
+   * Broadcast to a room inside a specific namespace.
+   */
+  emitToNamespace(namespace: string, room: string, event: string, data: unknown): void {
+    const io = ensureInitialized();
+    io.of(namespace).to(room).emit(event, data);
+  },
+
+  /**
+   * Push an event to a specific user on both the default namespace notification room
+   * and the `/notifications` namespace room.
+   */
+  emitToUser(userId: string, event: string, data: unknown): void {
+    const io = ensureInitialized();
+    const room = `${SOCKET_ROOM_PREFIX.notification}${userId}`;
+
+    io.to(room).emit(event, data);
+    io.of('/notifications').to(room).emit(event, data);
   },
 
   emitToAll(event: string, data: unknown): void {

@@ -1,21 +1,10 @@
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { logger } from '../config/logger';
-import { SOCKET_EVENTS } from '../utils/constants';
-import { tokenService } from '../services/token.service';
+import { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } from '../utils/constants';
+import { parseSocketUser } from './auth';
 import { registerNotificationSocket } from './notification.socket';
 import { registerTaskSocket } from './task.socket';
 import { registerTeamSocket } from './team.socket';
-
-const parseSocketUser = (socket: Socket): { id: string; email: string; role: string } | null => {
-  try {
-    const token = socket.handshake.auth.token as string | undefined;
-    if (!token) return null;
-    const payload = tokenService.verifyAccessToken(token);
-    return { id: payload.sub, email: payload.email, role: payload.role };
-  } catch {
-    return null;
-  }
-};
 
 export const registerSockets = (io: Server) => {
   io.on('connection', (socket) => {
@@ -36,6 +25,10 @@ export const registerSockets = (io: Server) => {
       }
 
       socket.user = user;
+
+      // Join a per-user notification room on the default namespace so push
+      // notifications can be delivered over the existing socket connection.
+      socket.join(`${SOCKET_ROOM_PREFIX.notification}${user.id}`);
 
       registerTaskSocket(io, socket);
       registerNotificationSocket(socket);

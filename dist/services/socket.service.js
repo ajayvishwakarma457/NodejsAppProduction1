@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.socketService = void 0;
 const logger_1 = require("../config/logger");
+const constants_1 = require("../utils/constants");
 let ioInstance = null;
 const ensureInitialized = () => {
     if (!ioInstance) {
@@ -22,6 +23,23 @@ exports.socketService = {
     emitToRoom(room, event, data) {
         const io = ensureInitialized();
         io.to(room).emit(event, data);
+    },
+    /**
+     * Broadcast to a room inside a specific namespace.
+     */
+    emitToNamespace(namespace, room, event, data) {
+        const io = ensureInitialized();
+        io.of(namespace).to(room).emit(event, data);
+    },
+    /**
+     * Push an event to a specific user on both the default namespace notification room
+     * and the `/notifications` namespace room.
+     */
+    emitToUser(userId, event, data) {
+        const io = ensureInitialized();
+        const room = `${constants_1.SOCKET_ROOM_PREFIX.notification}${userId}`;
+        io.to(room).emit(event, data);
+        io.of('/notifications').to(room).emit(event, data);
     },
     emitToAll(event, data) {
         const io = ensureInitialized();

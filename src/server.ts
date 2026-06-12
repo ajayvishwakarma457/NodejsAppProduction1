@@ -6,6 +6,7 @@ import { logger } from './config/logger';
 import { redisService } from './services/redis.service';
 import { jobOrchestrator } from './jobs';
 import { registerSockets } from './sockets';
+import { initializeNamespaces } from './sockets/namespaces';
 import { socketService } from './services/socket.service';
 import { initializeEventBus } from './events';
 import { Server } from 'socket.io';
@@ -27,6 +28,7 @@ const bootstrap = async () => {
 
     socketService.setIO(io);
     registerSockets(io);
+    initializeNamespaces(io);
 
     if (env.EVENT_BUS_ENABLED) {
       initializeEventBus();

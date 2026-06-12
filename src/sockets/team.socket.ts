@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Server, Namespace, Socket } from 'socket.io';
 import { logger } from '../config/logger';
 import { teamService } from '../modules/teams/team.service';
 import { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } from '../utils/constants';
@@ -13,7 +13,7 @@ const isTeamMember = (
   return team.members.some((member) => String(member.userId) === userId);
 };
 
-export const registerTeamSocket = (io: Server, socket: Socket) => {
+export const registerTeamSocket = (io: Server | Namespace, socket: Socket) => {
   socketHandler(socket, SOCKET_EVENTS.team.join, async (teamId: unknown) => {
     if (!isValidId(teamId)) {
       logger.warn('Invalid team:join payload', { socketId: socket.id, teamId });

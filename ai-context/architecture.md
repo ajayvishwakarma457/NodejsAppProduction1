@@ -274,9 +274,15 @@ src/
 │
 ├── sockets/
 │   ├── index.ts
+│   ├── auth.ts
 │   ├── task.socket.ts
 │   ├── notification.socket.ts
-│   └── team.socket.ts
+│   ├── team.socket.ts
+│   └── namespaces/
+│       ├── index.ts
+│       ├── tasks.namespace.ts
+│       ├── teams.namespace.ts
+│       └── notifications.namespace.ts
 │
 ## Background Jobs
 
@@ -294,6 +300,23 @@ src/
   - Delayed jobs, job deduplication via `jobId`, and queue stats
   - `jobs/report.job.ts` is a sample BullMQ feature for asynchronous report generation
   - BullMQ workers are initialized in `jobOrchestrator.startAll()` and closed gracefully in `stopAll()`
+
+## Socket.IO / Realtime
+
+- `services/socket.service.ts` wraps the Socket.IO `Server` instance and exposes:
+  - `emitToRoom(room, event, data)` — broadcast to a room on the default namespace.
+  - `emitToNamespace(namespace, room, event, data)` — broadcast to a room inside a specific namespace.
+  - `emitToUser(userId, event, data)` — broadcast to a user's notification room on both the default namespace and `/notifications` namespace.
+  - `emitToAll(event, data)` — broadcast to every connected socket.
+- `sockets/index.ts` registers the default namespace connection handler:
+  - JWT auth via `socket.handshake.auth.token`.
+  - Each authenticated socket joins a per-user notification room (`notification:{userId}`).
+  - Registers task, notification, and team socket handlers.
+- `sockets/namespaces/index.ts` registers additional namespaces additively:
+  - `/tasks` — task room join/leave events.
+  - `/teams` — team room join/leave events.
+  - `/notifications` — per-user notification room for push delivery.
+- Existing default-namespace behavior is unchanged; namespaces are an opt-in entry point for clients.
 
 ## Event Bus
 

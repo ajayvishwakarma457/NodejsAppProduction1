@@ -3,22 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSockets = void 0;
 const logger_1 = require("../config/logger");
 const constants_1 = require("../utils/constants");
-const token_service_1 = require("../services/token.service");
+const auth_1 = require("./auth");
 const notification_socket_1 = require("./notification.socket");
 const task_socket_1 = require("./task.socket");
 const team_socket_1 = require("./team.socket");
-const parseSocketUser = (socket) => {
-    try {
-        const token = socket.handshake.auth.token;
-        if (!token)
-            return null;
-        const payload = token_service_1.tokenService.verifyAccessToken(token);
-        return { id: payload.sub, email: payload.email, role: payload.role };
-    }
-    catch {
-        return null;
-    }
-};
 const registerSockets = (io) => {
     io.on('connection', (socket) => {
         try {
@@ -26,7 +14,7 @@ const registerSockets = (io) => {
                 socketId: socket.id,
                 ip: socket.handshake.address,
             });
-            const user = parseSocketUser(socket);
+            const user = (0, auth_1.parseSocketUser)(socket);
             if (!user) {
                 logger_1.logger.warn('Socket connection rejected: invalid or missing auth token', {
                     socketId: socket.id,
@@ -36,6 +24,9 @@ const registerSockets = (io) => {
                 return;
             }
             socket.user = user;
+            // Join a per-user notification room on the default namespace so push
+            // notifications can be delivered over the existing socket connection.
+            socket.join(`${constants_1.SOCKET_ROOM_PREFIX.notification}${user.id}`);
             (0, task_socket_1.registerTaskSocket)(io, socket);
             (0, notification_socket_1.registerNotificationSocket)(socket);
             (0, team_socket_1.registerTeamSocket)(io, socket);
