@@ -49,6 +49,16 @@ const envSchema = zod_1.z.object({
     S3_ENDPOINT: zod_1.z.string().url().optional(),
     S3_FORCE_PATH_STYLE: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     S3_PUBLIC_URL: zod_1.z.string().url().optional(),
+    // Image processing
+    IMAGE_PROCESSING_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
+    IMAGE_MAX_WIDTH: zod_1.z.coerce.number().min(1).default(1920),
+    IMAGE_MAX_HEIGHT: zod_1.z.coerce.number().min(1).default(1080),
+    IMAGE_QUALITY: zod_1.z.coerce.number().min(1).max(100).default(80),
+    IMAGE_OUTPUT_FORMAT: zod_1.z.enum(['webp', 'jpeg', 'png', 'avif']).default('webp'),
+    IMAGE_VARIANTS: zod_1.z
+        .string()
+        .optional()
+        .default('thumbnail:150x150:cover,medium:800x600:inside,large:1920x1080:inside'),
     EMAIL_JOB_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     EMAIL_JOB_CRON: zod_1.z.string().min(1).default('*/30 * * * * *'),
     EMAIL_JOB_BATCH_SIZE: zod_1.z.coerce.number().min(1).max(100).default(10),

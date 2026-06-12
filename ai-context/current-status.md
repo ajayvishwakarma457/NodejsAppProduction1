@@ -33,6 +33,7 @@ Production-ready API backend. All core modules implemented, 176 tests passing.
 - Storage service with provider pattern: local filesystem and production-grade AWS S3 (SDK v3) with upload, delete, exists, metadata, stream, public URL, presigned URL, and multipart upload support
 - File streaming endpoint (`GET /api/v1/files/:key/stream`) with HTTP Range request support for both local and S3 storage
 - Direct-to-S3 multipart upload endpoints (`/api/v1/files/multipart/*`) for large/resumable uploads
+- Image processing with Sharp: uploaded images are resized, converted, and auto-generate configured variants (master + thumbnail/medium/large) when `IMAGE_PROCESSING_ENABLED=true`
 - Background jobs: email, notification, reminder (cron-based with DLQ)
 
 ### Security

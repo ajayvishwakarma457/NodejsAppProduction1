@@ -52,6 +52,20 @@ const envSchema = z.object({
   ),
   S3_PUBLIC_URL: z.string().url().optional(),
 
+  // Image processing
+  IMAGE_PROCESSING_ENABLED: z.preprocess(
+    (val) => val === 'true' || val === true,
+    z.boolean().default(false)
+  ),
+  IMAGE_MAX_WIDTH: z.coerce.number().min(1).default(1920),
+  IMAGE_MAX_HEIGHT: z.coerce.number().min(1).default(1080),
+  IMAGE_QUALITY: z.coerce.number().min(1).max(100).default(80),
+  IMAGE_OUTPUT_FORMAT: z.enum(['webp', 'jpeg', 'png', 'avif']).default('webp'),
+  IMAGE_VARIANTS: z
+    .string()
+    .optional()
+    .default('thumbnail:150x150:cover,medium:800x600:inside,large:1920x1080:inside'),
+
   EMAIL_JOB_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

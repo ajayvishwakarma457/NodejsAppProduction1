@@ -20,6 +20,7 @@ import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { ApiError } from '../utils/ApiError';
+import { isImage, processImage, getProcessedFileName } from '../utils/image-processor';
 
 const statAsync = promisify(stat);
 
@@ -35,12 +36,25 @@ export interface StorageFile {
   buffer?: Buffer;
 }
 
+export interface UploadVariant {
+  name: string;
+  key: string;
+  url: string;
+  width: number;
+  height: number;
+  size: number;
+  mimetype: string;
+}
+
 export interface UploadResult {
   key: string;
   url: string;
   size: number;
   mimetype: string;
   originalName: string;
+  width?: number;
+  height?: number;
+  variants?: UploadVariant[];
 }
 
 export interface FileMetadata {
@@ -530,7 +544,56 @@ const getProvider = (): StorageProvider => {
 export const storageService = {
   /** Upload a file to the configured provider. */
   async upload(file: StorageFile, folder?: string): Promise<UploadResult> {
+    if (env.IMAGE_PROCESSING_ENABLED && isImage(file.mimetype) && file.buffer) {
+      return this.uploadImageWithVariants(file, folder);
+    }
+
     return getProvider().upload(file, folder);
+  },
+
+  /**
+   * Process an image and upload the master + variants.
+   */
+  async uploadImageWithVariants(file: StorageFile, folder = 'general'): Promise<UploadResult> {
+    const processed = await processImage(file.buffer!, file.originalname);
+
+    const uploadProcessed = async (image: typeof processed.master, name: string) => {
+      const result = await getProvider().upload(
+        {
+          ...file,
+          originalname: getProcessedFileName(file.originalname, name),
+          mimetype: image.mimetype,
+          size: image.size,
+          buffer: image.buffer,
+        },
+        folder
+      );
+      return {
+        name,
+        key: result.key,
+        url: result.url,
+        width: image.width,
+        height: image.height,
+        size: image.size,
+        mimetype: image.mimetype,
+      };
+    };
+
+    const masterUpload = await uploadProcessed(processed.master, 'master');
+    const variantUploads = await Promise.all(
+      processed.variants.map((variant) => uploadProcessed(variant, variant.name))
+    );
+
+    return {
+      key: masterUpload.key,
+      url: masterUpload.url,
+      size: masterUpload.size,
+      mimetype: masterUpload.mimetype,
+      originalName: file.originalname,
+      width: processed.master.width,
+      height: processed.master.height,
+      variants: [masterUpload, ...variantUploads],
+    };
   },
 
   /** Delete a file by its storage key. */

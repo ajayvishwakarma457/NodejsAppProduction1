@@ -50,7 +50,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - `projects` — `getById` cached; invalidated on `create`, `update`, and `remove`.
   - `tasks` — `getById` cached; invalidated on `create`, `update`, and `remove`.
 
-## File Uploads, Streaming & Storage
+## File Uploads, Streaming, Storage & Image Processing
 
 - `middleware/upload.middleware.ts` uses Multer with `memoryStorage()` for server-side upload handling.
 - Production-grade limits are enforced:
@@ -68,6 +68,15 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
     - temporary presigned URLs for private access and multipart part uploads
     - runtime validation of required S3 env vars
     - structured S3 error handling and logging
+  - **Image processing** — when `IMAGE_PROCESSING_ENABLED=true`, uploaded images are processed by Sharp:
+    - master image resized to `IMAGE_MAX_WIDTH` x `IMAGE_MAX_HEIGHT` and converted to `IMAGE_OUTPUT_FORMAT`
+    - predefined variants generated per `IMAGE_VARIANTS` config (e.g., thumbnail, medium, large)
+    - all variants uploaded and returned in `UploadResult.variants`
+- `utils/image-processor.ts` — Sharp-based image processing utility:
+  - MIME type detection for supported image formats
+  - `Range` header parsing
+  - variant config parsing (`name:width[xheight][:fit]`)
+  - quality, format, and resize handling
 - `modules/files/file.service.ts` handles streaming logic:
   - HTTP `Range` header parsing (`bytes=start-end`, `bytes=start-`, `bytes=-suffix`)
   - `206 Partial Content` responses with `Content-Range`

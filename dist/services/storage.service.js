@@ -14,6 +14,7 @@ const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const ApiError_1 = require("../utils/ApiError");
+const image_processor_1 = require("../utils/image-processor");
 const statAsync = (0, util_1.promisify)(fs_1.stat);
 /* ─────────────── Local Provider ─────────────── */
 class LocalStorageProvider {
@@ -380,7 +381,46 @@ const getProvider = () => {
 exports.storageService = {
     /** Upload a file to the configured provider. */
     async upload(file, folder) {
+        if (env_1.env.IMAGE_PROCESSING_ENABLED && (0, image_processor_1.isImage)(file.mimetype) && file.buffer) {
+            return this.uploadImageWithVariants(file, folder);
+        }
         return getProvider().upload(file, folder);
+    },
+    /**
+     * Process an image and upload the master + variants.
+     */
+    async uploadImageWithVariants(file, folder = 'general') {
+        const processed = await (0, image_processor_1.processImage)(file.buffer, file.originalname);
+        const uploadProcessed = async (image, name) => {
+            const result = await getProvider().upload({
+                ...file,
+                originalname: (0, image_processor_1.getProcessedFileName)(file.originalname, name),
+                mimetype: image.mimetype,
+                size: image.size,
+                buffer: image.buffer,
+            }, folder);
+            return {
+                name,
+                key: result.key,
+                url: result.url,
+                width: image.width,
+                height: image.height,
+                size: image.size,
+                mimetype: image.mimetype,
+            };
+        };
+        const masterUpload = await uploadProcessed(processed.master, 'master');
+        const variantUploads = await Promise.all(processed.variants.map((variant) => uploadProcessed(variant, variant.name)));
+        return {
+            key: masterUpload.key,
+            url: masterUpload.url,
+            size: masterUpload.size,
+            mimetype: masterUpload.mimetype,
+            originalName: file.originalname,
+            width: processed.master.width,
+            height: processed.master.height,
+            variants: [masterUpload, ...variantUploads],
+        };
     },
     /** Delete a file by its storage key. */
     async delete(key) {
