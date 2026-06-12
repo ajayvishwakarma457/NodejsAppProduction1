@@ -18,6 +18,8 @@ Production-ready API backend. All core modules implemented, 114 tests passing.
 ### Infrastructure
 - MongoDB connection with Mongoose models
 - Redis for caching, token blacklisting, rate limiting, and job queues
+- Production-grade database migrations with locking, batching, transactions (with fallback), and rollback
+- Environment-aware database seeders with idempotent seeds and execution tracking
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
 - Structured logging (Winston) with request correlation IDs
 - Email service with SMTP fallback to mock logging

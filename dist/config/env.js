@@ -84,6 +84,15 @@ const envSchema = zod_1.z.object({
         .url()
         .optional()
         .default('http://localhost:4000/api/v1/auth/github/callback'),
+    // Database migrations and seeding
+    SEED_ALLOWED_ENVS: zod_1.z
+        .string()
+        .optional()
+        .default('development,test,staging')
+        .transform((val) => val
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)),
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

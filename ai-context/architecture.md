@@ -15,6 +15,12 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 - `comments`
 - `notifications`
 
+## Migrations & Seeders
+
+- `migrations` — Migration framework (`migration-runner`, `migration-lock`, tracking model, and timestamped migration files)
+- `seeders` — Seeder framework (`seeder-runner`, tracking model, and environment-scoped seed files)
+- `scripts` — CLI entry points for `migrate`, `seed`, and `migrate-and-seed`
+
 ## Data Flow
 
 Typical request flow:
@@ -42,6 +48,31 @@ src/
 │   ├── env.ts
 │   ├── logger.ts
 │   └── passport.ts
+│
+├── migrations/
+│   ├── migration-runner.ts
+│   ├── migration-lock.ts
+│   ├── migration-lock.model.ts
+│   ├── migration.model.ts
+│   ├── migration.types.ts
+│   ├── index.ts
+│   └── files/
+│       ├── 001_initialize_migration_tracking.ts
+│       └── 002_ensure_application_indexes.ts
+│
+├── seeders/
+│   ├── seeder-runner.ts
+│   ├── seeder.model.ts
+│   ├── seeder.types.ts
+│   ├── index.ts
+│   └── files/
+│       ├── 001_seed_admin_user.ts
+│       └── 002_seed_demo_team_and_project.ts
+│
+├── scripts/
+│   ├── migrate.ts
+│   ├── seed.ts
+│   └── migrate-and-seed.ts
 │
 ├── modules/
 │   ├── auth/

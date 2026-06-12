@@ -99,6 +99,18 @@ const envSchema = z.object({
     .url()
     .optional()
     .default('http://localhost:4000/api/v1/auth/github/callback'),
+
+  // Database migrations and seeding
+  SEED_ALLOWED_ENVS: z
+    .string()
+    .optional()
+    .default('development,test,staging')
+    .transform((val) =>
+      val
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+    ),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -112,4 +124,4 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+export const env = parsed.data as z.infer<typeof envSchema>;
