@@ -52,6 +52,8 @@ exports.notificationRepository = {
      * Find a notification by its MongoDB _id.
      */
     async findById(id) {
+        if (!mongoose_1.Types.ObjectId.isValid(id))
+            return null;
         const query = notification_model_1.NotificationModel.findById(id).select((0, query_optimizer_1.buildListProjection)()).lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'findById' });
     },
@@ -84,6 +86,8 @@ exports.notificationRepository = {
      * Returns the updated document or null if not found / already read.
      */
     async markAsRead(id, userId, session) {
+        if (!mongoose_1.Types.ObjectId.isValid(id))
+            return null;
         const query = notification_model_1.NotificationModel.findOneAndUpdate({ _id: id, userId, isRead: false }, { isRead: true, readAt: new Date() }, { new: true, session }).lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'notifications', operation: 'markAsRead' });
     },
@@ -100,6 +104,8 @@ exports.notificationRepository = {
      * Returns true if a document was matched.
      */
     async markDelivered(id, session) {
+        if (!mongoose_1.Types.ObjectId.isValid(id))
+            return false;
         const result = await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'delivered', deliveredAt: new Date(), errorMessage: null }, { session });
         return result.matchedCount > 0;
     },
@@ -107,6 +113,8 @@ exports.notificationRepository = {
      * Mark a notification as failed with an error message.
      */
     async markFailed(id, errorMessage, session) {
+        if (!mongoose_1.Types.ObjectId.isValid(id))
+            return;
         await notification_model_1.NotificationModel.updateOne({ _id: id }, { status: 'failed', failedAt: new Date(), errorMessage }, { session });
     },
     /**
@@ -120,6 +128,8 @@ exports.notificationRepository = {
      * Delete a notification by id. Returns true if a document was deleted.
      */
     async deleteById(id, session) {
+        if (!mongoose_1.Types.ObjectId.isValid(id))
+            return false;
         const result = await notification_model_1.NotificationModel.findByIdAndDelete(id, { session });
         return result !== null;
     },

@@ -16,6 +16,7 @@
 - [x] Add background jobs (email, notification, reminder) with retry + DLQ
 - [x] Add test suite (unit + integration tests passing via Vitest and Supertest)
 - [x] Expand integration test coverage to all API modules (health, auth, users, teams, projects, tasks, comments, notifications, files, SSE)
+- [x] Add production-grade test coverage reporting with `@vitest/coverage-v8`, threshold enforcement, and multiple output formats (text/HTML/LCOV/JSON)
 - [x] Implement rate limiting with IETF Draft-7 + legacy headers
 - [x] Fix Helmet config for API usage (remove HTML CSP)
 - [x] Enhance CORS with explicit headers and preflight cache

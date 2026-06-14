@@ -86,6 +86,7 @@ export const notificationRepository = {
    * Find a notification by its MongoDB _id.
    */
   async findById(id: string): Promise<NotificationDocument | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
     const query = NotificationModel.findById(id).select(buildListProjection()).lean();
     return timedQuery(query, { collection: 'notifications', operation: 'findById' });
   },
@@ -125,6 +126,7 @@ export const notificationRepository = {
     userId: string,
     session?: ClientSession
   ): Promise<NotificationDocument | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
     const query = NotificationModel.findOneAndUpdate(
       { _id: id, userId, isRead: false },
       { isRead: true, readAt: new Date() },
@@ -151,6 +153,7 @@ export const notificationRepository = {
    * Returns true if a document was matched.
    */
   async markDelivered(id: string, session?: ClientSession): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) return false;
     const result = await NotificationModel.updateOne(
       { _id: id },
       { status: 'delivered', deliveredAt: new Date(), errorMessage: null },
@@ -163,6 +166,7 @@ export const notificationRepository = {
    * Mark a notification as failed with an error message.
    */
   async markFailed(id: string, errorMessage: string, session?: ClientSession): Promise<void> {
+    if (!Types.ObjectId.isValid(id)) return;
     await NotificationModel.updateOne(
       { _id: id },
       { status: 'failed', failedAt: new Date(), errorMessage },
@@ -185,6 +189,7 @@ export const notificationRepository = {
    * Delete a notification by id. Returns true if a document was deleted.
    */
   async deleteById(id: string, session?: ClientSession): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) return false;
     const result = await NotificationModel.findByIdAndDelete(id, { session });
     return result !== null;
   },

@@ -48,5 +48,27 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html', 'lcov', 'json'],
+      reportsDirectory: './coverage/integration',
+      include: ['src/**/*.ts'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/tests/unit/**',
+        'src/config/env.ts',
+        'src/scripts/**',
+        'src/server.ts',
+        'src/app.ts',
+      ],
+      // Thresholds are set at the current baseline. Raise them as the suite
+      // improves; the goal is 80%+ across all metrics for production code.
+      thresholds: {
+        lines: 45,
+        functions: 55,
+        branches: 65,
+        statements: 45,
+      },
+    },
   },
 });

@@ -21,6 +21,7 @@ Production-ready API backend. All core modules implemented, 252 unit tests and 9
 - Vitest unit test suite under `src/tests/unit/` (252 tests)
 - New Supertest-based integration suite under `src/tests/integration/` (90 tests) exercising the Express app end-to-end against real MongoDB and Redis
 - Separate commands: `npm test` (unit), `npm run test:integration`, and `npm run test:all`
+- Production-grade coverage reporting via `@vitest/coverage-v8` with `npm run test:coverage`, `npm run test:integration:coverage`, and `npm run test:all:coverage`; reports emitted as text, HTML, LCOV, and JSON under `./coverage/`
 
 ### Infrastructure
 

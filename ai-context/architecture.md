@@ -8,6 +8,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
 
 - **Unit tests** — Vitest-based tests under `src/tests/unit/` (excluding `src/tests/integration/`). They run with `npm test` and focus on services, utilities, middleware, and domain logic in isolation.
 - **Integration tests** — Supertest-based HTTP tests under `src/tests/integration/`. They run with `npm run test:integration` against a dedicated `nodejs-app-production1-integration-test` MongoDB database and a real Redis instance, configured in `vitest.integration.config.ts`.
+- **Coverage** — `@vitest/coverage-v8` produces text, HTML, LCOV, and JSON reports under `./coverage/unit` and `./coverage/integration`. Thresholds are enforced per suite (`npm run test:coverage`, `npm run test:integration:coverage`, `npm run test:all:coverage`, `npm run ci:coverage`).
 - **Isolation** — Integration tests connect once per test file, clean all collections after each test, and run sequentially (`fileParallelism: false`) to avoid cross-test data races.
 - **Environment** — Integration tests override process env before the app loads, disabling background jobs, WebSocket, event bus, and rate limiting so the suite stays deterministic.
 
