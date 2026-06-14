@@ -22,6 +22,7 @@ Production-ready API backend. All core modules implemented, 252 unit tests and 9
 - New Supertest-based integration suite under `src/tests/integration/` (90 tests) exercising the Express app end-to-end against real MongoDB and Redis
 - Separate commands: `npm test` (unit), `npm run test:integration`, and `npm run test:all`
 - Production-grade coverage reporting via `@vitest/coverage-v8` with `npm run test:coverage`, `npm run test:integration:coverage`, and `npm run test:all:coverage`; reports emitted as text, HTML, LCOV, and JSON under `./coverage/`
+- Playwright E2E test suite under `src/tests/e2e/` (21 tests across health, auth, users, teams, projects, tasks, notifications, and files) that exercises the running application through real HTTP calls; runs locally via `npm run e2e` (auto-starts the server on a dedicated test database) or against any deployed environment via `BASE_URL`
 
 ### Infrastructure
 

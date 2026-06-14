@@ -1,2 +1,4 @@
 node_modules
 coverage
+e2e-report
+test-results
