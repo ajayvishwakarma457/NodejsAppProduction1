@@ -21,6 +21,7 @@ import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { optionalAuthMiddleware } from './middleware/auth.middleware';
 import { morganMiddleware } from './middleware/morgan.middleware';
+import { docsRouter } from './routes/docs.routes';
 import { configurePassport } from './config/passport';
 
 /* ------------------------------------------------------------------ */
@@ -207,6 +208,14 @@ app.use('/api/v1/comments', commentRouter);
 app.use('/api/v1/files', fileRouter);
 app.use('/api/v1/notifications', notificationRouter);
 app.use('/api/v1/events', sseRouter);
+
+/* ------------------------------------------------------------------ */
+// API documentation
+/* ------------------------------------------------------------------ */
+
+if (env.DOCS_ENABLED) {
+  app.use(env.DOCS_PATH, docsRouter);
+}
 
 /* ------------------------------------------------------------------ */
 // Error handling

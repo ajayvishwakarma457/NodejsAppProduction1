@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 271 unit tests and 90 HTTP integration tests passing.
+Production-ready API backend. All core modules implemented, 277 unit tests and 90 HTTP integration tests passing.
 
 ## What Exists
 
@@ -18,7 +18,7 @@ Production-ready API backend. All core modules implemented, 271 unit tests and 9
 
 ### Testing
 
-- Vitest unit test suite under `src/tests/unit/` (271 tests)
+- Vitest unit test suite under `src/tests/unit/` (277 tests)
 - New Supertest-based integration suite under `src/tests/integration/` (90 tests) exercising the Express app end-to-end against real MongoDB and Redis
 - Separate commands: `npm test` (unit), `npm run test:integration`, and `npm run test:all`
 - Production-grade coverage reporting via `@vitest/coverage-v8` with `npm run test:coverage`, `npm run test:integration:coverage`, and `npm run test:all:coverage`; reports emitted as text, HTML, LCOV, and JSON under `./coverage/`
@@ -48,6 +48,7 @@ Production-ready API backend. All core modules implemented, 271 unit tests and 9
 - Distributed scheduler locks for all cron jobs (`utils/distributed-lock.ts`) so only one app instance executes each job per tick; locks use Redis SET NX EX with configurable `CRON_JOB_LOCK_TTL_SECONDS`
 - Job priorities: legacy custom queue (`utils/queue.ts`) supports an optional `priority` number (lower = higher priority) via a Redis sorted set while keeping the existing FIFO list behavior for unprioritized jobs; BullMQ report queue also exposes `priority`
 - Production-grade, typed event bus (`utils/event-bus.ts`) for application-level EventEmitter patterns; handlers wired at startup (`events/index.ts`) and services emit domain events (`user.created`, `user.updated`, `user.deleted`, `task.created`, `task.assigned`, `project.created`) without changing existing business logic
+- OpenAPI 3.0 / Swagger documentation generated from Zod schemas and served at `/api-docs` (with raw spec at `/api-docs/openapi.json`)
 - Socket.IO realtime layer with JWT auth, rooms (task/team/notification), broadcasting, and additive namespaces (`/tasks`, `/teams`, `/notifications`) alongside the default namespace
 - Lightweight raw WebSocket server (`ws`) running on its own port (`WS_PORT`) as an alternative to Socket.IO; supports JWT auth, user-specific emit, channel subscriptions, heartbeat, and broadcasts to both Socket.IO and `ws` clients from `socketService.emitToUser`
 - Server-Sent Events (SSE) endpoint (`GET /api/v1/events/stream`) for one-way streaming; integrated into `socketService.emitToUser` so notifications are pushed over SSE alongside Socket.IO and `ws`

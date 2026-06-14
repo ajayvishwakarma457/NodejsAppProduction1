@@ -30,6 +30,36 @@ Impact:
 - `.env.example` updated with the new variables.
 - New `src/tests/unit/middleware/morgan.middleware.test.ts` covering token registration, format registration, stream routing, skip behavior, and env option propagation.
 
+## 2026-06-14 - Add OpenAPI / Swagger Documentation
+
+Decision:
+
+Add interactive OpenAPI 3.0 documentation generated from Zod schemas and served via Swagger UI at `/api-docs`.
+
+Reason:
+
+API consumers (frontend, mobile, QA, external partners) need a single, discoverable contract for all endpoints. Generating the spec from Zod schemas keeps the documentation aligned with the actual validation rules, reducing drift between code and docs.
+
+Rules:
+
+- Use `@asteasolutions/zod-to-openapi` (v7.x for Zod 3.x compatibility) to generate the OpenAPI document.
+- Use `swagger-ui-express` to serve the interactive UI.
+- Keep documentation centralized in `src/config/openapi.ts` to avoid scattering metadata across many route files.
+- Document all public endpoints: system health, auth, users, teams, projects, tasks, comments, notifications, API keys, and SSE.
+- Register reusable schemas (User, Team, Project, Task, Comment, Notification, ApiKey, ApiError, PaginationMeta, etc.).
+- Register security schemes for Bearer JWT and `X-API-Key`.
+- Expose the raw spec at `/api-docs/openapi.json`.
+- Make docs configurable via `DOCS_ENABLED` and `DOCS_PATH`; enabled by default in development/test and can be disabled in production if desired.
+
+Impact:
+
+- New `src/config/openapi.ts` with the full OpenAPI document and path definitions.
+- New `src/routes/docs.routes.ts` serving Swagger UI and the raw JSON spec.
+- `src/app.ts` mounts the docs router when `DOCS_ENABLED=true`.
+- `src/config/env.ts` extended with `DOCS_ENABLED` and `DOCS_PATH`.
+- `.env.example` updated with the new variables.
+- New `src/tests/unit/routes/docs.routes.test.ts` verifying the generated document, paths, schemas, and security schemes.
+
 ## 2026-06-14 - Adopt Winston for Structured Logging
 
 Decision:

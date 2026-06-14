@@ -90,6 +90,9 @@ const envSchema = zod_1.z.object({
     // Lightweight raw WebSocket server (ws) running alongside Socket.IO
     WS_ENABLED: zod_1.z.preprocess((val) => (val === undefined ? true : val === 'true' || val === true), zod_1.z.boolean().default(true)),
     WS_PORT: zod_1.z.coerce.number().min(1).max(65535).default(3001),
+    // OpenAPI / Swagger documentation
+    DOCS_ENABLED: zod_1.z.preprocess((val) => (val === undefined ? true : val === 'true' || val === true), zod_1.z.boolean().default(true)),
+    DOCS_PATH: zod_1.z.string().min(1).default('/api-docs'),
     RATE_LIMIT_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     RATE_LIMIT_WINDOW_MS: zod_1.z.coerce.number().min(1000).max(3600000).default(900000),
     RATE_LIMIT_MAX_REQUESTS: zod_1.z.coerce.number().min(1).max(10000).default(100),

@@ -124,6 +124,13 @@ const envSchema = z.object({
   ),
   WS_PORT: z.coerce.number().min(1).max(65535).default(3001),
 
+  // OpenAPI / Swagger documentation
+  DOCS_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean().default(true)
+  ),
+  DOCS_PATH: z.string().min(1).default('/api-docs'),
+
   RATE_LIMIT_ENABLED: z.preprocess(
     (val) => val === 'true' || val === true,
     z.boolean().default(false)

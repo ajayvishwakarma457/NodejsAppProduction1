@@ -27,6 +27,7 @@ const requestId_middleware_1 = require("./middleware/requestId.middleware");
 const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const auth_middleware_1 = require("./middleware/auth.middleware");
 const morgan_middleware_1 = require("./middleware/morgan.middleware");
+const docs_routes_1 = require("./routes/docs.routes");
 const passport_1 = require("./config/passport");
 /* ------------------------------------------------------------------ */
 // App instance
@@ -176,6 +177,12 @@ exports.app.use('/api/v1/comments', comment_routes_1.commentRouter);
 exports.app.use('/api/v1/files', file_routes_1.fileRouter);
 exports.app.use('/api/v1/notifications', notification_routes_1.notificationRouter);
 exports.app.use('/api/v1/events', sse_routes_1.sseRouter);
+/* ------------------------------------------------------------------ */
+// API documentation
+/* ------------------------------------------------------------------ */
+if (env_1.env.DOCS_ENABLED) {
+    exports.app.use(env_1.env.DOCS_PATH, docs_routes_1.docsRouter);
+}
 /* ------------------------------------------------------------------ */
 // Error handling
 /* ------------------------------------------------------------------ */
