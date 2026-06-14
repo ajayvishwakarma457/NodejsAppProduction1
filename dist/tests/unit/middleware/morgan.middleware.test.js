@@ -34,6 +34,13 @@ const createMorganMock = () => {
     });
     return { morganMock, tokenMock, formatMock };
 };
+const invokeMiddleware = (middleware, morganMock, statusCode = 200) => {
+    const next = vitest_1.vi.fn();
+    const req = { path: '/api/v1/users' };
+    const res = { statusCode };
+    middleware(req, res, next);
+    return { options: morganMock.mock.calls[0][1], req, res, next };
+};
 (0, vitest_1.describe)('morgan middleware', () => {
     (0, vitest_1.beforeEach)(() => {
         vitest_1.vi.resetModules();
@@ -47,9 +54,17 @@ const createMorganMock = () => {
     const setupMocks = async (envOverrides) => {
         const { morganMock, tokenMock, formatMock } = createMorganMock();
         const loggerInfoMock = vitest_1.vi.fn();
+        const loggerWarnMock = vitest_1.vi.fn();
+        const loggerErrorMock = vitest_1.vi.fn();
+        const loggerDebugMock = vitest_1.vi.fn();
         vitest_1.vi.doMock('morgan', () => ({ default: morganMock, ...morganMock }));
         vitest_1.vi.doMock('../../../config/logger', () => ({
-            logger: { info: loggerInfoMock },
+            logger: {
+                debug: loggerDebugMock,
+                info: loggerInfoMock,
+                warn: loggerWarnMock,
+                error: loggerErrorMock,
+            },
         }));
         vitest_1.vi.stubEnv('NODE_ENV', 'test');
         vitest_1.vi.stubEnv('HTTP_LOGGER', 'morgan');
@@ -65,6 +80,9 @@ const createMorganMock = () => {
             tokenMock,
             formatMock,
             loggerInfoMock,
+            loggerWarnMock,
+            loggerErrorMock,
+            loggerDebugMock,
             middleware: module.morganMiddleware,
         };
     };
@@ -78,24 +96,60 @@ const createMorganMock = () => {
         (0, vitest_1.expect)(formatMock).toHaveBeenCalledWith('json', vitest_1.expect.any(Function));
     });
     (0, vitest_1.it)('configures morgan with the configured format, stream, skip and immediate options', async () => {
-        const { morganMock } = await setupMocks({
+        const { morganMock, middleware } = await setupMocks({
             MORGAN_FORMAT: 'combined',
             MORGAN_IMMEDIATE: 'true',
         });
+        invokeMiddleware(middleware, morganMock);
         (0, vitest_1.expect)(morganMock).toHaveBeenCalledWith('combined', vitest_1.expect.objectContaining({
             stream: vitest_1.expect.objectContaining({ write: vitest_1.expect.any(Function) }),
             skip: vitest_1.expect.any(Function),
             immediate: true,
         }));
     });
-    (0, vitest_1.it)('streams morgan output to logger.info', async () => {
-        const { morganMock, loggerInfoMock } = await setupMocks();
-        const options = morganMock.mock.calls[0][1];
-        options.stream.write(' GET /health 200\n');
-        (0, vitest_1.expect)(loggerInfoMock).toHaveBeenCalledWith('GET /health 200');
+    (0, vitest_1.it)('streams 2xx/3xx morgan output to logger.info', async () => {
+        const { morganMock, middleware, loggerInfoMock, loggerWarnMock, loggerErrorMock } = await setupMocks();
+        const { options } = invokeMiddleware(middleware, morganMock, 200);
+        options.stream.write(' GET /api/v1/users 200\n');
+        (0, vitest_1.expect)(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 200');
+        (0, vitest_1.expect)(loggerWarnMock).not.toHaveBeenCalled();
+        (0, vitest_1.expect)(loggerErrorMock).not.toHaveBeenCalled();
+    });
+    (0, vitest_1.it)('streams 4xx morgan output to logger.warn', async () => {
+        const { morganMock, middleware, loggerWarnMock, loggerInfoMock, loggerErrorMock } = await setupMocks();
+        const { options } = invokeMiddleware(middleware, morganMock, 404);
+        options.stream.write(' GET /api/v1/users 404\n');
+        (0, vitest_1.expect)(loggerWarnMock).toHaveBeenCalledWith('GET /api/v1/users 404');
+        (0, vitest_1.expect)(loggerInfoMock).not.toHaveBeenCalled();
+        (0, vitest_1.expect)(loggerErrorMock).not.toHaveBeenCalled();
+    });
+    (0, vitest_1.it)('streams 5xx morgan output to logger.error', async () => {
+        const { morganMock, middleware, loggerErrorMock, loggerInfoMock, loggerWarnMock } = await setupMocks();
+        const { options } = invokeMiddleware(middleware, morganMock, 500);
+        options.stream.write(' GET /api/v1/users 500\n');
+        (0, vitest_1.expect)(loggerErrorMock).toHaveBeenCalledWith('GET /api/v1/users 500');
+        (0, vitest_1.expect)(loggerInfoMock).not.toHaveBeenCalled();
+        (0, vitest_1.expect)(loggerWarnMock).not.toHaveBeenCalled();
+    });
+    (0, vitest_1.it)('routes logs to logger.info when immediate logging is enabled regardless of status', async () => {
+        const { morganMock, middleware, loggerInfoMock, loggerWarnMock, loggerErrorMock } = await setupMocks({
+            MORGAN_IMMEDIATE: 'true',
+        });
+        const { options } = invokeMiddleware(middleware, morganMock, 500);
+        options.stream.write(' GET /api/v1/users 500\n');
+        (0, vitest_1.expect)(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 500');
+        (0, vitest_1.expect)(loggerWarnMock).not.toHaveBeenCalled();
+        (0, vitest_1.expect)(loggerErrorMock).not.toHaveBeenCalled();
+    });
+    (0, vitest_1.it)('trims whitespace from morgan messages before logging', async () => {
+        const { morganMock, middleware, loggerInfoMock } = await setupMocks();
+        const { options } = invokeMiddleware(middleware, morganMock, 200);
+        options.stream.write('  GET /api/v1/users 200  \n');
+        (0, vitest_1.expect)(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 200');
     });
     (0, vitest_1.it)('skips health check requests when MORGAN_SKIP_HEALTH_CHECK is true', async () => {
-        const { morganMock } = await setupMocks();
+        const { morganMock, middleware } = await setupMocks();
+        invokeMiddleware(middleware, morganMock);
         const options = morganMock.mock.calls[0][1];
         const skipHealth = options.skip({ path: '/health' });
         const skipOther = options.skip({ path: '/api/v1/users' });
@@ -103,7 +157,8 @@ const createMorganMock = () => {
         (0, vitest_1.expect)(skipOther).toBe(false);
     });
     (0, vitest_1.it)('does not skip health check requests when MORGAN_SKIP_HEALTH_CHECK is false', async () => {
-        const { morganMock } = await setupMocks({ MORGAN_SKIP_HEALTH_CHECK: 'false' });
+        const { morganMock, middleware } = await setupMocks({ MORGAN_SKIP_HEALTH_CHECK: 'false' });
+        invokeMiddleware(middleware, morganMock);
         const options = morganMock.mock.calls[0][1];
         const skipHealth = options.skip({ path: '/health' });
         (0, vitest_1.expect)(skipHealth).toBe(false);
@@ -119,6 +174,16 @@ const createMorganMock = () => {
         const userIdToken = tokenMock.mock.calls.find(([name]) => name === 'userId')[1];
         (0, vitest_1.expect)(userIdToken({ user: { id: 'user-123' } })).toBe('user-123');
         (0, vitest_1.expect)(userIdToken({})).toBe('-');
+    });
+    (0, vitest_1.it)('invokes the morgan middleware with the request and response', async () => {
+        const { morganMock, middleware } = await setupMocks();
+        const morganHandler = vitest_1.vi.fn();
+        morganMock.mockReturnValue(morganHandler);
+        const req = { path: '/api/v1/users' };
+        const res = { statusCode: 200 };
+        const next = vitest_1.vi.fn();
+        middleware(req, res, next);
+        (0, vitest_1.expect)(morganHandler).toHaveBeenCalledWith(req, res, next);
     });
 });
 //# sourceMappingURL=morgan.middleware.test.js.map

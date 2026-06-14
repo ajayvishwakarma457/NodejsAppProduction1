@@ -8,6 +8,17 @@ const morgan_1 = __importDefault(require("morgan"));
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 /**
+ * Map an HTTP response status code to the corresponding application log level.
+ * Mirrors the level mapping used by the existing Winston request logger.
+ */
+const statusToLogLevel = (statusCode) => {
+    if (statusCode >= 500)
+        return 'error';
+    if (statusCode >= 400)
+        return 'warn';
+    return 'info';
+};
+/**
  * Custom Morgan token that exposes the per-request correlation id
  * attached earlier in the request pipeline by requestIdMiddleware.
  */
@@ -39,37 +50,37 @@ morgan_1.default.format('json', (tokens, req, res) => {
     });
 });
 /**
- * Stream that forwards Morgan output to the application Winston logger.
- *
- * Morgan always emits a single line string, so we route it through logger.info.
- * This keeps all application logs on the same transport(s) and with the same
- * formatting policy (JSON / pretty, console / rotating file) configured in
- * config/logger.ts.
- */
-const morganStream = {
-    write: (message) => {
-        logger_1.logger.info(message.trim());
-    },
-};
-/**
  * Production-grade Morgan HTTP request logging middleware.
  *
  * Features:
  * - Configurable format via MORGAN_FORMAT (default 'combined').
  * - Optional structured JSON format named 'json'.
  * - Custom tokens for requestId and userId correlation.
- * - Output routed through Winston for centralized log handling.
+ * - Output routed through Winston at the appropriate log level:
+ *   5xx -> error, 4xx -> warn, otherwise -> info.
  * - Health check requests can be skipped via MORGAN_SKIP_HEALTH_CHECK.
  * - Immediate logging (before response finishes) via MORGAN_IMMEDIATE.
  */
-exports.morganMiddleware = (0, morgan_1.default)(env_1.env.MORGAN_FORMAT, {
-    stream: morganStream,
-    skip: (req) => {
+const morganMiddleware = (req, res, next) => {
+    const stream = {
+        write: (message) => {
+            // When immediate logging is enabled the response has not finished yet,
+            // so the status code is not meaningful. Log those as info.
+            const level = env_1.env.MORGAN_IMMEDIATE ? 'info' : statusToLogLevel(res.statusCode);
+            logger_1.logger[level](message.trim());
+        },
+    };
+    const skip = (request) => {
         if (!env_1.env.MORGAN_SKIP_HEALTH_CHECK) {
             return false;
         }
-        return req.path === '/health';
-    },
-    immediate: env_1.env.MORGAN_IMMEDIATE,
-});
+        return request.path === '/health';
+    };
+    return (0, morgan_1.default)(env_1.env.MORGAN_FORMAT, {
+        stream,
+        skip,
+        immediate: env_1.env.MORGAN_IMMEDIATE,
+    })(req, res, next);
+};
+exports.morganMiddleware = morganMiddleware;
 //# sourceMappingURL=morgan.middleware.js.map

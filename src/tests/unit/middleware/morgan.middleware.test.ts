@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Request } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 const createMorganMock = () => {
   const tokenMock = vi.fn();
@@ -12,6 +12,20 @@ const createMorganMock = () => {
   });
 
   return { morganMock, tokenMock, formatMock };
+};
+
+const invokeMiddleware = (
+  middleware: (req: Request, res: Response, next: NextFunction) => unknown,
+  morganMock: ReturnType<typeof createMorganMock>['morganMock'],
+  statusCode = 200
+) => {
+  const next = vi.fn();
+  const req = { path: '/api/v1/users' } as Request;
+  const res = { statusCode } as Response;
+
+  middleware(req, res, next);
+
+  return { options: morganMock.mock.calls[0][1], req, res, next };
 };
 
 describe('morgan middleware', () => {
@@ -29,10 +43,18 @@ describe('morgan middleware', () => {
   const setupMocks = async (envOverrides?: Record<string, string>) => {
     const { morganMock, tokenMock, formatMock } = createMorganMock();
     const loggerInfoMock = vi.fn();
+    const loggerWarnMock = vi.fn();
+    const loggerErrorMock = vi.fn();
+    const loggerDebugMock = vi.fn();
 
     vi.doMock('morgan', () => ({ default: morganMock, ...morganMock }));
     vi.doMock('../../../config/logger', () => ({
-      logger: { info: loggerInfoMock },
+      logger: {
+        debug: loggerDebugMock,
+        info: loggerInfoMock,
+        warn: loggerWarnMock,
+        error: loggerErrorMock,
+      },
     }));
 
     vi.stubEnv('NODE_ENV', 'test');
@@ -52,6 +74,9 @@ describe('morgan middleware', () => {
       tokenMock,
       formatMock,
       loggerInfoMock,
+      loggerWarnMock,
+      loggerErrorMock,
+      loggerDebugMock,
       middleware: module.morganMiddleware,
     };
   };
@@ -70,10 +95,12 @@ describe('morgan middleware', () => {
   });
 
   it('configures morgan with the configured format, stream, skip and immediate options', async () => {
-    const { morganMock } = await setupMocks({
+    const { morganMock, middleware } = await setupMocks({
       MORGAN_FORMAT: 'combined',
       MORGAN_IMMEDIATE: 'true',
     });
+
+    invokeMiddleware(middleware, morganMock);
 
     expect(morganMock).toHaveBeenCalledWith(
       'combined',
@@ -85,17 +112,69 @@ describe('morgan middleware', () => {
     );
   });
 
-  it('streams morgan output to logger.info', async () => {
-    const { morganMock, loggerInfoMock } = await setupMocks();
+  it('streams 2xx/3xx morgan output to logger.info', async () => {
+    const { morganMock, middleware, loggerInfoMock, loggerWarnMock, loggerErrorMock } =
+      await setupMocks();
 
-    const options = morganMock.mock.calls[0][1] as { stream: { write: (msg: string) => void } };
-    options.stream.write(' GET /health 200\n');
+    const { options } = invokeMiddleware(middleware, morganMock, 200);
+    options.stream.write(' GET /api/v1/users 200\n');
 
-    expect(loggerInfoMock).toHaveBeenCalledWith('GET /health 200');
+    expect(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 200');
+    expect(loggerWarnMock).not.toHaveBeenCalled();
+    expect(loggerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('streams 4xx morgan output to logger.warn', async () => {
+    const { morganMock, middleware, loggerWarnMock, loggerInfoMock, loggerErrorMock } =
+      await setupMocks();
+
+    const { options } = invokeMiddleware(middleware, morganMock, 404);
+    options.stream.write(' GET /api/v1/users 404\n');
+
+    expect(loggerWarnMock).toHaveBeenCalledWith('GET /api/v1/users 404');
+    expect(loggerInfoMock).not.toHaveBeenCalled();
+    expect(loggerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('streams 5xx morgan output to logger.error', async () => {
+    const { morganMock, middleware, loggerErrorMock, loggerInfoMock, loggerWarnMock } =
+      await setupMocks();
+
+    const { options } = invokeMiddleware(middleware, morganMock, 500);
+    options.stream.write(' GET /api/v1/users 500\n');
+
+    expect(loggerErrorMock).toHaveBeenCalledWith('GET /api/v1/users 500');
+    expect(loggerInfoMock).not.toHaveBeenCalled();
+    expect(loggerWarnMock).not.toHaveBeenCalled();
+  });
+
+  it('routes logs to logger.info when immediate logging is enabled regardless of status', async () => {
+    const { morganMock, middleware, loggerInfoMock, loggerWarnMock, loggerErrorMock } =
+      await setupMocks({
+        MORGAN_IMMEDIATE: 'true',
+      });
+
+    const { options } = invokeMiddleware(middleware, morganMock, 500);
+    options.stream.write(' GET /api/v1/users 500\n');
+
+    expect(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 500');
+    expect(loggerWarnMock).not.toHaveBeenCalled();
+    expect(loggerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('trims whitespace from morgan messages before logging', async () => {
+    const { morganMock, middleware, loggerInfoMock } = await setupMocks();
+
+    const { options } = invokeMiddleware(middleware, morganMock, 200);
+    options.stream.write('  GET /api/v1/users 200  \n');
+
+    expect(loggerInfoMock).toHaveBeenCalledWith('GET /api/v1/users 200');
   });
 
   it('skips health check requests when MORGAN_SKIP_HEALTH_CHECK is true', async () => {
-    const { morganMock } = await setupMocks();
+    const { morganMock, middleware } = await setupMocks();
+
+    invokeMiddleware(middleware, morganMock);
 
     const options = morganMock.mock.calls[0][1] as { skip: (req: Request) => boolean };
     const skipHealth = options.skip({ path: '/health' } as Request);
@@ -106,7 +185,9 @@ describe('morgan middleware', () => {
   });
 
   it('does not skip health check requests when MORGAN_SKIP_HEALTH_CHECK is false', async () => {
-    const { morganMock } = await setupMocks({ MORGAN_SKIP_HEALTH_CHECK: 'false' });
+    const { morganMock, middleware } = await setupMocks({ MORGAN_SKIP_HEALTH_CHECK: 'false' });
+
+    invokeMiddleware(middleware, morganMock);
 
     const options = morganMock.mock.calls[0][1] as { skip: (req: Request) => boolean };
     const skipHealth = options.skip({ path: '/health' } as Request);
@@ -134,5 +215,20 @@ describe('morgan middleware', () => {
 
     expect(userIdToken({ user: { id: 'user-123' } } as Request)).toBe('user-123');
     expect(userIdToken({} as Request)).toBe('-');
+  });
+
+  it('invokes the morgan middleware with the request and response', async () => {
+    const { morganMock, middleware } = await setupMocks();
+    const morganHandler = vi.fn();
+
+    morganMock.mockReturnValue(morganHandler);
+
+    const req = { path: '/api/v1/users' } as Request;
+    const res = { statusCode: 200 } as Response;
+    const next = vi.fn();
+
+    middleware(req, res, next);
+
+    expect(morganHandler).toHaveBeenCalledWith(req, res, next);
   });
 });
