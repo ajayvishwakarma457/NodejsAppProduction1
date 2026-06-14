@@ -22,19 +22,34 @@ const idParam = registry.registerParameter('Id', zod_1.z.string().openapi({
     example: '507f1f77bcf86cd799439011',
 }));
 const paginationQuery = {
-    page: zod_1.z.coerce.number().min(1).optional().openapi({
+    page: zod_1.z.coerce
+        .number()
+        .min(1)
+        .optional()
+        .openapi({
         param: { name: 'page', in: 'query', description: 'Page number' },
         example: 1,
     }),
-    limit: zod_1.z.coerce.number().min(1).max(100).optional().openapi({
+    limit: zod_1.z.coerce
+        .number()
+        .min(1)
+        .max(100)
+        .optional()
+        .openapi({
         param: { name: 'limit', in: 'query', description: 'Items per page' },
         example: 10,
     }),
-    sort: zod_1.z.string().optional().openapi({
+    sort: zod_1.z
+        .string()
+        .optional()
+        .openapi({
         param: { name: 'sort', in: 'query', description: 'Field to sort by' },
         example: 'createdAt',
     }),
-    order: zod_1.z.enum(['asc', 'desc']).optional().openapi({
+    order: zod_1.z
+        .enum(['asc', 'desc'])
+        .optional()
+        .openapi({
         param: { name: 'order', in: 'query', description: 'Sort order' },
         example: 'desc',
     }),
@@ -184,7 +199,9 @@ const HealthCheckSchema = registry.register('HealthCheck', zod_1.z
     .object({
     success: zod_1.z.boolean().openapi({ example: true }),
     message: zod_1.z.string().openapi({ example: 'OK' }),
-    checks: zod_1.z.record(zod_1.z.enum(['ok', 'error'])).openapi({ example: { server: 'ok', mongodb: 'ok' } }),
+    checks: zod_1.z
+        .record(zod_1.z.enum(['ok', 'error']))
+        .openapi({ example: { server: 'ok', mongodb: 'ok' } }),
     timestamp: zod_1.z.string().datetime().openapi({ example: '2024-01-01T00:00:00.000Z' }),
 })
     .openapi('HealthCheck'));
@@ -421,15 +438,24 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            role: zod_1.z.enum(['admin', 'manager', 'member']).optional().openapi({
+            role: zod_1.z
+                .enum(['admin', 'manager', 'member'])
+                .optional()
+                .openapi({
                 param: { name: 'role', in: 'query', description: 'Filter by role' },
                 example: 'member',
             }),
-            isVerified: zod_1.z.enum(['true', 'false']).optional().openapi({
+            isVerified: zod_1.z
+                .enum(['true', 'false'])
+                .optional()
+                .openapi({
                 param: { name: 'isVerified', in: 'query', description: 'Filter by verification status' },
                 example: 'true',
             }),
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search by name or email' },
                 example: 'jane',
             }),
@@ -513,7 +539,10 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search by name or description' },
                 example: 'engineering',
             }),
@@ -618,15 +647,24 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            teamId: zod_1.z.string().optional().openapi({
+            teamId: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'teamId', in: 'query', description: 'Filter by team id' },
                 example: '507f1f77bcf86cd799439011',
             }),
-            status: zod_1.z.enum(['active', 'completed', 'archived']).optional().openapi({
+            status: zod_1.z
+                .enum(['active', 'completed', 'archived'])
+                .optional()
+                .openapi({
                 param: { name: 'status', in: 'query', description: 'Filter by status' },
                 example: 'active',
             }),
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search by name or description' },
                 example: 'website',
             }),
@@ -652,9 +690,20 @@ registry.registerPath({
                         name: zod_1.z.string().min(1).openapi({ example: 'Website redesign' }),
                         description: zod_1.z.string().min(1).openapi({ example: 'Redesign the public website' }),
                         teamId: zod_1.z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
-                        status: zod_1.z.enum(['active', 'completed', 'archived']).optional().openapi({ example: 'active' }),
-                        startDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-01-01T00:00:00.000Z' }),
-                        dueDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+                        status: zod_1.z
+                            .enum(['active', 'completed', 'archived'])
+                            .optional()
+                            .openapi({ example: 'active' }),
+                        startDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-01-01T00:00:00.000Z' }),
+                        dueDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-06-01T00:00:00.000Z' }),
                     }),
                 },
             },
@@ -695,10 +744,25 @@ registry.registerPath({
                 'application/json': {
                     schema: zod_1.z.object({
                         name: zod_1.z.string().min(1).optional().openapi({ example: 'Website redesign' }),
-                        description: zod_1.z.string().min(1).optional().openapi({ example: 'Redesign the public website' }),
-                        status: zod_1.z.enum(['active', 'completed', 'archived']).optional().openapi({ example: 'active' }),
-                        startDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-01-01T00:00:00.000Z' }),
-                        dueDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+                        description: zod_1.z
+                            .string()
+                            .min(1)
+                            .optional()
+                            .openapi({ example: 'Redesign the public website' }),
+                        status: zod_1.z
+                            .enum(['active', 'completed', 'archived'])
+                            .optional()
+                            .openapi({ example: 'active' }),
+                        startDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-01-01T00:00:00.000Z' }),
+                        dueDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-06-01T00:00:00.000Z' }),
                     }),
                 },
             },
@@ -761,27 +825,45 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            projectId: zod_1.z.string().optional().openapi({
+            projectId: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'projectId', in: 'query', description: 'Filter by project id' },
                 example: '507f1f77bcf86cd799439011',
             }),
-            assignedTo: zod_1.z.string().optional().openapi({
+            assignedTo: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'assignedTo', in: 'query', description: 'Filter by assignee id' },
                 example: '507f1f77bcf86cd799439011',
             }),
-            createdBy: zod_1.z.string().optional().openapi({
+            createdBy: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'createdBy', in: 'query', description: 'Filter by creator id' },
                 example: '507f1f77bcf86cd799439011',
             }),
-            status: zod_1.z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({
+            status: zod_1.z
+                .enum(['todo', 'in-progress', 'review', 'done'])
+                .optional()
+                .openapi({
                 param: { name: 'status', in: 'query', description: 'Filter by status' },
                 example: 'in-progress',
             }),
-            priority: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({
+            priority: zod_1.z
+                .enum(['low', 'medium', 'high', 'critical'])
+                .optional()
+                .openapi({
                 param: { name: 'priority', in: 'query', description: 'Filter by priority' },
                 example: 'high',
             }),
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search by title or description' },
                 example: 'login',
             }),
@@ -808,9 +890,19 @@ registry.registerPath({
                         description: zod_1.z.string().min(1).openapi({ example: 'Users cannot log in with Google' }),
                         projectId: zod_1.z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
                         assignedTo: zod_1.z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
-                        priority: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({ example: 'high' }),
-                        status: zod_1.z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({ example: 'todo' }),
-                        dueDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+                        priority: zod_1.z
+                            .enum(['low', 'medium', 'high', 'critical'])
+                            .optional()
+                            .openapi({ example: 'high' }),
+                        status: zod_1.z
+                            .enum(['todo', 'in-progress', 'review', 'done'])
+                            .optional()
+                            .openapi({ example: 'todo' }),
+                        dueDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-06-01T00:00:00.000Z' }),
                         estimatedHours: zod_1.z.number().min(0).optional().openapi({ example: 4 }),
                         actualHours: zod_1.z.number().min(0).optional().openapi({ example: 0 }),
                     }),
@@ -854,10 +946,20 @@ registry.registerPath({
                     schema: zod_1.z.object({
                         title: zod_1.z.string().min(1).optional().openapi({ example: 'Fix login bug' }),
                         description: zod_1.z.string().min(1).optional().openapi({ example: 'Updated description' }),
-                        priority: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({ example: 'critical' }),
-                        status: zod_1.z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({ example: 'done' }),
+                        priority: zod_1.z
+                            .enum(['low', 'medium', 'high', 'critical'])
+                            .optional()
+                            .openapi({ example: 'critical' }),
+                        status: zod_1.z
+                            .enum(['todo', 'in-progress', 'review', 'done'])
+                            .optional()
+                            .openapi({ example: 'done' }),
                         assignedTo: zod_1.z.string().optional().openapi({ example: '507f1f77bcf86cd799439011' }),
-                        dueDate: zod_1.z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+                        dueDate: zod_1.z
+                            .string()
+                            .datetime()
+                            .optional()
+                            .openapi({ example: '2024-06-01T00:00:00.000Z' }),
                         estimatedHours: zod_1.z.number().min(0).optional().openapi({ example: 4 }),
                         actualHours: zod_1.z.number().min(0).optional().openapi({ example: 3 }),
                     }),
@@ -925,11 +1027,17 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            taskId: zod_1.z.string().optional().openapi({
+            taskId: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'taskId', in: 'query', description: 'Filter by task id' },
                 example: '507f1f77bcf86cd799439011',
             }),
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search comment content' },
                 example: 'looks good',
             }),
@@ -1034,18 +1142,32 @@ registry.registerPath({
     request: {
         query: zod_1.z.object({
             ...paginationQuery,
-            isRead: zod_1.z.enum(['true', 'false']).optional().openapi({
+            isRead: zod_1.z
+                .enum(['true', 'false'])
+                .optional()
+                .openapi({
                 param: { name: 'isRead', in: 'query', description: 'Filter by read status' },
                 example: 'false',
             }),
             type: zod_1.z
-                .enum(['task-assigned', 'task-updated', 'comment-added', 'project-created', 'mention', 'due-soon', 'invite'])
+                .enum([
+                'task-assigned',
+                'task-updated',
+                'comment-added',
+                'project-created',
+                'mention',
+                'due-soon',
+                'invite',
+            ])
                 .optional()
                 .openapi({
                 param: { name: 'type', in: 'query', description: 'Filter by notification type' },
                 example: 'task-assigned',
             }),
-            search: zod_1.z.string().optional().openapi({
+            search: zod_1.z
+                .string()
+                .optional()
+                .openapi({
                 param: { name: 'search', in: 'query', description: 'Search title or message' },
                 example: 'assigned',
             }),
@@ -1123,7 +1245,10 @@ registry.registerPath({
                 'application/json': {
                     schema: zod_1.z.object({
                         name: zod_1.z.string().min(1).openapi({ example: 'CI deployment key' }),
-                        scopes: zod_1.z.array(zod_1.z.enum(['read', 'write', 'admin'])).optional().openapi({ example: ['read', 'write'] }),
+                        scopes: zod_1.z
+                            .array(zod_1.z.enum(['read', 'write', 'admin']))
+                            .optional()
+                            .openapi({ example: ['read', 'write'] }),
                         expiresInDays: zod_1.z.number().min(1).max(365).optional().openapi({ example: 365 }),
                     }),
                 },

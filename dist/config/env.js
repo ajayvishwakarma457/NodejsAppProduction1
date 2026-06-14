@@ -96,7 +96,11 @@ const envSchema = zod_1.z.object({
     // Idempotency keys for safe retries
     IDEMPOTENCY_ENABLED: zod_1.z.preprocess((val) => (val === undefined ? true : val === 'true' || val === true), zod_1.z.boolean().default(true)),
     IDEMPOTENCY_KEY_HEADER: zod_1.z.string().min(1).default('Idempotency-Key'),
-    IDEMPOTENCY_TTL_SECONDS: zod_1.z.coerce.number().min(1).max(86400 * 7).default(86400),
+    IDEMPOTENCY_TTL_SECONDS: zod_1.z.coerce
+        .number()
+        .min(1)
+        .max(86400 * 7)
+        .default(86400),
     IDEMPOTENCY_LOCK_TTL_SECONDS: zod_1.z.coerce.number().min(1).max(300).default(30),
     RATE_LIMIT_ENABLED: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     RATE_LIMIT_WINDOW_MS: zod_1.z.coerce.number().min(1000).max(3600000).default(900000),

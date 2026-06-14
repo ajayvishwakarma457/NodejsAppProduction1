@@ -20,13 +20,17 @@ const lockKey = (key) => `${LOCK_PREFIX}${key}`;
  */
 const buildFingerprint = (req) => {
     const body = JSON.stringify(req.body ?? {});
-    return crypto_1.default.createHash('sha256').update(`${req.method}:${req.originalUrl}:${body}`).digest('hex');
+    return crypto_1.default
+        .createHash('sha256')
+        .update(`${req.method}:${req.originalUrl}:${body}`)
+        .digest('hex');
 };
 const validateKey = (key) => /^[a-zA-Z0-9._:-]{1,255}$/.test(key);
 const sendCachedResponse = (res, cached) => {
     res.status(cached.statusCode);
     for (const [name, value] of Object.entries(cached.headers)) {
-        if (value !== undefined && !['content-length', 'transfer-encoding'].includes(name.toLowerCase())) {
+        if (value !== undefined &&
+            !['content-length', 'transfer-encoding'].includes(name.toLowerCase())) {
             res.setHeader(name, value);
         }
     }
