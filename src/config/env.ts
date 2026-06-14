@@ -26,6 +26,18 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   LOG_FORMAT: z.enum(['pretty', 'json']).default('json'),
 
+  // HTTP request logger: 'winston' (existing structured logger) or 'morgan' (Apache-style)
+  HTTP_LOGGER: z.enum(['winston', 'morgan']).default('winston'),
+  MORGAN_FORMAT: z.string().min(1).default('combined'),
+  MORGAN_SKIP_HEALTH_CHECK: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean().default(true)
+  ),
+  MORGAN_IMMEDIATE: z.preprocess(
+    (val) => val === 'true' || val === true,
+    z.boolean().default(false)
+  ),
+
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().min(1).max(65535).default(587),
   SMTP_SECURE: z.preprocess((val) => val === 'true' || val === true, z.boolean().default(false)),

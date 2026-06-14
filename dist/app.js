@@ -26,6 +26,7 @@ const notFound_middleware_1 = require("./middleware/notFound.middleware");
 const requestId_middleware_1 = require("./middleware/requestId.middleware");
 const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const auth_middleware_1 = require("./middleware/auth.middleware");
+const morgan_middleware_1 = require("./middleware/morgan.middleware");
 const passport_1 = require("./config/passport");
 /* ------------------------------------------------------------------ */
 // App instance
@@ -81,24 +82,31 @@ exports.app.use(requestId_middleware_1.requestIdMiddleware);
 /* ------------------------------------------------------------------ */
 // Request logger
 /* ------------------------------------------------------------------ */
-exports.app.use((req, res, next) => {
-    const start = Date.now();
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-        logger_1.logger[logLevel]('HTTP request', {
-            method: req.method,
-            url: req.originalUrl,
-            statusCode: res.statusCode,
-            durationMs: duration,
-            ip: req.ip,
-            requestId: req.requestId,
-            userId: req.user?.id,
-            userAgent: req.get('user-agent'),
+if (env_1.env.HTTP_LOGGER === 'morgan') {
+    // Apache-style HTTP request logging via Morgan, streamed to Winston.
+    exports.app.use(morgan_middleware_1.morganMiddleware);
+}
+else {
+    // Structured HTTP request logging via the existing Winston logger.
+    exports.app.use((req, res, next) => {
+        const start = Date.now();
+        res.on('finish', () => {
+            const duration = Date.now() - start;
+            const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+            logger_1.logger[logLevel]('HTTP request', {
+                method: req.method,
+                url: req.originalUrl,
+                statusCode: res.statusCode,
+                durationMs: duration,
+                ip: req.ip,
+                requestId: req.requestId,
+                userId: req.user?.id,
+                userAgent: req.get('user-agent'),
+            });
         });
+        next();
     });
-    next();
-});
+}
 /* ------------------------------------------------------------------ */
 // Body parsers
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 252 unit tests and 90 HTTP integration tests passing.
+Production-ready API backend. All core modules implemented, 266 unit tests and 90 HTTP integration tests passing.
 
 ## What Exists
 
@@ -38,7 +38,7 @@ Production-ready API backend. All core modules implemented, 252 unit tests and 9
 - Optimized list/find endpoints across all repositories using projections, pagination, and slow-query logging
 - Production-grade MongoDB aggregation pipelines with safety guards (maxTimeMS, allowDiskUse, read-only sanitization), `$facet` pagination, date grouping helpers, and dashboard endpoints for projects, tasks, and notifications
 - Custom rate limiter with IETF Draft-7 + legacy headers, fails open on Redis loss
-- Structured logging (Winston) with request correlation IDs
+- Structured logging (Winston) with request correlation IDs; Morgan HTTP request logging available as an opt-in alternative via `HTTP_LOGGER=morgan`
 - Email service with SMTP fallback to mock logging
 - Storage service with provider pattern: local filesystem and production-grade AWS S3 (SDK v3) with upload, delete, exists, metadata, stream, public URL, presigned URL, and multipart upload support
 - File streaming endpoint (`GET /api/v1/files/:key/stream`) with HTTP Range request support for both local and S3 storage

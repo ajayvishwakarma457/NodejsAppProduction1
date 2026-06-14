@@ -29,6 +29,11 @@ const envSchema = zod_1.z.object({
     CLIENT_URL: zod_1.z.string().min(1).default('*'),
     LOG_LEVEL: zod_1.z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     LOG_FORMAT: zod_1.z.enum(['pretty', 'json']).default('json'),
+    // HTTP request logger: 'winston' (existing structured logger) or 'morgan' (Apache-style)
+    HTTP_LOGGER: zod_1.z.enum(['winston', 'morgan']).default('winston'),
+    MORGAN_FORMAT: zod_1.z.string().min(1).default('combined'),
+    MORGAN_SKIP_HEALTH_CHECK: zod_1.z.preprocess((val) => (val === undefined ? true : val === 'true' || val === true), zod_1.z.boolean().default(true)),
+    MORGAN_IMMEDIATE: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),
     SMTP_HOST: zod_1.z.string().optional().default(''),
     SMTP_PORT: zod_1.z.coerce.number().min(1).max(65535).default(587),
     SMTP_SECURE: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),

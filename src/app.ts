@@ -20,6 +20,7 @@ import { notFoundMiddleware } from './middleware/notFound.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { optionalAuthMiddleware } from './middleware/auth.middleware';
+import { morganMiddleware } from './middleware/morgan.middleware';
 import { configurePassport } from './config/passport';
 
 /* ------------------------------------------------------------------ */
@@ -95,27 +96,33 @@ app.use(requestIdMiddleware);
 // Request logger
 /* ------------------------------------------------------------------ */
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const start = Date.now();
+if (env.HTTP_LOGGER === 'morgan') {
+  // Apache-style HTTP request logging via Morgan, streamed to Winston.
+  app.use(morganMiddleware);
+} else {
+  // Structured HTTP request logging via the existing Winston logger.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const start = Date.now();
 
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
 
-    logger[logLevel]('HTTP request', {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      durationMs: duration,
-      ip: req.ip,
-      requestId: req.requestId,
-      userId: req.user?.id,
-      userAgent: req.get('user-agent'),
+      logger[logLevel]('HTTP request', {
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs: duration,
+        ip: req.ip,
+        requestId: req.requestId,
+        userId: req.user?.id,
+        userAgent: req.get('user-agent'),
+      });
     });
-  });
 
-  next();
-});
+    next();
+  });
+}
 
 /* ------------------------------------------------------------------ */
 // Body parsers

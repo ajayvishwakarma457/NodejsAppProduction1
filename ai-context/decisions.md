@@ -2,6 +2,34 @@
 
 ## Decision Log
 
+## 2026-06-14 - Add Morgan as an Optional HTTP Request Logger
+
+Decision:
+
+Add `morgan` as an optional, production-grade HTTP request logger that can be enabled via `HTTP_LOGGER=morgan`. The existing Winston-based structured request logger remains the default so no existing behavior changes.
+
+Reason:
+
+Some teams and logging pipelines expect Apache-style HTTP access logs. Morgan is a battle-tested middleware for this purpose. Making it configurable keeps the existing logger intact while providing a standard alternative.
+
+Rules:
+
+- Default HTTP logger remains `winston` (`HTTP_LOGGER=winston`).
+- Set `HTTP_LOGGER=morgan` to use Morgan instead.
+- Morgan output is streamed to the Winston logger so all logs follow the same transports and formatting policy.
+- Format is configurable via `MORGAN_FORMAT` (default `combined`); a custom `json` format is also registered for structured output.
+- Custom Morgan tokens expose `requestId` and `userId` for request correlation.
+- Health check requests (`/health`) are skipped by default (`MORGAN_SKIP_HEALTH_CHECK=true`).
+- Immediate logging (before response finishes) can be enabled via `MORGAN_IMMEDIATE=true`.
+
+Impact:
+
+- New `src/middleware/morgan.middleware.ts` with Morgan configuration and Winston stream integration.
+- `src/config/env.ts` extended with `HTTP_LOGGER`, `MORGAN_FORMAT`, `MORGAN_SKIP_HEALTH_CHECK`, and `MORGAN_IMMEDIATE`.
+- `src/app.ts` conditionally mounts either the Morgan middleware or the existing Winston request logger based on `HTTP_LOGGER`.
+- `.env.example` updated with the new variables.
+- New `src/tests/unit/middleware/morgan.middleware.test.ts` covering token registration, format registration, stream routing, skip behavior, and env option propagation.
+
 ## 2026-06-14 - Adopt Winston for Structured Logging
 
 Decision:
