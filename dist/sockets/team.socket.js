@@ -9,7 +9,8 @@ const socketHandler_1 = require("../utils/socketHandler");
 const isTeamMember = (team, userId) => {
     if (String(team.ownerId) === userId)
         return true;
-    return team.members.some((member) => String(member.userId) === userId);
+    const members = team.members ?? [];
+    return members.some((member) => String(member.userId) === userId);
 };
 const registerTeamSocket = (io, socket) => {
     (0, socketHandler_1.socketHandler)(socket, constants_1.SOCKET_EVENTS.team.join, async (teamId) => {

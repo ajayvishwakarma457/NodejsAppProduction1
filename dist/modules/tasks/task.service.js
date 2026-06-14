@@ -7,6 +7,7 @@ const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const serializer_1 = require("../../utils/serializer");
 const transaction_1 = require("../../utils/transaction");
 const event_bus_1 = require("../../utils/event-bus");
 exports.taskService = {
@@ -31,15 +32,20 @@ exports.taskService = {
         if (query.search) {
             filter.search = String(query.search);
         }
-        return task_repository_1.taskRepository.findAll({
+        const result = await task_repository_1.taskRepository.findAll({
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
             order: pagination.order,
         }, filter);
+        return {
+            ...result,
+            data: (0, serializer_1.serializeDocuments)(result.data),
+        };
     },
     async getById(id) {
-        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.tasks, id, () => task_repository_1.taskRepository.findById(id));
+        const task = await cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.tasks, id, () => task_repository_1.taskRepository.findById(id));
+        return (0, serializer_1.serializeDocument)(task);
     },
     async create(data) {
         const created = await task_repository_1.taskRepository.create(data);
@@ -55,7 +61,7 @@ exports.taskService = {
                 assignedBy: createdBy,
             });
         }
-        return created;
+        return (0, serializer_1.serializeDocument)(created);
     },
     async update(id, data, userId, role) {
         const existing = await task_repository_1.taskRepository.findById(id);
@@ -78,7 +84,7 @@ exports.taskService = {
                 });
             }
         }
-        return updated;
+        return (0, serializer_1.serializeDocument)(updated);
     },
     async remove(id, userId, role) {
         const existing = await task_repository_1.taskRepository.findById(id);

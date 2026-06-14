@@ -138,7 +138,7 @@ Impact:
 - `src/types/express.d.ts` extended with `authType`.
 - `src/config/env.ts` extended with API key configuration.
 - New environment variables added to `.env.example`.
-- New tests in `src/tests/api-key.test.ts` and additional middleware tests in `src/tests/auth-middleware.test.ts`.
+- New tests in `src/tests/unit/api-key.test.ts` and additional middleware tests in `src/tests/unit/auth-middleware.test.ts`.
 
 ## 2026-06-12 - Use Redis Distributed Locks for Cron Jobs
 
@@ -161,7 +161,7 @@ Rules:
 Impact:
 
 - `email.job.ts`, `notification.job.ts`, and `reminder.job.ts` now schedule locked handlers.
-- Added `src/tests/utils/distributed-lock.test.ts` covering successful lock acquisition, skip-when-held behavior, and single execution under concurrency.
+- Added `src/tests/unit/utils/distributed-lock.test.ts` covering successful lock acquisition, skip-when-held behavior, and single execution under concurrency.
 
 ## 2026-06-12 - Add Optional Job Priorities Without Replacing the Legacy Queue
 
@@ -188,9 +188,9 @@ Rules:
 
 Impact:
 
-- `src/utils/queue.ts` extended with priority support and `src/tests/utils/queue.test.ts` added.
+- `src/utils/queue.ts` extended with priority support and `src/tests/unit/utils/queue.test.ts` added.
 - `src/jobs/report.job.ts` enqueue signature now accepts `priority`.
-- `src/tests/bullmq.test.ts` includes a prioritized job test.
+- `src/tests/unit/bullmq.test.ts` includes a prioritized job test.
 
 ## 2026-06-12 - Add a Production-Grade Typed Event Bus
 
@@ -218,7 +218,7 @@ Impact:
 - New `src/utils/event-bus.ts`, `src/events/index.ts`, and `src/events/handlers/*`.
 - `userService`, `taskService`, and `projectService` now emit domain events.
 - `src/config/env.ts` and `.env.example` extended with `EVENT_BUS_ENABLED`.
-- Added `src/tests/utils/event-bus.test.ts` covering listeners, async handlers, error isolation, once, unsubscribe, and metrics.
+- Added `src/tests/unit/utils/event-bus.test.ts` covering listeners, async handlers, error isolation, once, unsubscribe, and metrics.
 
 ## 2026-06-12 - Add Socket.IO Namespaces Additively
 
@@ -245,7 +245,7 @@ Impact:
 - `src/sockets/task.socket.ts` and `src/sockets/team.socket.ts` now accept `Server | Namespace`.
 - `src/services/socket.service.ts` extended with namespace-aware helpers.
 - `src/server.ts` calls `initializeNamespaces(io)` after `registerSockets(io)`.
-- Added `src/tests/sockets/namespaces.test.ts` covering auth rejection, namespace connection, and user-specific broadcasts on both default and `/notifications` namespaces.
+- Added `src/tests/unit/sockets/namespaces.test.ts` covering auth rejection, namespace connection, and user-specific broadcasts on both default and `/notifications` namespaces.
 
 ## 2026-06-12 - Add a Lightweight `ws` Server Alongside Socket.IO
 
@@ -272,7 +272,7 @@ Impact:
 - New `src/services/ws.service.ts`, `src/ws/index.ts`, `src/ws/helpers.ts`, `src/ws/handlers/message.handler.ts`.
 - `src/services/socket.service.ts` `emitToUser` now also pushes to `ws` clients.
 - `src/server.ts` starts/stops the `ws` server alongside Socket.IO.
-- Added `src/tests/ws/ws.test.ts` covering auth, user emit, channel subscription, and unsubscribed isolation.
+- Added `src/tests/unit/ws/ws.test.ts` covering auth, user emit, channel subscription, and unsubscribed isolation.
 
 ## 2026-06-12 - Add Server-Sent Events (SSE) for One-Way Streaming
 
@@ -297,4 +297,4 @@ Impact:
 - New `src/services/sse.service.ts`, `src/controllers/sse.controller.ts`, `src/routes/sse.routes.ts`.
 - `src/app.ts` mounts `/api/v1/events` SSE routes.
 - `src/services/socket.service.ts` `emitToUser` now also pushes to SSE clients.
-- Added `src/tests/sse.test.ts` covering connection event, user emit, broadcast, and removal.
+- Added `src/tests/unit/sse.test.ts` covering connection event, user emit, broadcast, and removal.

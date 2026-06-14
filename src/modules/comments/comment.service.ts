@@ -1,6 +1,6 @@
 import { ApiError } from '../../utils/ApiError';
 import { getPagination } from '../../utils/pagination';
-import { CommentDocument } from './comment.model';
+import { serializeDocument, serializeDocuments } from '../../utils/serializer';
 import { commentRepository, CommentListFilter } from './comment.repository';
 
 export const commentService = {
@@ -17,7 +17,7 @@ export const commentService = {
       filter.userId = String(query.userId);
     }
 
-    return commentRepository.findAll(
+    const result = await commentRepository.findAll(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -26,24 +26,31 @@ export const commentService = {
       },
       filter
     );
+
+    return {
+      ...result,
+      data: serializeDocuments(result.data as unknown as Record<string, unknown>[]),
+    };
   },
 
-  async getById(id: string): Promise<CommentDocument | null> {
-    return commentRepository.findByIdWithUser(id);
+  async getById(id: string): Promise<Record<string, unknown> | null> {
+    const comment = await commentRepository.findByIdWithUser(id);
+    return serializeDocument(comment as unknown as Record<string, unknown> | null);
   },
 
-  async create(data: Record<string, unknown>, userId: string): Promise<CommentDocument> {
-    return commentRepository.create({
+  async create(data: Record<string, unknown>, userId: string): Promise<Record<string, unknown>> {
+    const comment = await commentRepository.create({
       ...data,
       userId,
     });
+    return serializeDocument(comment as unknown as Record<string, unknown>)!;
   },
 
   async update(
     id: string,
     data: Record<string, unknown>,
     userId: string
-  ): Promise<CommentDocument | null> {
+  ): Promise<Record<string, unknown> | null> {
     const comment = await commentRepository.findById(id);
 
     if (!comment) {
@@ -54,7 +61,8 @@ export const commentService = {
       throw ApiError.forbidden('You can only update your own comments');
     }
 
-    return commentRepository.updateById(id, data);
+    const updated = await commentRepository.updateById(id, data);
+    return serializeDocument(updated as unknown as Record<string, unknown> | null);
   },
 
   async remove(id: string, userId: string): Promise<boolean> {

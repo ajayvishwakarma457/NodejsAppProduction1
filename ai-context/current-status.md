@@ -2,20 +2,28 @@
 
 ## Stage
 
-Production-ready API backend. All core modules implemented, 252 tests passing.
+Production-ready API backend. All core modules implemented, 252 unit tests and 90 HTTP integration tests passing.
 
 ## What Exists
 
 ### Modules
+
 - **auth** — Local register/login, JWT token rotation, OAuth2 (Google + GitHub), logout/blacklist, API key authentication
 - **users** — CRUD with self-or-admin access controls, role-restricted updates
 - **teams** — CRUD with owner enforcement, member management (owner/admin only)
 - **projects** — CRUD scoped to owner/team membership, auto-assigned `ownerId`
 - **tasks** — CRUD scoped to creator/assignee, auto-assigned `createdBy`
-- **comments** — Basic structure present
+- **comments** — CRUD scoped to task and author
 - **notifications** — Queue-based delivery with in-app + email channels
 
+### Testing
+
+- Vitest unit test suite under `src/tests/unit/` (252 tests)
+- New Supertest-based integration suite under `src/tests/integration/` (90 tests) exercising the Express app end-to-end against real MongoDB and Redis
+- Separate commands: `npm test` (unit), `npm run test:integration`, and `npm run test:all`
+
 ### Infrastructure
+
 - MongoDB connection with Mongoose models
 - Redis for caching, token blacklisting, rate limiting, and job queues, now with a production-grade service wrapper covering strings (set/get/JSON/cache-aside/counters/locks/pattern delete), hashes (hSet/hSetMultiple/hGet/hGetAll/hDel/hExists/hIncrBy/hKeys/hLen), sorted sets (zAdd/zAddJSON/zRange/zRevRange/zRank/zScore/zCount/zCard/zIncrBy/zRemRangeByScore), and TTL helpers (ttl/persist)
 - Cache-aside pattern implemented at the domain level for `users`, `teams`, `projects`, and `tasks` entity reads (`getById`) with namespace-scoped invalidation on creates/updates/deletes/member changes via `src/utils/cache.ts`
@@ -44,6 +52,7 @@ Production-ready API backend. All core modules implemented, 252 tests passing.
 - BullMQ integration added alongside the legacy custom queue for new features, including a sample `report-generation` queue/worker with retries, backoff, delayed jobs, and deduplication
 
 ### Security
+
 - Helmet with API-appropriate CSP
 - Explicit CORS with preflight caching
 - JWT access + refresh tokens with JTI blacklisting
@@ -54,7 +63,6 @@ Production-ready API backend. All core modules implemented, 252 tests passing.
 
 ## Next Steps
 
-- Add integration tests for RBAC edge cases (cross-user access attempts)
 - Implement manager role permissions (currently defined but unused)
 - Add HATEOAS / content negotiation (noted as missing)
 - Add notification POST endpoint restrictions (currently any auth user can create for any user)

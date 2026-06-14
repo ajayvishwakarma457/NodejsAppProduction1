@@ -107,8 +107,14 @@ userSchema.index({ email: 1 }, { unique: true, name: 'email_unique_idx' });
 userSchema.index({ role: 1, createdAt: -1 }, { name: 'role_createdat_idx' });
 // Index for filtering unverified users (e.g. cleanup jobs or re-send flows).
 userSchema.index({ isVerified: 1 }, { name: 'isverified_idx' });
-// Sparse index for OAuth provider lookups.
-userSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true, name: 'provider_providerid_idx' });
+// Partial unique index for OAuth provider lookups.
+// Only enforces uniqueness for documents that have a real providerId,
+// allowing multiple local users that do not link an OAuth account.
+userSchema.index({ provider: 1, providerId: 1 }, {
+    unique: true,
+    name: 'provider_providerid_idx',
+    partialFilterExpression: { providerId: { $type: 'string' } },
+});
 // Text index for user search across name and email.
 userSchema.index({ firstName: 'text', lastName: 'text', email: 'text' }, { name: 'user_text_search_idx', weights: { firstName: 10, lastName: 10, email: 5 } });
 // Compound index for listing users by verification status and creation time.

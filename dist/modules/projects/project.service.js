@@ -8,6 +8,7 @@ const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const serializer_1 = require("../../utils/serializer");
 const transaction_1 = require("../../utils/transaction");
 const event_bus_1 = require("../../utils/event-bus");
 exports.projectService = {
@@ -26,15 +27,20 @@ exports.projectService = {
         if (query.search) {
             filter.search = String(query.search);
         }
-        return project_repository_1.projectRepository.findAll({
+        const result = await project_repository_1.projectRepository.findAll({
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
             order: pagination.order,
         }, filter);
+        return {
+            ...result,
+            data: (0, serializer_1.serializeDocuments)(result.data),
+        };
     },
     async getById(id) {
-        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.projects, id, () => project_repository_1.projectRepository.findById(id));
+        const project = await cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.projects, id, () => project_repository_1.projectRepository.findById(id));
+        return (0, serializer_1.serializeDocument)(project);
     },
     async create(data) {
         const created = await project_repository_1.projectRepository.create(data);
@@ -44,7 +50,7 @@ exports.projectService = {
             ownerId: String(created.ownerId ?? data.ownerId ?? ''),
             name: String(created.name),
         });
-        return created;
+        return (0, serializer_1.serializeDocument)(created);
     },
     async update(id, data, userId, role) {
         const existing = await project_repository_1.projectRepository.findById(id);
@@ -57,7 +63,7 @@ exports.projectService = {
         if (updated) {
             await cache_1.cacheAside.invalidateEntity(cache_1.CACHE_NAMESPACE.projects, id);
         }
-        return updated;
+        return (0, serializer_1.serializeDocument)(updated);
     },
     async remove(id, userId, role) {
         const existing = await project_repository_1.projectRepository.findById(id);

@@ -4,6 +4,13 @@
 
 The backend uses a feature-module structure under `src/modules`, with shared infrastructure placed in dedicated folders for config, middleware, jobs, sockets, services, and utilities.
 
+## Testing Strategy
+
+- **Unit tests** — Vitest-based tests under `src/tests/unit/` (excluding `src/tests/integration/`). They run with `npm test` and focus on services, utilities, middleware, and domain logic in isolation.
+- **Integration tests** — Supertest-based HTTP tests under `src/tests/integration/`. They run with `npm run test:integration` against a dedicated `nodejs-app-production1-integration-test` MongoDB database and a real Redis instance, configured in `vitest.integration.config.ts`.
+- **Isolation** — Integration tests connect once per test file, clean all collections after each test, and run sequentially (`fileParallelism: false`) to avoid cross-test data races.
+- **Environment** — Integration tests override process env before the app loads, disabling background jobs, WebSocket, event bus, and rate limiting so the suite stays deterministic.
+
 ## Main Modules
 
 - `auth`
@@ -59,7 +66,7 @@ The backend uses a feature-module structure under `src/modules`, with shared inf
   - MIME type allow-list via `STORAGE_ALLOWED_MIME_TYPES`
   - structured `MulterError` → `ApiError` conversion with request context logging
 - `services/storage.service.ts` provides a provider-pattern storage abstraction:
-  - `LocalStorageProvider` — stores files on disk with directory traversal protection, unique safe filenames, upload/delete/exists/stream/URL.
+  - `LocalStorageProvider` — stores files on disk with directory traversal protection, unique safe filenames, upload/delete/exists/stream/URL. Uploads persist original mimetype/size metadata in a sidecar `.meta.json` so `getMetadata` returns accurate `Content-Type` for streamed responses.
   - `S3StorageProvider` — production-grade AWS S3 implementation using AWS SDK v3:
     - `PutObjectCommand` for uploads with correct `ContentType`
     - `DeleteObjectCommand`, `HeadObjectCommand`, `GetObjectCommand`

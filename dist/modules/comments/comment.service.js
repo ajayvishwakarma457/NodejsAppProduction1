@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.commentService = void 0;
 const ApiError_1 = require("../../utils/ApiError");
 const pagination_1 = require("../../utils/pagination");
+const serializer_1 = require("../../utils/serializer");
 const comment_repository_1 = require("./comment.repository");
 exports.commentService = {
     async list(query) {
@@ -14,21 +15,27 @@ exports.commentService = {
         if (query.userId) {
             filter.userId = String(query.userId);
         }
-        return comment_repository_1.commentRepository.findAll({
+        const result = await comment_repository_1.commentRepository.findAll({
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
             order: pagination.order,
         }, filter);
+        return {
+            ...result,
+            data: (0, serializer_1.serializeDocuments)(result.data),
+        };
     },
     async getById(id) {
-        return comment_repository_1.commentRepository.findByIdWithUser(id);
+        const comment = await comment_repository_1.commentRepository.findByIdWithUser(id);
+        return (0, serializer_1.serializeDocument)(comment);
     },
     async create(data, userId) {
-        return comment_repository_1.commentRepository.create({
+        const comment = await comment_repository_1.commentRepository.create({
             ...data,
             userId,
         });
+        return (0, serializer_1.serializeDocument)(comment);
     },
     async update(id, data, userId) {
         const comment = await comment_repository_1.commentRepository.findById(id);
@@ -38,7 +45,8 @@ exports.commentService = {
         if (String(comment.userId) !== userId) {
             throw ApiError_1.ApiError.forbidden('You can only update your own comments');
         }
-        return comment_repository_1.commentRepository.updateById(id, data);
+        const updated = await comment_repository_1.commentRepository.updateById(id, data);
+        return (0, serializer_1.serializeDocument)(updated);
     },
     async remove(id, userId) {
         const comment = await comment_repository_1.commentRepository.findById(id);

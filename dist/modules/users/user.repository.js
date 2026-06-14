@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userRepository = void 0;
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const user_model_1 = require("./user.model");
 const pagination_1 = require("../../utils/pagination");
 const query_optimizer_1 = require("../../utils/query-optimizer");
@@ -96,7 +100,12 @@ exports.userRepository = {
      * Update a user by id. Returns the updated document or null if not found.
      */
     async updateById(id, data, session) {
-        const query = user_model_1.UserModel.findByIdAndUpdate(id, data, { new: true, session })
+        const update = { ...data };
+        if (update.password) {
+            const salt = await bcryptjs_1.default.genSalt(12);
+            update.password = await bcryptjs_1.default.hash(update.password, salt);
+        }
+        const query = user_model_1.UserModel.findByIdAndUpdate(id, update, { new: true, session })
             .select((0, query_optimizer_1.buildListProjection)(['password', 'refreshToken']))
             .lean();
         return (0, query_optimizer_1.timedQuery)(query, { collection: 'users', operation: 'updateById' });

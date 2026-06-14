@@ -4,6 +4,7 @@ import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin, isAdmin } from '../../utils/rbac';
+import { serializeDocument, serializeDocuments } from '../../utils/serializer';
 import { withTransaction } from '../../utils/transaction';
 import { eventBus } from '../../utils/event-bus';
 
@@ -37,7 +38,7 @@ export const taskService = {
       filter.search = String(query.search);
     }
 
-    return taskRepository.findAll(
+    const result = await taskRepository.findAll(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -46,10 +47,18 @@ export const taskService = {
       },
       filter
     );
+
+    return {
+      ...result,
+      data: serializeDocuments(result.data as Record<string, unknown>[]),
+    };
   },
 
   async getById(id: string) {
-    return cacheAside.getOrSet(CACHE_NAMESPACE.tasks, id, () => taskRepository.findById(id));
+    const task = await cacheAside.getOrSet(CACHE_NAMESPACE.tasks, id, () =>
+      taskRepository.findById(id)
+    );
+    return serializeDocument(task as Record<string, unknown> | null);
   },
 
   async create(data: Record<string, unknown>) {
@@ -70,7 +79,7 @@ export const taskService = {
       });
     }
 
-    return created;
+    return serializeDocument(created as Record<string, unknown>);
   },
 
   async update(id: string, data: Record<string, unknown>, userId: string, role?: string) {
@@ -97,7 +106,7 @@ export const taskService = {
         });
       }
     }
-    return updated;
+    return serializeDocument(updated as Record<string, unknown> | null);
   },
 
   async remove(id: string, userId: string, role?: string) {

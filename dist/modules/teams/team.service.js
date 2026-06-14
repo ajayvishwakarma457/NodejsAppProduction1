@@ -9,6 +9,7 @@ const comment_model_1 = require("../comments/comment.model");
 const pagination_1 = require("../../utils/pagination");
 const ApiError_1 = require("../../utils/ApiError");
 const rbac_1 = require("../../utils/rbac");
+const serializer_1 = require("../../utils/serializer");
 const transaction_1 = require("../../utils/transaction");
 exports.teamService = {
     async list(query) {
@@ -23,15 +24,20 @@ exports.teamService = {
         if (query.search) {
             filter.search = String(query.search);
         }
-        return team_repository_1.teamRepository.findAll({
+        const result = await team_repository_1.teamRepository.findAll({
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
             order: pagination.order,
         }, filter);
+        return {
+            ...result,
+            data: (0, serializer_1.serializeDocuments)(result.data),
+        };
     },
     async getById(id) {
-        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.teams, id, () => team_repository_1.teamRepository.findById(id));
+        const team = await cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.teams, id, () => team_repository_1.teamRepository.findById(id));
+        return (0, serializer_1.serializeDocument)(team);
     },
     async create(data) {
         const ownerId = String(data.ownerId);
@@ -42,7 +48,7 @@ exports.teamService = {
             if (created) {
                 await cache_1.cacheAside.invalidatePattern(cache_1.CACHE_NAMESPACE.teams, 'list:*');
             }
-            return created;
+            return (0, serializer_1.serializeDocument)(created);
         });
     },
     async update(id, data, userId, role) {

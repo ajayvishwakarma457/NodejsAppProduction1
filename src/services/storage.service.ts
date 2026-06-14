@@ -133,6 +133,17 @@ class LocalStorageProvider implements StorageProvider {
       throw ApiError.internal('No file buffer or path available');
     }
 
+    // Persist metadata in a sidecar so getMetadata can return the original mimetype.
+    const metaPath = `${destPath}.meta.json`;
+    await fs.writeFile(
+      metaPath,
+      JSON.stringify({
+        size: file.size,
+        mimetype: file.mimetype,
+        originalName: file.originalname,
+      })
+    );
+
     logger.info('File uploaded (local)', { key, size: file.size });
 
     return {
@@ -148,6 +159,8 @@ class LocalStorageProvider implements StorageProvider {
     try {
       const filePath = this.resolvePath(key);
       await fs.unlink(filePath);
+      // Best-effort cleanup of sidecar metadata; failures are ignored.
+      await fs.unlink(`${filePath}.meta.json`).catch(() => undefined);
       logger.info('File deleted (local)', { key });
       return true;
     } catch {
@@ -165,15 +178,31 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   async getMetadata(key: string): Promise<FileMetadata | null> {
+    const filePath = this.resolvePath(key);
+    const metaPath = `${filePath}.meta.json`;
+
     try {
-      const stats = await statAsync(this.resolvePath(key));
+      // Prefer persisted sidecar metadata so the original mimetype is preserved.
+      const metaRaw = await fs.readFile(metaPath, 'utf-8');
+      const meta = JSON.parse(metaRaw) as FileMetadata & { originalName?: string };
+      const stats = await statAsync(filePath);
       return {
-        size: stats.size,
-        mimetype: 'application/octet-stream',
+        size: meta.size ?? stats.size,
+        mimetype: meta.mimetype ?? 'application/octet-stream',
         lastModified: stats.mtime,
       };
     } catch {
-      return null;
+      // Fall back to filesystem stats if metadata is missing.
+      try {
+        const stats = await statAsync(filePath);
+        return {
+          size: stats.size,
+          mimetype: 'application/octet-stream',
+          lastModified: stats.mtime,
+        };
+      } catch {
+        return null;
+      }
     }
   }
 

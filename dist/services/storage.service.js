@@ -45,6 +45,13 @@ class LocalStorageProvider {
         else {
             throw ApiError_1.ApiError.internal('No file buffer or path available');
         }
+        // Persist metadata in a sidecar so getMetadata can return the original mimetype.
+        const metaPath = `${destPath}.meta.json`;
+        await promises_1.default.writeFile(metaPath, JSON.stringify({
+            size: file.size,
+            mimetype: file.mimetype,
+            originalName: file.originalname,
+        }));
         logger_1.logger.info('File uploaded (local)', { key, size: file.size });
         return {
             key,
@@ -58,6 +65,8 @@ class LocalStorageProvider {
         try {
             const filePath = this.resolvePath(key);
             await promises_1.default.unlink(filePath);
+            // Best-effort cleanup of sidecar metadata; failures are ignored.
+            await promises_1.default.unlink(`${filePath}.meta.json`).catch(() => undefined);
             logger_1.logger.info('File deleted (local)', { key });
             return true;
         }
@@ -75,16 +84,32 @@ class LocalStorageProvider {
         }
     }
     async getMetadata(key) {
+        const filePath = this.resolvePath(key);
+        const metaPath = `${filePath}.meta.json`;
         try {
-            const stats = await statAsync(this.resolvePath(key));
+            // Prefer persisted sidecar metadata so the original mimetype is preserved.
+            const metaRaw = await promises_1.default.readFile(metaPath, 'utf-8');
+            const meta = JSON.parse(metaRaw);
+            const stats = await statAsync(filePath);
             return {
-                size: stats.size,
-                mimetype: 'application/octet-stream',
+                size: meta.size ?? stats.size,
+                mimetype: meta.mimetype ?? 'application/octet-stream',
                 lastModified: stats.mtime,
             };
         }
         catch {
-            return null;
+            // Fall back to filesystem stats if metadata is missing.
+            try {
+                const stats = await statAsync(filePath);
+                return {
+                    size: stats.size,
+                    mimetype: 'application/octet-stream',
+                    lastModified: stats.mtime,
+                };
+            }
+            catch {
+                return null;
+            }
         }
     }
     getStream(key, start, end) {

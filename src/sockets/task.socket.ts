@@ -5,10 +5,7 @@ import { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } from '../utils/constants';
 import { isValidId } from '../utils/helpers';
 import { socketHandler } from '../utils/socketHandler';
 
-const canAccessTask = (
-  task: { createdBy: unknown; assignedTo: unknown },
-  userId: string
-): boolean => {
+const canAccessTask = (task: Record<string, unknown>, userId: string): boolean => {
   const createdBy = String(task.createdBy);
   const assignedTo = String(task.assignedTo);
   return createdBy === userId || assignedTo === userId;

@@ -5,12 +5,10 @@ import { SOCKET_EVENTS, SOCKET_ROOM_PREFIX } from '../utils/constants';
 import { isValidId } from '../utils/helpers';
 import { socketHandler } from '../utils/socketHandler';
 
-const isTeamMember = (
-  team: { ownerId: unknown; members: { userId: unknown }[] },
-  userId: string
-): boolean => {
+const isTeamMember = (team: Record<string, unknown>, userId: string): boolean => {
   if (String(team.ownerId) === userId) return true;
-  return team.members.some((member) => String(member.userId) === userId);
+  const members = (team.members as Array<{ userId: unknown }>) ?? [];
+  return members.some((member) => String(member.userId) === userId);
 };
 
 export const registerTeamSocket = (io: Server | Namespace, socket: Socket) => {

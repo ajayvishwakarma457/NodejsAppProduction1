@@ -6,6 +6,7 @@ import { CommentModel } from '../comments/comment.model';
 import { getPagination } from '../../utils/pagination';
 import { ApiError } from '../../utils/ApiError';
 import { isOwnerOrAdmin } from '../../utils/rbac';
+import { serializeDocument, serializeDocuments } from '../../utils/serializer';
 import { withTransaction } from '../../utils/transaction';
 
 export const teamService = {
@@ -26,7 +27,7 @@ export const teamService = {
       filter.search = String(query.search);
     }
 
-    return teamRepository.findAll(
+    const result = await teamRepository.findAll(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -35,10 +36,18 @@ export const teamService = {
       },
       filter
     );
+
+    return {
+      ...result,
+      data: serializeDocuments(result.data as Record<string, unknown>[]),
+    };
   },
 
   async getById(id: string) {
-    return cacheAside.getOrSet(CACHE_NAMESPACE.teams, id, () => teamRepository.findById(id));
+    const team = await cacheAside.getOrSet(CACHE_NAMESPACE.teams, id, () =>
+      teamRepository.findById(id)
+    );
+    return serializeDocument(team as Record<string, unknown> | null);
   },
 
   async create(data: Record<string, unknown>) {
@@ -53,7 +62,7 @@ export const teamService = {
       if (created) {
         await cacheAside.invalidatePattern(CACHE_NAMESPACE.teams, 'list:*');
       }
-      return created;
+      return serializeDocument(created as Record<string, unknown> | null);
     });
   },
 

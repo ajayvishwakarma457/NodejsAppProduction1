@@ -14,7 +14,8 @@
 - [x] Add Sharp-based image processing with on-upload resize, format conversion, and variant generation
 - [x] Add BullMQ integration alongside the legacy queue for new background job features
 - [x] Add background jobs (email, notification, reminder) with retry + DLQ
-- [x] Add test suite (114 tests passing)
+- [x] Add test suite (unit + integration tests passing via Vitest and Supertest)
+- [x] Expand integration test coverage to all API modules (health, auth, users, teams, projects, tasks, comments, notifications, files, SSE)
 - [x] Implement rate limiting with IETF Draft-7 + legacy headers
 - [x] Fix Helmet config for API usage (remove HTML CSP)
 - [x] Enhance CORS with explicit headers and preflight cache
@@ -37,13 +38,16 @@
 ## Open Tasks
 
 - [ ] Define and implement `manager` role permissions (currently unused)
-- [ ] Add integration tests for RBAC edge cases (cross-user update/delete attempts)
+- [x] Add integration tests for RBAC edge cases (cross-user update/delete attempts) — implemented in `src/tests/integration/users.test.ts`
 - [ ] Restrict notification POST endpoint (currently any auth user can target any `userId`)
 - [ ] Add HATEOAS links to API responses
 - [ ] Add content negotiation support
 - [ ] Add scope-based authorization middleware for API keys
 - [ ] Fix pre-existing Redis `getOrSet` test race condition
-- [ ] Extend cache-aside to list endpoints and dashboard aggregations (currently only `getById` is cached)
+- [x] Fix OAuth provider index to allow multiple local users (uncovered by integration tests)
+- [x] Fix password hashing for updates via `findByIdAndUpdate` (uncovered by integration tests)
+- [x] Add response serializers for team/project/task/comment/notification services so HTTP responses use `id` consistently
+- [x] Persist local-storage mimetype metadata via sidecar JSON so file streaming returns correct `Content-Type`- [ ] Extend cache-aside to list endpoints and dashboard aggregations (currently only `getById` is cached)
 
 ## Open Questions
 

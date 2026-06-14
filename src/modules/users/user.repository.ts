@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { ClientSession, FilterQuery } from 'mongoose';
 import { UserDocument, UserModel } from './user.model';
 import { buildPaginationMeta, PaginationMeta } from '../../utils/pagination';
@@ -137,7 +138,14 @@ export const userRepository = {
     data: Partial<UserDocument>,
     session?: ClientSession
   ): Promise<UserDocument | null> {
-    const query = UserModel.findByIdAndUpdate(id, data, { new: true, session })
+    const update = { ...data };
+
+    if (update.password) {
+      const salt = await bcrypt.genSalt(12);
+      update.password = await bcrypt.hash(update.password, salt);
+    }
+
+    const query = UserModel.findByIdAndUpdate(id, update, { new: true, session })
       .select(buildListProjection(['password', 'refreshToken']))
       .lean();
     return timedQuery(query, { collection: 'users', operation: 'updateById' });

@@ -16,6 +16,23 @@ const api_key_repository_1 = require("../api-keys/api-key.repository");
 const pagination_1 = require("../../utils/pagination");
 const transaction_1 = require("../../utils/transaction");
 const event_bus_1 = require("../../utils/event-bus");
+const serializeUser = (user) => {
+    if (!user)
+        return null;
+    const u = user;
+    return {
+        id: String(u._id ?? u.id),
+        firstName: String(u.firstName),
+        lastName: String(u.lastName),
+        email: String(u.email),
+        role: String(u.role),
+        avatar: u.avatar ?? null,
+        isVerified: Boolean(u.isVerified),
+        lastLogin: u.lastLogin ?? null,
+        createdAt: new Date(u.createdAt),
+        updatedAt: new Date(u.updatedAt),
+    };
+};
 exports.userService = {
     async list(query) {
         const pagination = (0, pagination_1.getPagination)(query.page, query.limit, query.sort, query.order);
@@ -29,15 +46,20 @@ exports.userService = {
         if (query.search) {
             filter.search = String(query.search);
         }
-        return user_repository_1.userRepository.findAll({
+        const result = await user_repository_1.userRepository.findAll({
             page: pagination.page,
             limit: pagination.limit,
             sort: pagination.sort,
             order: pagination.order,
         }, filter);
+        return {
+            ...result,
+            data: result.data.map((user) => serializeUser(user)),
+        };
     },
     async getById(id) {
-        return cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.users, id, () => user_repository_1.userRepository.findById(id));
+        const user = await cache_1.cacheAside.getOrSet(cache_1.CACHE_NAMESPACE.users, id, () => user_repository_1.userRepository.findById(id));
+        return serializeUser(user);
     },
     async create(data) {
         const created = await user_repository_1.userRepository.create(data);

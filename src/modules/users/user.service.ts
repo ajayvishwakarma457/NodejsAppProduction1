@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { userRepository, UserListFilter } from './user.repository';
+import { UserDocument } from './user.model';
 import { cacheAside, CACHE_NAMESPACE } from '../../utils/cache';
 import { TeamModel } from '../teams/team.model';
 import { ProjectModel } from '../projects/project.model';
@@ -10,6 +11,24 @@ import { apiKeyRepository } from '../api-keys/api-key.repository';
 import { getPagination } from '../../utils/pagination';
 import { withTransaction } from '../../utils/transaction';
 import { eventBus } from '../../utils/event-bus';
+
+const serializeUser = (user: UserDocument | Record<string, unknown> | null) => {
+  if (!user) return null;
+
+  const u = user as Record<string, unknown>;
+  return {
+    id: String(u._id ?? u.id),
+    firstName: String(u.firstName),
+    lastName: String(u.lastName),
+    email: String(u.email),
+    role: String(u.role),
+    avatar: (u.avatar as string | null) ?? null,
+    isVerified: Boolean(u.isVerified),
+    lastLogin: (u.lastLogin as Date | null) ?? null,
+    createdAt: new Date(u.createdAt as Date | string),
+    updatedAt: new Date(u.updatedAt as Date | string),
+  };
+};
 
 export const userService = {
   async list(query: Record<string, unknown>) {
@@ -29,7 +48,7 @@ export const userService = {
       filter.search = String(query.search);
     }
 
-    return userRepository.findAll(
+    const result = await userRepository.findAll(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -38,10 +57,18 @@ export const userService = {
       },
       filter
     );
+
+    return {
+      ...result,
+      data: result.data.map((user) => serializeUser(user)),
+    };
   },
 
   async getById(id: string) {
-    return cacheAside.getOrSet(CACHE_NAMESPACE.users, id, () => userRepository.findById(id));
+    const user = await cacheAside.getOrSet(CACHE_NAMESPACE.users, id, () =>
+      userRepository.findById(id)
+    );
+    return serializeUser(user);
   },
 
   async create(data: Record<string, unknown>) {

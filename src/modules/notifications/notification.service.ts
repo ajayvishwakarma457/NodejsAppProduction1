@@ -1,5 +1,6 @@
 import { ApiError } from '../../utils/ApiError';
 import { getPagination } from '../../utils/pagination';
+import { serializeDocument, serializeDocuments } from '../../utils/serializer';
 import { NotificationDocument } from './notification.model';
 import { notificationRepository, NotificationListFilter } from './notification.repository';
 
@@ -17,7 +18,7 @@ export const notificationService = {
       filter.type = String(query.type);
     }
 
-    return notificationRepository.findAll(
+    const result = await notificationRepository.findAll(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -26,20 +27,26 @@ export const notificationService = {
       },
       filter
     );
+
+    return {
+      ...result,
+      data: serializeDocuments(result.data as unknown as Record<string, unknown>[]),
+    };
   },
 
-  async getById(id: string, userId: string): Promise<NotificationDocument | null> {
+  async getById(id: string, userId: string): Promise<Record<string, unknown> | null> {
     const notification = await notificationRepository.findById(id);
 
     if (notification && String(notification.userId) !== userId) {
       throw ApiError.forbidden('You do not have access to this notification');
     }
 
-    return notification;
+    return serializeDocument(notification as unknown as Record<string, unknown> | null);
   },
 
-  async create(data: Partial<NotificationDocument>): Promise<NotificationDocument> {
-    return notificationRepository.create(data);
+  async create(data: Partial<NotificationDocument>): Promise<Record<string, unknown>> {
+    const notification = await notificationRepository.create(data);
+    return serializeDocument(notification as unknown as Record<string, unknown>)!;
   },
 
   async markAsRead(id: string, userId: string): Promise<NotificationDocument | null> {
