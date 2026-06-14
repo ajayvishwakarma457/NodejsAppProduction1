@@ -28,6 +28,7 @@ const envSchema = zod_1.z.object({
         .default('mongodb://127.0.0.1:27017/nodejs-app-production1'),
     CLIENT_URL: zod_1.z.string().min(1).default('*'),
     LOG_LEVEL: zod_1.z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    LOG_FORMAT: zod_1.z.enum(['pretty', 'json']).default('json'),
     SMTP_HOST: zod_1.z.string().optional().default(''),
     SMTP_PORT: zod_1.z.coerce.number().min(1).max(65535).default(587),
     SMTP_SECURE: zod_1.z.preprocess((val) => val === 'true' || val === true, zod_1.z.boolean().default(false)),

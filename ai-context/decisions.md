@@ -2,6 +2,23 @@
 
 ## Decision Log
 
+## 2026-06-14 - Adopt Winston for Structured Logging
+
+Decision:
+
+Replace the custom console logger with `winston` for production-grade structured logging. Logs are emitted as JSON by default and written to rotating files in production. Pretty colorized output is available by setting `LOG_FORMAT=pretty`.
+
+Reason:
+
+Winston provides transport flexibility, syslog-level filtering, exception/rejection capture, and JSON serialization (including Error stacks) out of the box. The previous custom logger was JSON-shaped but lacked rotation and robust error serialization.
+
+Impact:
+
+- `src/config/logger.ts` now builds a Winston logger with Console and DailyRotateFile transports.
+- `LOG_FORMAT` (`pretty` | `json`) added to `src/config/env.ts`; defaults to `json`.
+- Existing `logger.debug/info/warn/error` API remains unchanged; call sites do not need updates.
+- Unit tests in `src/tests/unit/config/logger.test.ts` mock Winston to verify behavior.
+
 ## 2026-06-09 - Use Feature-Based Source Structure
 
 Decision:
