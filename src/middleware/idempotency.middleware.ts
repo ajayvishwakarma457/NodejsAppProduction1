@@ -8,7 +8,8 @@ const CACHE_PREFIX = 'idempotency:cache:';
 const LOCK_PREFIX = 'idempotency:lock:';
 const POLL_INTERVAL_MS = 100;
 
-const isReadOnly = (method: string): boolean => ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+const isReadOnly = (method: string): boolean =>
+  ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 
 const cacheKey = (key: string): string => `${CACHE_PREFIX}${key}`;
 const lockKey = (key: string): string => `${LOCK_PREFIX}${key}`;
@@ -19,7 +20,10 @@ const lockKey = (key: string): string => `${LOCK_PREFIX}${key}`;
  */
 const buildFingerprint = (req: Request): string => {
   const body = JSON.stringify(req.body ?? {});
-  return crypto.createHash('sha256').update(`${req.method}:${req.originalUrl}:${body}`).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(`${req.method}:${req.originalUrl}:${body}`)
+    .digest('hex');
 };
 
 interface CachedResponse {
@@ -34,7 +38,10 @@ const validateKey = (key: string): boolean => /^[a-zA-Z0-9._:-]{1,255}$/.test(ke
 const sendCachedResponse = (res: Response, cached: CachedResponse): void => {
   res.status(cached.statusCode);
   for (const [name, value] of Object.entries(cached.headers)) {
-    if (value !== undefined && !['content-length', 'transfer-encoding'].includes(name.toLowerCase())) {
+    if (
+      value !== undefined &&
+      !['content-length', 'transfer-encoding'].includes(name.toLowerCase())
+    ) {
       res.setHeader(name, value as string);
     }
   }
@@ -179,7 +186,8 @@ export const idempotencyMiddleware = async (req: Request, res: Response, next: N
         const cacheEntry: CachedResponse = {
           statusCode: res.statusCode,
           headers: res.getHeaders(),
-          body: typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody ?? {}),
+          body:
+            typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody ?? {}),
           fingerprint,
         };
 

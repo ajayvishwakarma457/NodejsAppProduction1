@@ -137,7 +137,11 @@ const envSchema = z.object({
     z.boolean().default(true)
   ),
   IDEMPOTENCY_KEY_HEADER: z.string().min(1).default('Idempotency-Key'),
-  IDEMPOTENCY_TTL_SECONDS: z.coerce.number().min(1).max(86400 * 7).default(86400),
+  IDEMPOTENCY_TTL_SECONDS: z.coerce
+    .number()
+    .min(1)
+    .max(86400 * 7)
+    .default(86400),
   IDEMPOTENCY_LOCK_TTL_SECONDS: z.coerce.number().min(1).max(300).default(30),
 
   RATE_LIMIT_ENABLED: z.preprocess(

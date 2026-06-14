@@ -1,4 +1,8 @@
-import { extendZodWithOpenApi, OpenApiGeneratorV3, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import {
+  extendZodWithOpenApi,
+  OpenApiGeneratorV3,
+  OpenAPIRegistry,
+} from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import { env } from './env';
 
@@ -28,22 +32,37 @@ const idParam = registry.registerParameter(
 );
 
 const paginationQuery = {
-  page: z.coerce.number().min(1).optional().openapi({
-    param: { name: 'page', in: 'query', description: 'Page number' },
-    example: 1,
-  }),
-  limit: z.coerce.number().min(1).max(100).optional().openapi({
-    param: { name: 'limit', in: 'query', description: 'Items per page' },
-    example: 10,
-  }),
-  sort: z.string().optional().openapi({
-    param: { name: 'sort', in: 'query', description: 'Field to sort by' },
-    example: 'createdAt',
-  }),
-  order: z.enum(['asc', 'desc']).optional().openapi({
-    param: { name: 'order', in: 'query', description: 'Sort order' },
-    example: 'desc',
-  }),
+  page: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .openapi({
+      param: { name: 'page', in: 'query', description: 'Page number' },
+      example: 1,
+    }),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .openapi({
+      param: { name: 'limit', in: 'query', description: 'Items per page' },
+      example: 10,
+    }),
+  sort: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: 'sort', in: 'query', description: 'Field to sort by' },
+      example: 'createdAt',
+    }),
+  order: z
+    .enum(['asc', 'desc'])
+    .optional()
+    .openapi({
+      param: { name: 'order', in: 'query', description: 'Sort order' },
+      example: 'desc',
+    }),
 };
 
 /* ------------------------------------------------------------------ */
@@ -239,7 +258,9 @@ const HealthCheckSchema = registry.register(
     .object({
       success: z.boolean().openapi({ example: true }),
       message: z.string().openapi({ example: 'OK' }),
-      checks: z.record(z.enum(['ok', 'error'])).openapi({ example: { server: 'ok', mongodb: 'ok' } }),
+      checks: z
+        .record(z.enum(['ok', 'error']))
+        .openapi({ example: { server: 'ok', mongodb: 'ok' } }),
       timestamp: z.string().datetime().openapi({ example: '2024-01-01T00:00:00.000Z' }),
     })
     .openapi('HealthCheck')
@@ -493,18 +514,27 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      role: z.enum(['admin', 'manager', 'member']).optional().openapi({
-        param: { name: 'role', in: 'query', description: 'Filter by role' },
-        example: 'member',
-      }),
-      isVerified: z.enum(['true', 'false']).optional().openapi({
-        param: { name: 'isVerified', in: 'query', description: 'Filter by verification status' },
-        example: 'true',
-      }),
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search by name or email' },
-        example: 'jane',
-      }),
+      role: z
+        .enum(['admin', 'manager', 'member'])
+        .optional()
+        .openapi({
+          param: { name: 'role', in: 'query', description: 'Filter by role' },
+          example: 'member',
+        }),
+      isVerified: z
+        .enum(['true', 'false'])
+        .optional()
+        .openapi({
+          param: { name: 'isVerified', in: 'query', description: 'Filter by verification status' },
+          example: 'true',
+        }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search by name or email' },
+          example: 'jane',
+        }),
     }),
   },
   responses: {
@@ -589,10 +619,13 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search by name or description' },
-        example: 'engineering',
-      }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search by name or description' },
+          example: 'engineering',
+        }),
     }),
   },
   responses: {
@@ -699,18 +732,27 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      teamId: z.string().optional().openapi({
-        param: { name: 'teamId', in: 'query', description: 'Filter by team id' },
-        example: '507f1f77bcf86cd799439011',
-      }),
-      status: z.enum(['active', 'completed', 'archived']).optional().openapi({
-        param: { name: 'status', in: 'query', description: 'Filter by status' },
-        example: 'active',
-      }),
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search by name or description' },
-        example: 'website',
-      }),
+      teamId: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'teamId', in: 'query', description: 'Filter by team id' },
+          example: '507f1f77bcf86cd799439011',
+        }),
+      status: z
+        .enum(['active', 'completed', 'archived'])
+        .optional()
+        .openapi({
+          param: { name: 'status', in: 'query', description: 'Filter by status' },
+          example: 'active',
+        }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search by name or description' },
+          example: 'website',
+        }),
     }),
   },
   responses: {
@@ -734,9 +776,20 @@ registry.registerPath({
             name: z.string().min(1).openapi({ example: 'Website redesign' }),
             description: z.string().min(1).openapi({ example: 'Redesign the public website' }),
             teamId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
-            status: z.enum(['active', 'completed', 'archived']).optional().openapi({ example: 'active' }),
-            startDate: z.string().datetime().optional().openapi({ example: '2024-01-01T00:00:00.000Z' }),
-            dueDate: z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+            status: z
+              .enum(['active', 'completed', 'archived'])
+              .optional()
+              .openapi({ example: 'active' }),
+            startDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-01-01T00:00:00.000Z' }),
+            dueDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-06-01T00:00:00.000Z' }),
           }),
         },
       },
@@ -779,10 +832,25 @@ registry.registerPath({
         'application/json': {
           schema: z.object({
             name: z.string().min(1).optional().openapi({ example: 'Website redesign' }),
-            description: z.string().min(1).optional().openapi({ example: 'Redesign the public website' }),
-            status: z.enum(['active', 'completed', 'archived']).optional().openapi({ example: 'active' }),
-            startDate: z.string().datetime().optional().openapi({ example: '2024-01-01T00:00:00.000Z' }),
-            dueDate: z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+            description: z
+              .string()
+              .min(1)
+              .optional()
+              .openapi({ example: 'Redesign the public website' }),
+            status: z
+              .enum(['active', 'completed', 'archived'])
+              .optional()
+              .openapi({ example: 'active' }),
+            startDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-01-01T00:00:00.000Z' }),
+            dueDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-06-01T00:00:00.000Z' }),
           }),
         },
       },
@@ -848,30 +916,48 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      projectId: z.string().optional().openapi({
-        param: { name: 'projectId', in: 'query', description: 'Filter by project id' },
-        example: '507f1f77bcf86cd799439011',
-      }),
-      assignedTo: z.string().optional().openapi({
-        param: { name: 'assignedTo', in: 'query', description: 'Filter by assignee id' },
-        example: '507f1f77bcf86cd799439011',
-      }),
-      createdBy: z.string().optional().openapi({
-        param: { name: 'createdBy', in: 'query', description: 'Filter by creator id' },
-        example: '507f1f77bcf86cd799439011',
-      }),
-      status: z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({
-        param: { name: 'status', in: 'query', description: 'Filter by status' },
-        example: 'in-progress',
-      }),
-      priority: z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({
-        param: { name: 'priority', in: 'query', description: 'Filter by priority' },
-        example: 'high',
-      }),
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search by title or description' },
-        example: 'login',
-      }),
+      projectId: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'projectId', in: 'query', description: 'Filter by project id' },
+          example: '507f1f77bcf86cd799439011',
+        }),
+      assignedTo: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'assignedTo', in: 'query', description: 'Filter by assignee id' },
+          example: '507f1f77bcf86cd799439011',
+        }),
+      createdBy: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'createdBy', in: 'query', description: 'Filter by creator id' },
+          example: '507f1f77bcf86cd799439011',
+        }),
+      status: z
+        .enum(['todo', 'in-progress', 'review', 'done'])
+        .optional()
+        .openapi({
+          param: { name: 'status', in: 'query', description: 'Filter by status' },
+          example: 'in-progress',
+        }),
+      priority: z
+        .enum(['low', 'medium', 'high', 'critical'])
+        .optional()
+        .openapi({
+          param: { name: 'priority', in: 'query', description: 'Filter by priority' },
+          example: 'high',
+        }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search by title or description' },
+          example: 'login',
+        }),
     }),
   },
   responses: {
@@ -896,9 +982,19 @@ registry.registerPath({
             description: z.string().min(1).openapi({ example: 'Users cannot log in with Google' }),
             projectId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
             assignedTo: z.string().openapi({ example: '507f1f77bcf86cd799439011' }),
-            priority: z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({ example: 'high' }),
-            status: z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({ example: 'todo' }),
-            dueDate: z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+            priority: z
+              .enum(['low', 'medium', 'high', 'critical'])
+              .optional()
+              .openapi({ example: 'high' }),
+            status: z
+              .enum(['todo', 'in-progress', 'review', 'done'])
+              .optional()
+              .openapi({ example: 'todo' }),
+            dueDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-06-01T00:00:00.000Z' }),
             estimatedHours: z.number().min(0).optional().openapi({ example: 4 }),
             actualHours: z.number().min(0).optional().openapi({ example: 0 }),
           }),
@@ -944,10 +1040,20 @@ registry.registerPath({
           schema: z.object({
             title: z.string().min(1).optional().openapi({ example: 'Fix login bug' }),
             description: z.string().min(1).optional().openapi({ example: 'Updated description' }),
-            priority: z.enum(['low', 'medium', 'high', 'critical']).optional().openapi({ example: 'critical' }),
-            status: z.enum(['todo', 'in-progress', 'review', 'done']).optional().openapi({ example: 'done' }),
+            priority: z
+              .enum(['low', 'medium', 'high', 'critical'])
+              .optional()
+              .openapi({ example: 'critical' }),
+            status: z
+              .enum(['todo', 'in-progress', 'review', 'done'])
+              .optional()
+              .openapi({ example: 'done' }),
             assignedTo: z.string().optional().openapi({ example: '507f1f77bcf86cd799439011' }),
-            dueDate: z.string().datetime().optional().openapi({ example: '2024-06-01T00:00:00.000Z' }),
+            dueDate: z
+              .string()
+              .datetime()
+              .optional()
+              .openapi({ example: '2024-06-01T00:00:00.000Z' }),
             estimatedHours: z.number().min(0).optional().openapi({ example: 4 }),
             actualHours: z.number().min(0).optional().openapi({ example: 3 }),
           }),
@@ -998,7 +1104,9 @@ registry.registerPath({
               statusDistribution: z.array(z.object({ _id: z.string(), count: z.number() })),
               priorityDistribution: z.array(z.object({ _id: z.string(), count: z.number() })),
               overdueSummary: z.object({ total: z.number(), overdue: z.number() }),
-              workload: z.array(z.object({ _id: z.string(), assigned: z.number(), done: z.number() })),
+              workload: z.array(
+                z.object({ _id: z.string(), assigned: z.number(), done: z.number() })
+              ),
             }),
           }),
         },
@@ -1018,14 +1126,20 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      taskId: z.string().optional().openapi({
-        param: { name: 'taskId', in: 'query', description: 'Filter by task id' },
-        example: '507f1f77bcf86cd799439011',
-      }),
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search comment content' },
-        example: 'looks good',
-      }),
+      taskId: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'taskId', in: 'query', description: 'Filter by task id' },
+          example: '507f1f77bcf86cd799439011',
+        }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search comment content' },
+          example: 'looks good',
+        }),
     }),
   },
   responses: {
@@ -1132,21 +1246,35 @@ registry.registerPath({
   request: {
     query: z.object({
       ...paginationQuery,
-      isRead: z.enum(['true', 'false']).optional().openapi({
-        param: { name: 'isRead', in: 'query', description: 'Filter by read status' },
-        example: 'false',
-      }),
+      isRead: z
+        .enum(['true', 'false'])
+        .optional()
+        .openapi({
+          param: { name: 'isRead', in: 'query', description: 'Filter by read status' },
+          example: 'false',
+        }),
       type: z
-        .enum(['task-assigned', 'task-updated', 'comment-added', 'project-created', 'mention', 'due-soon', 'invite'])
+        .enum([
+          'task-assigned',
+          'task-updated',
+          'comment-added',
+          'project-created',
+          'mention',
+          'due-soon',
+          'invite',
+        ])
         .optional()
         .openapi({
           param: { name: 'type', in: 'query', description: 'Filter by notification type' },
           example: 'task-assigned',
         }),
-      search: z.string().optional().openapi({
-        param: { name: 'search', in: 'query', description: 'Search title or message' },
-        example: 'assigned',
-      }),
+      search: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: 'search', in: 'query', description: 'Search title or message' },
+          example: 'assigned',
+        }),
     }),
   },
   responses: {
@@ -1225,7 +1353,10 @@ registry.registerPath({
         'application/json': {
           schema: z.object({
             name: z.string().min(1).openapi({ example: 'CI deployment key' }),
-            scopes: z.array(z.enum(['read', 'write', 'admin'])).optional().openapi({ example: ['read', 'write'] }),
+            scopes: z
+              .array(z.enum(['read', 'write', 'admin']))
+              .optional()
+              .openapi({ example: ['read', 'write'] }),
             expiresInDays: z.number().min(1).max(365).optional().openapi({ example: 365 }),
           }),
         },

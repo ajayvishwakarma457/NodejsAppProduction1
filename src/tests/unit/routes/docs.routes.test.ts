@@ -115,8 +115,15 @@ describe('docs route integration', () => {
     } as unknown as Response;
 
     const routeLayer = docsRouter.stack.find(
-      (layer: { route?: { path: string; stack: { method: string; handle: (req: Request, res: Response, next: () => void) => void }[] } }) =>
-        layer.route?.path === '/openapi.json'
+      (layer: {
+        route?: {
+          path: string;
+          stack: {
+            method: string;
+            handle: (req: Request, res: Response, next: () => void) => void;
+          }[];
+        };
+      }) => layer.route?.path === '/openapi.json'
     );
     expect(routeLayer).toBeDefined();
 
