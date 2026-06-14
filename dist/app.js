@@ -27,6 +27,7 @@ const requestId_middleware_1 = require("./middleware/requestId.middleware");
 const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const auth_middleware_1 = require("./middleware/auth.middleware");
 const morgan_middleware_1 = require("./middleware/morgan.middleware");
+const idempotency_middleware_1 = require("./middleware/idempotency.middleware");
 const docs_routes_1 = require("./routes/docs.routes");
 const passport_1 = require("./config/passport");
 /* ------------------------------------------------------------------ */
@@ -165,6 +166,12 @@ exports.app.get('/health', async (_req, res) => {
 /* ------------------------------------------------------------------ */
 exports.app.use(auth_middleware_1.optionalAuthMiddleware);
 exports.app.use(rateLimit_middleware_1.rateLimitMiddleware);
+/* ------------------------------------------------------------------ */
+// Idempotency (must be after body parsers to access req.body)
+/* ------------------------------------------------------------------ */
+if (env_1.env.IDEMPOTENCY_ENABLED) {
+    exports.app.use('/api/v1', idempotency_middleware_1.idempotencyMiddleware);
+}
 /* ------------------------------------------------------------------ */
 // API routes
 /* ------------------------------------------------------------------ */

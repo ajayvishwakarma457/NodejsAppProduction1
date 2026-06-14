@@ -30,6 +30,37 @@ Impact:
 - `.env.example` updated with the new variables.
 - New `src/tests/unit/middleware/morgan.middleware.test.ts` covering token registration, format registration, stream routing, skip behavior, and env option propagation.
 
+## 2026-06-14 - Add Idempotency Keys for Safe Retries
+
+Decision:
+
+Add middleware that supports `Idempotency-Key` headers for state-changing API requests. Duplicate requests with the same key return the cached response instead of re-executing business logic.
+
+Reason:
+
+Network timeouts and retries can cause clients to send the same mutation multiple times. Idempotency keys prevent duplicate side effects (double-charges, duplicate records, multiple emails) while still giving clients a safe retry mechanism.
+
+Rules:
+
+- Use Redis for both response caching and distributed locking.
+- Fingerprint each request from `method + URL + body` so a key cannot be reused with a different payload (returns `409`).
+- Skip read-only methods (`GET`, `HEAD`, `OPTIONS`) automatically.
+- Skip requests that do not include the configured idempotency header.
+- Cache only successful (`2xx`) responses.
+- Lock concurrent requests with the same key so duplicates wait for the first request to finish.
+- Release locks and cache responses via the response `finish` event.
+- TTLs are configurable: `IDEMPOTENCY_TTL_SECONDS` for cached responses, `IDEMPOTENCY_LOCK_TTL_SECONDS` for in-flight locks.
+- Apply the middleware under `/api/v1` after body parsers so `req.body` is available for fingerprinting.
+- Gracefully degrade: Redis errors are logged but do not block the request.
+
+Impact:
+
+- New `src/middleware/idempotency.middleware.ts` with Redis-backed caching, locking, and fingerprinting.
+- `src/app.ts` mounts the middleware under `/api/v1` when `IDEMPOTENCY_ENABLED=true`.
+- `src/config/env.ts` extended with `IDEMPOTENCY_ENABLED`, `IDEMPOTENCY_KEY_HEADER`, `IDEMPOTENCY_TTL_SECONDS`, and `IDEMPOTENCY_LOCK_TTL_SECONDS`.
+- `.env.example` updated with the new variables.
+- New `src/tests/unit/middleware/idempotency.middleware.test.ts` covering read-only skip, missing header skip, invalid key, caching, key reuse detection, and non-2xx behavior.
+
 ## 2026-06-14 - Add OpenAPI / Swagger Documentation
 
 Decision:

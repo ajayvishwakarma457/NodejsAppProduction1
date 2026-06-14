@@ -21,6 +21,7 @@ import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { optionalAuthMiddleware } from './middleware/auth.middleware';
 import { morganMiddleware } from './middleware/morgan.middleware';
+import { idempotencyMiddleware } from './middleware/idempotency.middleware';
 import { docsRouter } from './routes/docs.routes';
 import { configurePassport } from './config/passport';
 
@@ -194,6 +195,14 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 app.use(optionalAuthMiddleware);
 app.use(rateLimitMiddleware);
+
+/* ------------------------------------------------------------------ */
+// Idempotency (must be after body parsers to access req.body)
+/* ------------------------------------------------------------------ */
+
+if (env.IDEMPOTENCY_ENABLED) {
+  app.use('/api/v1', idempotencyMiddleware);
+}
 
 /* ------------------------------------------------------------------ */
 // API routes
