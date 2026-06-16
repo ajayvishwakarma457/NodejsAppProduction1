@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { sseService } from '../../services/sse.service';
+import { sseService } from '../../modules/sse/sse.service';
 
 interface MockResponse {
   write: (chunk: string) => boolean;

@@ -7,7 +7,7 @@ import { authRouter } from './modules/auth/auth.routes';
 import { commentRouter } from './modules/comments/comment.routes';
 import { fileRouter } from './modules/files/file.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
-import { sseRouter } from './routes/sse.routes';
+import { sseRouter } from './modules/sse/sse.routes';
 import { projectRouter } from './modules/projects/project.routes';
 import { taskRouter } from './modules/tasks/task.routes';
 import { teamRouter } from './modules/teams/team.routes';
@@ -22,7 +22,7 @@ import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { optionalAuthMiddleware } from './middleware/auth.middleware';
 import { morganMiddleware } from './middleware/morgan.middleware';
 import { idempotencyMiddleware } from './middleware/idempotency.middleware';
-import { docsRouter } from './routes/docs.routes';
+import { docsRouter } from './modules/docs/docs.routes';
 import { configurePassport } from './config/passport';
 
 /* ------------------------------------------------------------------ */

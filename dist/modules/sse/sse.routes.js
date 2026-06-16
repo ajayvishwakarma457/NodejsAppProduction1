@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sseRouter = void 0;
 const express_1 = require("express");
-const sse_controller_1 = require("../controllers/sse.controller");
+const sse_controller_1 = require("./sse.controller");
 const router = (0, express_1.Router)();
 router.get('/stream', (req, res, next) => {
     try {

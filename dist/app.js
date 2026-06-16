@@ -13,7 +13,7 @@ const auth_routes_1 = require("./modules/auth/auth.routes");
 const comment_routes_1 = require("./modules/comments/comment.routes");
 const file_routes_1 = require("./modules/files/file.routes");
 const notification_routes_1 = require("./modules/notifications/notification.routes");
-const sse_routes_1 = require("./routes/sse.routes");
+const sse_routes_1 = require("./modules/sse/sse.routes");
 const project_routes_1 = require("./modules/projects/project.routes");
 const task_routes_1 = require("./modules/tasks/task.routes");
 const team_routes_1 = require("./modules/teams/team.routes");
@@ -28,7 +28,7 @@ const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
 const auth_middleware_1 = require("./middleware/auth.middleware");
 const morgan_middleware_1 = require("./middleware/morgan.middleware");
 const idempotency_middleware_1 = require("./middleware/idempotency.middleware");
-const docs_routes_1 = require("./routes/docs.routes");
+const docs_routes_1 = require("./modules/docs/docs.routes");
 const passport_1 = require("./config/passport");
 /* ------------------------------------------------------------------ */
 // App instance

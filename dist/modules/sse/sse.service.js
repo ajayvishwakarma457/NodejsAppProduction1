@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sseService = void 0;
-const logger_1 = require("../config/logger");
+const logger_1 = require("../../config/logger");
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const globalClients = new Set();
 const userClients = new Map();

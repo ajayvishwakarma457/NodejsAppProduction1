@@ -4,7 +4,7 @@ exports.socketService = void 0;
 const logger_1 = require("../config/logger");
 const constants_1 = require("../utils/constants");
 const ws_service_1 = require("./ws.service");
-const sse_service_1 = require("./sse.service");
+const sse_service_1 = require("../modules/sse/sse.service");
 let ioInstance = null;
 const ensureInitialized = () => {
     if (!ioInstance) {

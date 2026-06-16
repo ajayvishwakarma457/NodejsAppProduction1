@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { streamEvents } from '../controllers/sse.controller';
+import { streamEvents } from './sse.controller';
 
 const router = Router();
 

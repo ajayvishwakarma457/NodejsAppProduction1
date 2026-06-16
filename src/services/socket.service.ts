@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { logger } from '../config/logger';
 import { SOCKET_ROOM_PREFIX } from '../utils/constants';
 import { wsService } from './ws.service';
-import { sseService } from './sse.service';
+import { sseService } from '../modules/sse/sse.service';
 
 let ioInstance: Server | null = null;
 

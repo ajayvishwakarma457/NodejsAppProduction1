@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { sseService } from '../services/sse.service';
-import { ApiError } from '../utils/ApiError';
-import { logger } from '../config/logger';
+import { sseService } from './sse.service';
+import { ApiError } from '../../utils/ApiError';
+import { logger } from '../../config/logger';
 
 /**
  * Establish a Server-Sent Events stream for the authenticated user.

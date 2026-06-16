@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { logger } from '../config/logger';
+import { logger } from '../../config/logger';
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 

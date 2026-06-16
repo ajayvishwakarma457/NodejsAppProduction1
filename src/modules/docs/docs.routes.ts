@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
-import { openApiDocument } from '../config/openapi';
+import { openApiDocument } from '../../config/openapi';
 
 const router = Router();
 

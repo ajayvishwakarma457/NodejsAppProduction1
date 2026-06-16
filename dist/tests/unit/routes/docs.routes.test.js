@@ -35,7 +35,7 @@ const vitest_1 = require("vitest");
     (0, vitest_1.it)('exports a docs router with Swagger UI and OpenAPI JSON endpoints', async () => {
         vitest_1.vi.stubEnv('DOCS_ENABLED', 'true');
         vitest_1.vi.stubEnv('DOCS_PATH', '/api-docs');
-        const { docsRouter } = await Promise.resolve().then(() => __importStar(require('../../../routes/docs.routes')));
+        const { docsRouter } = await Promise.resolve().then(() => __importStar(require('../../../modules/docs/docs.routes')));
         (0, vitest_1.expect)(docsRouter).toBeDefined();
         (0, vitest_1.expect)(typeof docsRouter.get).toBe('function');
         (0, vitest_1.expect)(typeof docsRouter.use).toBe('function');
@@ -106,7 +106,7 @@ const vitest_1 = require("vitest");
     });
     (0, vitest_1.it)('openapi.json handler returns the document', async () => {
         vitest_1.vi.stubEnv('DOCS_ENABLED', 'true');
-        const { docsRouter } = await Promise.resolve().then(() => __importStar(require('../../../routes/docs.routes')));
+        const { docsRouter } = await Promise.resolve().then(() => __importStar(require('../../../modules/docs/docs.routes')));
         const { openApiDocument } = await Promise.resolve().then(() => __importStar(require('../../../config/openapi')));
         const jsonMock = vitest_1.vi.fn();
         const setHeaderMock = vitest_1.vi.fn();

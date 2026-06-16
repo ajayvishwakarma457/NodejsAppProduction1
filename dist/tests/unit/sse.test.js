@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const vitest_1 = require("vitest");
-const sse_service_1 = require("../../services/sse.service");
+const sse_service_1 = require("../../modules/sse/sse.service");
 const createMockRes = () => {
     const chunks = [];
     return {

@@ -15,7 +15,7 @@ describe('docs routes', () => {
     vi.stubEnv('DOCS_ENABLED', 'true');
     vi.stubEnv('DOCS_PATH', '/api-docs');
 
-    const { docsRouter } = await import('../../../routes/docs.routes');
+    const { docsRouter } = await import('../../../modules/docs/docs.routes');
 
     expect(docsRouter).toBeDefined();
     expect(typeof docsRouter.get).toBe('function');
@@ -104,7 +104,7 @@ describe('docs route integration', () => {
   it('openapi.json handler returns the document', async () => {
     vi.stubEnv('DOCS_ENABLED', 'true');
 
-    const { docsRouter } = await import('../../../routes/docs.routes');
+    const { docsRouter } = await import('../../../modules/docs/docs.routes');
     const { openApiDocument } = await import('../../../config/openapi');
 
     const jsonMock = vi.fn();
